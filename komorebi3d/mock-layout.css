@@ -1,5 +1,5 @@
-.mock-root{--test-panel-height:440px;width:100%;max-width:100%;container-type:inline-size}
-.mock-root .mock-frame{width:100%;max-width:850px;margin:0 auto;padding:12px;background:#f2f0e4;border:0;border-radius:0;color:#4d5540;font:12px system-ui}
+.mock-root{--test-panel-height:max(640px,calc(100vh - 330px));width:100%;max-width:100%;container-type:inline-size}
+.mock-root .mock-frame{width:100%;max-width:none;margin:0 auto;padding:12px;background:#f2f0e4;border:0;border-radius:0;color:#4d5540;font:12px system-ui}
 .mock-root .shell{width:100%;max-width:none;margin:0;min-width:0}
 .mock-root .landscape-hero{display:flex;flex-direction:column;gap:8px;min-height:0;height:auto;overflow:visible}
 .mock-root .site-heading{flex:0 0 auto;display:flex;justify-content:space-between;font-size:12px;color:#385c42}
@@ -44,3 +44,41 @@
  .mock-root .landscape-main{height:var(--test-panel-height);min-height:0}
  .mock-root .landscape-main .panel-slot-main{height:100%}
 }
+
+/* Mock page: tighter outer margin than the product page. */
+body{padding:6px}
+
+/* PC layout: wider frame, 3-column runtime status, roomier panels. */
+@container (min-width:1000px){
+ .mock-root .mock-frame{padding:18px}
+ .mock-root .landscape-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+ .mock-root .panel-slot-bottom>.runtime-status{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .mock-root .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
+ .mock-root .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
+}
+
+/* PC: single A / B mode uses the whole game panel. */
+@container (min-width:1000px){
+ .mock-root .landscape-game .play-surface:not(.ab-compare),
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
+ .mock-root .landscape-game .play-surface.ab-compare,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;gap:6px}
+ .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:9px}
+ .mock-root .landscape-game,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
+ .mock-root .landscape-game .play-surface,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface{border-radius:9px}
+ .mock-root .landscape-game .play-surface.ab-compare{gap:1px}
+}
+
+/* Mock-only faux game surface: shows each screen's label and settings. */
+.play-surface{position:relative;overflow:hidden;display:flex}
+.play-surface .screen-view{flex:1 1 0;min-width:0;position:relative;display:grid;place-items:center;color:#cfe0c8;font:700 11px/1.5 system-ui;text-align:center;
+ background:radial-gradient(circle at 50% 38%,#1f3a26 0,#0b150e 62%,#000 100%)}
+.play-surface .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-view small{display:block;font-weight:500;color:#8fae93;font-size:10px}
+/* A/B compare (below PC width): each screen keeps the same 3:4 size as in single A / B mode. */
+.landscape-game .play-surface.ab-compare{aspect-ratio:auto;width:auto;max-width:100%;gap:6px;background:transparent;justify-content:center}
+.play-surface.ab-compare .screen-view{flex:0 1 auto;height:100%;aspect-ratio:3/4;min-width:0;border:1px solid #2c4a33;border-radius:9px}
+.play-surface.ab-compare .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-tag{position:absolute;top:6px;left:8px;font-size:10px;color:#a6c4aa}

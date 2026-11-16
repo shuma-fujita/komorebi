@@ -103,8 +103,8 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .runtime-status{position:relative;--help-button-color:#455a49;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
 .runtime-status-heading{display:block;min-height:36px;margin:0 0 8px;padding-right:43px;font-size:13px}
 
-.mock-root{--test-panel-height:440px;width:100%;max-width:100%;container-type:inline-size}
-.mock-root .mock-frame{width:100%;max-width:850px;margin:0 auto;padding:12px;background:#f2f0e4;border:0;border-radius:0;color:#4d5540;font:12px system-ui}
+.mock-root{--test-panel-height:max(640px,calc(100vh - 330px));width:100%;max-width:100%;container-type:inline-size}
+.mock-root .mock-frame{width:100%;max-width:none;margin:0 auto;padding:12px;background:#f2f0e4;border:0;border-radius:0;color:#4d5540;font:12px system-ui}
 .mock-root .shell{width:100%;max-width:none;margin:0;min-width:0}
 .mock-root .landscape-hero{display:flex;flex-direction:column;gap:8px;min-height:0;height:auto;overflow:visible}
 .mock-root .site-heading{flex:0 0 auto;display:flex;justify-content:space-between;font-size:12px;color:#385c42}
@@ -150,11 +150,49 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
  .mock-root .landscape-main .panel-slot-main{height:100%}
 }
 
+/* Mock page: tighter outer margin than the product page. */
+body{padding:6px}
+
+/* PC layout: wider frame, 3-column runtime status, roomier panels. */
+@container (min-width:1000px){
+ .mock-root .mock-frame{padding:18px}
+ .mock-root .landscape-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+ .mock-root .panel-slot-bottom>.runtime-status{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .mock-root .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
+ .mock-root .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
+}
+
+/* PC: single A / B mode uses the whole game panel. */
+@container (min-width:1000px){
+ .mock-root .landscape-game .play-surface:not(.ab-compare),
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
+ .mock-root .landscape-game .play-surface.ab-compare,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;gap:6px}
+ .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:9px}
+ .mock-root .landscape-game,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
+ .mock-root .landscape-game .play-surface,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface{border-radius:9px}
+ .mock-root .landscape-game .play-surface.ab-compare{gap:1px}
+}
+
+/* Mock-only faux game surface: shows each screen's label and settings. */
+.play-surface{position:relative;overflow:hidden;display:flex}
+.play-surface .screen-view{flex:1 1 0;min-width:0;position:relative;display:grid;place-items:center;color:#cfe0c8;font:700 11px/1.5 system-ui;text-align:center;
+ background:radial-gradient(circle at 50% 38%,#1f3a26 0,#0b150e 62%,#000 100%)}
+.play-surface .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-view small{display:block;font-weight:500;color:#8fae93;font-size:10px}
+/* A/B compare (below PC width): each screen keeps the same 3:4 size as in single A / B mode. */
+.landscape-game .play-surface.ab-compare{aspect-ratio:auto;width:auto;max-width:100%;gap:6px;background:transparent;justify-content:center}
+.play-surface.ab-compare .screen-view{flex:0 1 auto;height:100%;aspect-ratio:3/4;min-width:0;border:1px solid #2c4a33;border-radius:9px}
+.play-surface.ab-compare .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-tag{position:absolute;top:6px;left:8px;font-size:10px;color:#a6c4aa}
+
 @media (orientation:landscape) and (min-width:900px) and (min-height:600px){
  .runtime-status{margin-top:12px;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49}
  .runtime-status-heading{display:block;font-size:13px;margin:0 0 8px}
  .runtime-status .stats{margin-top:8px}
-}</style><div class="mock-root"><div class="mock-frame"><div class="shell"><div class="landscape-hero"><div class="site-heading"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">000000</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" aria-label="ゲーム画面（描画なし）"></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" class="test-panel" data-panel-id="test" role="region" aria-label="テスト操作パネル">
+}</style><div class="mock-root"><div class="mock-frame"><div class="shell"><div class="landscape-hero"><div class="site-heading"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">000000</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface" aria-label="ゲーム画面（描画なし）"></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" class="test-panel" data-panel-id="test" role="region" aria-label="テスト操作パネル">
 <div class="test-panel-header">
 <strong class="test-panel-heading">🧪 テスト操作（開発用）</strong>
 <button id="test-help-button" class="panel-help-button test-help-button" type="button" aria-label="このエリアの名前：テスト操作パネル" aria-describedby="test-help-overlay"><span>ⓘ</span></button>
@@ -170,13 +208,13 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 <div class="screen-settings" data-visible="compare">
 <div class="screen-card" data-screen="A">
 <div class="screen-title">画面A</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>旧500m</label><label><input type="radio" name="screen-map-A" value="new">新2km</label></fieldset>
-<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A">WebGL</label><label><input type="radio" name="screen-engine-A" value="B" checked>Three.js</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old">旧500m</label><label><input type="radio" name="screen-map-A" value="new" checked>新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
 <fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧500m</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km</label></fieldset>
-<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A">WebGL</label><label><input type="radio" name="screen-engine-B" value="B" checked>Three.js</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
 </div>
 </div>
 <div class="test-separator"></div>
@@ -214,11 +252,30 @@ function renderScreenSettingsUI(root,state){
  const caption=root.querySelector('#mode-status');
  if(caption)caption.textContent='表示：'+(comparing?'画面A＋画面B':'画面'+mode+'のみ');
 }
+/* Mock-only: reflect the display mode in the black game surface. */
+function renderFauxGame(state){
+ const surface=document.getElementById('play-surface');
+ if(!surface)return;
+ const mode=state.renderMode;
+ const names={map:{old:'旧500m',new:'新2km'},engine:{A:'WebGL',B:'Three.js'}};
+ const shown=mode==='compare'?['A','B']:[mode];
+ surface.classList.toggle('ab-compare',mode==='compare');
+ surface.replaceChildren();
+ for(const s of shown){
+  const v=document.createElement('div');v.className='screen-view';
+  const tag=document.createElement('span');tag.className='screen-tag';tag.textContent='画面'+s;
+  const body=document.createElement('div');
+  body.textContent='🌳 描画なし';
+  const sm=document.createElement('small');
+  sm.textContent=names.engine[state.screens[s].engine]+' / '+names.map[state.screens[s].map];
+  body.appendChild(sm);v.append(tag,body);surface.appendChild(v);
+ }
+}
 (function(){
  const panel=document.querySelector('#test-ops-panel');
  if(!panel)return;
  const state={renderMode:'compare',screens:{A:{map:'old',engine:'B'},B:{map:'new',engine:'B'}}};
- const render=()=>renderScreenSettingsUI(panel,state);
+ const render=()=>{renderScreenSettingsUI(panel,state);renderFauxGame(state);};
  panel.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
   state.renderMode=button.dataset.mode;render();
  }));
