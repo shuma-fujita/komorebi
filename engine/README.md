@@ -27,7 +27,7 @@ Komorebi 3Dで検証した、ブラウザ用の再利用可能な3Dエンジン�
 
 ## 対象ゲームとテスト
 
-**[Komorebi 3D v0.7 — Engine main統合版](https://komorebi-3d.github.io/komorebi/komorebi3d/komorebi3d-app-v07-engine-main-test.html)**
+**Komorebi 3D v0.7 — Engine main統合版**（v0.7のテストHTMLは整理済みで、このリポジトリにはありません。現在の開発版は **[dev.html](https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html)**）
 
 2026-11-08：iPhone Safariでユーザー実機テスト **PASS**。Input、Camera、Renderer、Core、Collisionの統合版。
 
