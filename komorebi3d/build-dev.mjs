@@ -52,7 +52,7 @@ for(const id of panelIds){
   panelHtml=panelHtml.replace('<!-- @screen-settings -->',screenHtml);
  }
  if(mock&&id==='build'){
-  const real='id="dev-engine">d4a392a</code>';
+  const real='id="dev-engine">56bb2bc</code>';
   if(!panelHtml.includes(real))throw Error('Missing mock Engine label');
   panelHtml=panelHtml.replace(real,'id="dev-engine">000000</code>');
  }

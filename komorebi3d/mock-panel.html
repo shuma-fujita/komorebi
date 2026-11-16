@@ -58,8 +58,8 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;aspect-ratio:auto;flex:1 1 auto}
 .panel-slot[data-slot-size-fixed]>.landscape-game .views{width:100%;height:100%;min-height:0}
 .panel-slot[data-slot-size-fixed]>.landscape-game .view-panel:not(.off){min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}
-.panel-slot[data-slot-size-fixed]>.landscape-game .views.single canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
-.panel-slot[data-slot-size-fixed]>.landscape-game .views:not(.single) canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
+.panel-slot[data-slot-size-fixed]>.landscape-game .views.single .view-panel > canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
+.panel-slot[data-slot-size-fixed]>.landscape-game .views:not(.single) .view-panel > canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
 
 /* Styles for build panel from canonical dev.html. */
 .build-info{margin:9px 0 12px;padding:10px 11px;border:1px solid #aec2a8;border-radius:9px;background:#e8f2e4;color:#31563b;font-size:11px;line-height:1.65;overflow-wrap:anywhere}
@@ -73,9 +73,10 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 /* Styles for game panel from canonical dev.html. */
 .views{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .views.single{grid-template-columns:minmax(0,1fr)}
+.view-panel{position:relative}
 .view-panel.off{display:none}
 #panel-a,#panel-b{min-width:0}
-canvas{display:block;width:100%;aspect-ratio:3/4;border-radius:9px;background:#a7d9e9}
+.view-panel > canvas{display:block;width:100%;aspect-ratio:3/4;border-radius:9px;background:#a7d9e9}
 .play-surface{position:relative}
 .touch-layer{position:absolute;inset:0;display:flex;z-index:2;touch-action:none}
 .touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -175,6 +176,23 @@ button.slider-step:active{background:#c4dec1}
  .panel-slot-bottom>.test-panel,.panel-slot-bottom>.build-info{margin-top:12px}
 }
 
+/* PC layout (same as mock): wider game panel, horizontal build info, 3-column runtime status. */
+/* Product-only file, so mock.chat.html stays small. IDs raise priority over panel and fixed-slot CSS. */
+@media (orientation:landscape) and (min-width:1000px) and (min-height:600px){
+ .shell .landscape-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+ .shell .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
+ .shell .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
+ .shell .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px}
+ .shell .panel-slot-bottom>.runtime-status>:is(.runtime-status-heading,#collision-status,#sync-status,.stats,#status,p:not([id])){grid-column:1/-1}
+ .shell .panel-slot-bottom>.runtime-status>p{margin:0;min-width:0}
+ .shell .panel-slot-bottom>.runtime-status>:is(#ea,#eb):empty{display:none}
+ /* Game panel: A only / B only fills the whole panel; compare splits it in two. */
+ .shell .landscape-game,.shell .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
+ #play-surface{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;border-radius:9px}
+ #play-surface>#views{width:100%;height:100%;gap:1px}
+ #play-surface .view-panel>canvas{width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:auto}
+}
+
 @media (orientation:landscape) and (min-width:900px) and (min-height:600px){
  .landscape-game{min-height:0;min-width:0;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}
  .landscape-game button.game-help-button{display:block;z-index:4}
@@ -183,8 +201,8 @@ button.slider-step:active{background:#c4dec1}
  .landscape-game .play-surface.ab-compare{width:100%;height:100%;aspect-ratio:auto;flex:1 1 auto}
  .landscape-game .views{width:100%;height:100%;min-height:0}
  .landscape-game .view-panel:not(.off){min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}
- .landscape-game .views.single canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
- .landscape-game .views:not(.single) canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
+ .landscape-game .views.single .view-panel > canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
+ .landscape-game .views:not(.single) .view-panel > canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
 }
 
 @media (orientation:landscape) and (min-width:900px) and (min-height:600px){
@@ -198,7 +216,7 @@ button.slider-step:active{background:#c4dec1}
 .landscape-game .views canvas{background:#000}
 .landscape-game .debug-map{display:none !important}
 .landscape-game .touch-layer{pointer-events:none}
-</style></head><body><div class="shell"><div id="launch-diagnostic" style="padding:10px;margin:8px 0;background:#fff3c8;border-radius:8px;font-size:13px">診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。</div><div class="landscape-hero"><div class="site-heading" style="display:flex;justify-content:space-between"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">d4a392a</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface"><div class="debug-map" id="debug-map" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas" width="256" height="256" role="img" aria-label="主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div><div class="views single" id="views"><div class="view-panel off" id="panel-a"><canvas id="a"></canvas></div><div class="view-panel" id="panel-b"><canvas id="b"></canvas></div></div><div class="touch-layer"><div class="touch-zone" id="pad" aria-label="左半分：キャラクター移動"></div><div class="touch-zone" id="camera-pad" aria-label="右半分：カメラ操作"></div></div></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
+</style></head><body><div class="shell"><div id="launch-diagnostic" style="padding:10px;margin:8px 0;background:#fff3c8;border-radius:8px;font-size:13px">診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。</div><div class="landscape-hero"><div class="site-heading" style="display:flex;justify-content:space-between"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">56bb2bc</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface"><div class="views single" id="views"><div class="view-panel off" id="panel-a"><canvas id="a"></canvas><div class="debug-map" id="debug-map-a" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas-a" width="256" height="256" role="img" aria-label="画面A：主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div></div><div class="view-panel" id="panel-b"><canvas id="b"></canvas><div class="debug-map" id="debug-map-b" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas-b" width="256" height="256" role="img" aria-label="画面B：主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div></div></div><div class="touch-layer"><div class="touch-zone" id="pad" aria-label="左半分：キャラクター移動"></div><div class="touch-zone" id="camera-pad" aria-label="右半分：カメラ操作"></div></div></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
 <div class="test-panel-header">
 <strong class="test-panel-heading">🧪 テスト操作（開発用）</strong>
 <button type="button" class="panel-help-button test-help-button" id="test-help-button" aria-label="このエリアの名前：テスト操作パネル" aria-describedby="test-help-overlay"><span>ⓘ</span></button>
@@ -215,13 +233,13 @@ button.slider-step:active{background:#c4dec1}
 <div class="screen-settings" data-visible="compare">
 <div class="screen-card" data-screen="A">
 <div class="screen-title">画面A</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>旧500m</label><label><input type="radio" name="screen-map-A" value="new">新2km</label></fieldset>
-<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A">WebGL</label><label><input type="radio" name="screen-engine-A" value="B" checked>Three.js</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old">旧500m</label><label><input type="radio" name="screen-map-A" value="new" checked>新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
 <fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧500m</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km</label></fieldset>
-<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A">WebGL</label><label><input type="radio" name="screen-engine-B" value="B" checked>Three.js</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
 </div>
 </div>
 <!-- @screen-settings:end -->

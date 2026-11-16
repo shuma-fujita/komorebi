@@ -31,7 +31,7 @@
 ## 1. 現在地（次のチャットはここから）
 
 - **開発入口：** [`komorebi3d/dev.html`](https://github.com/Komorebi-3D/komorebi/blob/main/komorebi3d/dev.html)。森・松戸の統合ワールド、4パネル（開発情報／ゲーム／テスト操作／実行ステータス）、描画方式A/B比較、テスト操作を提供。
-- **Engine固定：** `d4a392aba35c840e0bea8b585c6852515bf58f30`（表示値 `d4a392a`）。`engine/` や固定jsDelivr参照を不用意に変更しない。
+- **Engine固定：** `shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e`（表示値 `56bb2bc`）。旧リポジトリ `komorebi-3d/komorebi@d4a392a` から移行し、Engineは旧固定版より新しい版（旧リポジトリ `29c17a9` 以降の `engine/`）。移行後の実機確認は未実施。`engine/` や固定jsDelivr参照を不用意に変更しない。
 - **松戸の現行地図取得：** `komorebi3d/maps/map-loader.js` が旧 `matsudo.json` と、`tiles-2km/index.json` から解決する中央タイル `0_0` を取得。松戸入場時に順次読み込み、旧はhalfSize=250、新はhalfSize=1000で3D生成。A/B画面の地図設定で描画を選択する。初回の0_0比較はユーザー実機PASS。2026-11-14にローダーの `TEST_TILE_ID='0_0'` から選択タイルを読み、ビルダーが `map.tile` に基づきEPSG:6677グリッドの中心を自動算出するようリファクタ済み（リファクタ後の実機未確認）。
 - **ブラウザからのOSM直接API取得：削除済み。** Overpass接続先・再試行・OSM/JSON自動フォールバック・「自動／OSM最新／JSON」切替・`mapSourceMode`・`setMapSourceMode` は現行ゲームから削除済み。
 - **ワールド分離：** 松戸地図取得のセッションは `cancelMatsudoMapRequest()` と `isCurrentMatsudoMapRequest()` で管理。ワールド切替時に旧要求を中断・失効させる。森側にOSM API通信の可否判定を置かない。
@@ -158,7 +158,7 @@
 | UI・診断ログ | `komorebi3d/panels/test.html`、`panels/runtime.html`、`dev-panel-components.js` |
 | タイル保存先 | `komorebi3d/maps/data/tiles-2km/index.json` と559枚のJSON |
 | 開発情報 | `komorebi3d/development-info.json`（`engine`、`forest`、`matsudo`、`common`） |
-| 固定Engine | `d4a392aba35c840e0bea8b585c6852515bf58f30`。固定参照と `engine/` を保護 |
+| 固定Engine | `shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e`。固定参照と `engine/` を保護 |
 | 実機PASS済みの状態 | Git履歴で管理。旧v0.6／v0.7テストHTMLは整理済み |
 | モック | `komorebi3d/mock.html`／`mock.chat.html` はUI確認用。安定版とは別 |
 | 削除済み旧アーカイブ | `dev-before-decouple.html` は `1144253b7af98ad6c28f5c4bdf4f3434f2cb9aaa` のGit履歴から復元可能 |
