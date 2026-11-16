@@ -1,0 +1,247 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Komorebi 3D DEV｜NPC表示限界テスト</title><style>/* Shared page and panel styles from canonical dev.html. */
+*{box-sizing:border-box}
+body{margin:0;padding:12px;background:#f2f0e4;color:#4d5540;font:12px system-ui}
+.shell{max-width:760px;margin:auto}
+.label{text-align:center;font-weight:700;margin:8px 0}
+button{flex:1;padding:12px 3px;border:1px solid #cbb48f;border-radius:9px;background:#fffaf0;color:#574934;font-weight:700;touch-action:none}
+.stats{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;font-size:11px;margin-top:9px}
+.note{padding:9px;background:#fffaf0;border-radius:9px;margin-top:8px}
+button.panel-help-button{position:absolute;top:0;right:0;width:44px;height:44px;min-width:44px;min-height:44px;flex:none;padding:0;border:0;border-radius:9px;background:transparent;color:var(--help-button-color);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;z-index:2}
+button.panel-help-button span{position:absolute;top:8px;right:8px;width:14px;height:14px;display:grid;place-items:center;font:700 12px/1 system-ui}
+button.panel-help-button:focus-visible{outline:var(--help-focus-outline);outline-offset:var(--help-focus-offset)}
+.panel-help-overlay{position:absolute;inset:0;z-index:3;border-radius:9px;pointer-events:none;display:grid;place-items:center;padding:12px;background:var(--help-overlay-bg)}
+.panel-help-overlay[hidden]{display:none}
+.panel-help-label{width:max-content;max-width:100%;padding:14px 19px;border-radius:13px;font-size:16px;font-weight:750;text-align:center;background:var(--help-label-bg);color:var(--help-label-color);box-shadow:0 4px 18px rgba(0,0,0,.25);box-shadow:0 4px 18px color-mix(in srgb,currentColor 25%,transparent)}
+.test-panel-body{padding:10px 11px 11px}
+/* Test controls: keep the reset header visible; scroll only the body. */
+.test-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:visible}
+.test-panel-header{position:sticky;top:0;flex:0 0 auto}
+.test-panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* Shared display-mode controls used by product and lightweight mocks. */
+.test-panel .mode-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0}
+.test-panel .mode-buttons button{min-width:0}
+.test-panel .mode-buttons button.selected{background:#d9ebd5;border-color:#64956c;color:#31563b}
+
+button.game-help-button{display:none}
+.game-help-overlay{display:none}
+.panel-slot{min-width:0;min-height:0}
+.panel-slot{position:relative}
+.panel-slot[data-panel="empty"]{display:block;min-height:110px}
+.panel-slot-top[data-panel="empty"]{min-height:70px}
+.panel-slot-main[data-panel="empty"]{min-height:220px}
+.panel-slot-bottom[data-panel="empty"]{min-height:130px}
+.panel-slot.panel-drop-target{outline:3px solid #438d61;outline-offset:2px;box-shadow:0 0 0 5px #53986930}
+button.panel-add-button{position:absolute;top:0;right:0;z-index:8;width:44px;height:44px;min-width:44px;min-height:44px;flex:none;border:0;border-radius:9px;padding:0;background:transparent;color:#31563b;cursor:pointer;touch-action:manipulation}
+button.panel-add-button span{position:absolute;top:8px;right:8px;width:14px;height:14px;display:grid;place-items:center;font:700 15px/1 system-ui}
+button.panel-add-button:focus-visible{outline:2px solid #397452;outline-offset:-3px}
+.panel-add-menu{position:absolute;top:46px;right:0;min-width:177px;max-width:min(230px,90vw);z-index:20;padding:8px;border:1px solid #bcccaf;border-radius:9px;background:#fffdf7;box-shadow:0 6px 18px #0003;color:#395c44}
+.panel-add-menu-title{padding:4px 5px;font-size:11px;font-weight:750;color:#667664}
+.panel-add-menu button{display:block;width:100%;min-height:44px;flex:none;margin:3px 0;padding:9px 7px;border:0;border-radius:7px;background:#eaf1e5;color:#395c44;text-align:left;font:700 11px system-ui;touch-action:manipulation}
+.panel-add-menu button:focus-visible{outline:2px solid #397452}
+.panel-help-overlay:not([hidden]){display:flex;flex-direction:column;gap:15px;align-items:center;justify-content:center}
+button.panel-trash-target{display:grid;place-items:center;flex:none;width:52px;height:52px;min-width:52px;min-height:52px;padding:0;border:2px solid rgba(255,255,255,.94);border-radius:50%;background:rgba(255,255,255,.19);color:#fff;box-shadow:0 0 0 4px #ffffff2b;pointer-events:none;touch-action:none}
+button.panel-trash-target[hidden],.panel-edit-hint[hidden]{display:none}
+button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6px #e9aca288;transform:scale(1.08)}
+.panel-editor-armed button.panel-trash-target{pointer-events:auto;cursor:pointer}
+.panel-edit-hint{font-size:10px;font-weight:700;color:#fff;text-align:center}
+
+/* Fixed geometry follows the slot, not the panel being moved into it. */
+.panel-slot[data-slot-size-fixed]{overflow:hidden}
+.panel-slot[data-slot-size-fixed][data-panel="empty"]{overflow:visible}
+.panel-slot[data-slot-size-fixed]>[data-panel-id]{height:100%;max-height:100%;min-height:0;margin:0;overflow-y:auto}
+.panel-slot[data-slot-size-fixed]>.test-panel{overflow:hidden}
+.panel-slot[data-slot-size-fixed]>.landscape-game{display:flex;align-items:center;justify-content:center;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;overflow:hidden}
+.panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){height:100%;max-width:100%;min-width:0;min-height:0;width:auto;aspect-ratio:3/4;flex:0 1 auto}
+:root{--test-panel-height:min(640px,75svh)}
+.landscape-main .panel-slot-main[data-panel="test"]:not([data-slot-size-fixed]){height:var(--test-panel-height)}
+.landscape-main .panel-slot-main>.test-panel{height:100%;margin:0;overflow:hidden}
+.panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;aspect-ratio:auto;flex:1 1 auto}
+.panel-slot[data-slot-size-fixed]>.landscape-game .views{width:100%;height:100%;min-height:0}
+.panel-slot[data-slot-size-fixed]>.landscape-game .view-panel:not(.off){min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}
+.panel-slot[data-slot-size-fixed]>.landscape-game .views.single canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
+.panel-slot[data-slot-size-fixed]>.landscape-game .views:not(.single) canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
+
+/* Styles for build panel from canonical dev.html. */
+.build-info{margin:9px 0 12px;padding:10px 11px;border:1px solid #aec2a8;border-radius:9px;background:#e8f2e4;color:#31563b;font-size:11px;line-height:1.65;overflow-wrap:anywhere}
+.build-info strong{font-size:12px}
+.build-info .build-line{display:block}
+.build-info{position:relative;--help-button-color:#31563b;--help-overlay-bg:rgba(29,52,35,.55);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:3px solid #397452;--help-focus-offset:2px}
+.build-info>strong{display:block;padding-right:43px;min-height:38px}
+.build-help-overlay{padding:14px}
+.build-help-label{padding:14px 20px}
+
+/* Styles for game panel from canonical dev.html. */
+.views{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.views.single{grid-template-columns:minmax(0,1fr)}
+.view-panel.off{display:none}
+#panel-a,#panel-b{min-width:0}
+canvas{display:block;width:100%;aspect-ratio:3/4;border-radius:9px;background:#a7d9e9}
+.play-surface{position:relative}
+.touch-layer{position:absolute;inset:0;display:flex;z-index:2;touch-action:none}
+.touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.debug-map{position:absolute;top:8px;left:8px;z-index:3;width:min(47%,210px);padding:6px;border-radius:9px;background:rgba(17,35,29,.65);box-shadow:0 2px 12px #2133247a;pointer-events:none;color:#fff;user-select:none}
+.debug-map[hidden]{display:none}
+.debug-map canvas{width:100%;height:auto;aspect-ratio:1;background:transparent;border-radius:3px}
+.debug-map-title{font-size:10px;font-weight:700;margin-bottom:3px}
+.debug-map-legend{font-size:9px;display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.landscape-game{position:relative;--help-button-color:#31563b;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
+.landscape-game button.game-help-button{display:block;z-index:4}
+.landscape-game .game-help-overlay:not([hidden]){display:flex}
+
+/* Styles for test panel from canonical dev.html. */
+.mode-buttons button{min-width:0;padding:11px 3px}
+#mode-status{font-size:11px;color:#55725c;margin:4px 0 7px}
+.buttons{display:flex;gap:7px;margin-top:8px}
+.debug-controls{display:grid;gap:7px;margin-top:8px}
+.debug-controls label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700}
+.debug-controls input[type=range]{-webkit-appearance:none;appearance:none;flex:1;min-width:0;width:100%;height:48px;margin:0;padding:0;background:transparent;touch-action:pan-x;cursor:pointer}
+.debug-controls input[type=range]::-webkit-slider-runnable-track{height:12px;border-radius:99px;background:#b1cbb1;border:1px solid #7ca486}
+.debug-controls input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:38px;height:38px;margin-top:-14px;border-radius:50%;border:4px solid #fff;background:#4f8161;box-shadow:0 2px 7px #33543e77,0 0 0 2px #759c7e}
+.debug-controls input[type=range]::-moz-range-track{height:12px;border-radius:99px;background:#b1cbb1;border:1px solid #7ca486}
+.debug-controls input[type=range]::-moz-range-thumb{width:32px;height:32px;border-radius:50%;border:4px solid #fff;background:#4f8161;box-shadow:0 2px 7px #33543e77}
+.debug-controls input[type=range]:focus-visible{outline:2px solid #3b7f65;outline-offset:2px;border-radius:15px}
+.slider-row{display:flex;align-items:center;gap:9px}
+button.slider-step{flex:0 0 44px;width:44px;min-height:44px;padding:0;border-radius:14px;background:#e5f0df;border-color:#91af8e;color:#315c3f;font-size:25px;line-height:1;touch-action:manipulation}
+button.slider-step:active{background:#c4dec1}
+.debug-controls output{font-variant-numeric:tabular-nums;white-space:nowrap}
+.test-panel{position:relative;margin-top:8px;padding:0;border:1px solid #d5c8b6;border-radius:9px;background:#f5ede0;color:#554a3f;font-size:12px;line-height:1.65;--help-button-color:#554a3f;--help-overlay-bg:rgba(69,50,28,.34);--help-label-bg:#fffdf8;--help-label-color:#554a3f;--help-focus-outline:2px solid #8a6b4a;--help-focus-offset:-4px}
+.test-panel-header{padding:10px 11px 9px;background:#f5ede0;border-bottom:1px solid #dccbb5;z-index:1}
+.test-panel-heading{display:block;min-height:38px;padding-right:43px;font-size:12px;font-weight:750}
+.test-panel button.test-reset,.test-panel .test-panel-body button{min-height:44px;padding:9px 7px;border:1px solid #c4b29c;border-radius:9px;background:#fffaf3;color:#554a3f;font:700 12px system-ui;cursor:pointer;touch-action:manipulation}
+.test-panel button.test-reset{display:block;width:100%;margin:0;background:#f6e5da;border-color:#d0a793;color:#8a4a38}
+.test-section-title{margin:3px 0 8px;font-weight:750}
+.test-panel #mode-status{margin-top:5px;margin-bottom:0;font-size:11px;color:#81715f}
+.test-separator{height:1px;background:#d9c9b4;margin:15px 0 11px}
+.test-panel .buttons{margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.test-panel .buttons button{min-width:0}
+/* Match the existing render-mode selection styling for world and on/off controls. */
+.test-panel .buttons button.selected{background:#d9ebd5;border-color:#64956c;color:#31563b}
+.test-panel .debug-controls{gap:7px;margin-top:10px}
+.test-panel .debug-controls label{font-size:12px}
+.test-panel .debug-controls input[type=range]::-webkit-slider-runnable-track{background:#dbc8b3;border-color:#c2ab8f}
+.test-panel .debug-controls input[type=range]::-webkit-slider-thumb{background:#8f7355;box-shadow:0 2px 7px #0003}
+.test-panel .debug-controls input[type=range]::-moz-range-track{background:#dbc8b3;border-color:#c2ab8f}
+.test-panel .debug-controls input[type=range]::-moz-range-thumb{background:#8f7355}
+.test-panel button.slider-step{flex:0 0 44px;min-width:44px;width:44px;min-height:44px;padding:0;border-radius:14px;background:#efe2d1;border-color:#c8b39a;color:#5a4d3e;font-size:25px;line-height:1}
+.test-panel #npc-stress-info,.test-panel #npc-render-warning{font-size:11px}
+.test-panel .test-locations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.test-panel .test-locations button{min-width:0}
+
+/* @screen-settings:start */
+.screen-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:10px;height:290px}
+.screen-settings[data-visible="A"],.screen-settings[data-visible="B"]{grid-template-columns:minmax(0,1fr)}
+.screen-card{min-width:0;height:100%;padding:8px;border:1px solid #c4b29c;border-radius:9px;background:#fffaf3}
+.screen-card[hidden]{display:none}
+.screen-title{padding:6px 4px;margin-bottom:8px;border-radius:5px;background:#e9e1d3;text-align:center;font-weight:750}
+.setting-group{min-width:0;margin:0 0 9px;padding:8px 6px;border:1px solid #c4b29c;border-radius:8px;background:#fffaf3}
+.setting-group:last-child{margin-bottom:0}
+.setting-group legend{float:left;width:100%;padding:0;margin:0 0 7px;font-size:11px;font-weight:700;color:#554a3f}
+.setting-group legend+label{clear:both}
+.setting-group label{display:flex;align-items:center;gap:4px;min-height:31px;font-size:11px;white-space:nowrap;cursor:pointer}
+.setting-group input{margin:0;flex:0 0 auto;accent-color:#64956c}
+.setting-group.is-different{background:#fff0d5;border-color:#e5b86f}
+.setting-group.is-different legend{color:#995a1e}
+/* @screen-settings:end */
+
+/* Styles for runtime panel from canonical dev.html. */
+.runtime-status{position:relative;--help-button-color:#455a49;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
+.runtime-status-heading{display:block;min-height:36px;margin:0 0 8px;padding-right:43px;font-size:13px}
+
+@media (orientation:landscape) and (min-width:900px) and (min-height:600px){
+ body{padding:12px}
+ .shell{max-width:none;width:100%;margin:0}
+ #launch-diagnostic{display:none}
+ .landscape-hero{height:calc(100vh - 24px);height:calc(100svh - 24px);display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+ .landscape-hero .site-heading{flex:0 0 auto}
+ .landscape-hero .panel-slot-top{flex:0 0 auto;min-width:0;min-height:0}
+ .landscape-hero .panel-slot-top>.build-info{margin:0}
+ .landscape-hero .panel-slot-top:not([data-panel="build"]):not([data-panel="empty"]){height:min(38svh,300px)}
+ .landscape-hero .panel-slot-top>[data-panel-id]:not(.build-info){height:100%;margin:0;min-height:0}
+ .landscape-hero .panel-slot-top>.runtime-status{overflow-y:auto}
+ .landscape-main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+ .landscape-main[data-visible-panels="1"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .landscape-hero .panel-slot-top[data-panel="empty"]{min-height:70px;z-index:6}
+ .landscape-main .panel-slot-main[data-panel="empty"]{overflow:visible;min-height:0}
+ .panel-slot-bottom[data-panel="empty"]{min-height:130px}
+ .landscape-main .panel-slot-main{min-width:0;min-height:0;height:100%;overflow:hidden}
+ .landscape-main .panel-slot-main>[data-panel-id]{min-width:0;min-height:0;height:100%;margin:0}
+ .landscape-main .panel-slot-main>.build-info,.landscape-main .panel-slot-main>.runtime-status{overflow-y:auto}
+ .landscape-hero .test-panel{overflow:hidden}
+ .landscape-main .panel-slot-main[data-panel="test"]:not([data-slot-size-fixed]){height:100%}
+ .landscape-main .panel-slot-main>.test-panel{height:100%;max-height:100%;margin:0}
+ .panel-slot .test-panel-header{box-shadow:0 3px 8px #65432113}
+ .panel-slot-top>.runtime-status,.panel-slot-main>.runtime-status{margin-top:0}
+ .panel-slot-bottom>.landscape-game{height:min(55svh,420px);margin-top:12px}
+ .panel-slot-bottom>.test-panel,.panel-slot-bottom>.build-info{margin-top:12px}
+}
+
+@media (orientation:landscape) and (min-width:900px) and (min-height:600px){
+ .landscape-game{min-height:0;min-width:0;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+ .landscape-game button.game-help-button{display:block;z-index:4}
+ .landscape-game .game-help-overlay:not([hidden]){display:flex}
+ .landscape-game .play-surface{height:100%;width:auto;max-width:100%;min-width:0;min-height:0;aspect-ratio:3/4;flex:0 1 auto}
+ .landscape-game .play-surface.ab-compare{width:100%;height:100%;aspect-ratio:auto;flex:1 1 auto}
+ .landscape-game .views{width:100%;height:100%;min-height:0}
+ .landscape-game .view-panel:not(.off){min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}
+ .landscape-game .views.single canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
+ .landscape-game .views:not(.single) canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
+}
+
+@media (orientation:landscape) and (min-width:900px) and (min-height:600px){
+ .runtime-status{margin-top:12px;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49}
+ .runtime-status-heading{display:block;font-size:13px;margin:0 0 8px}
+ .runtime-status .stats{margin-top:8px}
+}
+/* Mock-only presentation: leave every canonical panel and layout rule intact. */
+#launch-diagnostic{display:none}
+.landscape-game .play-surface{background:#000}
+.landscape-game .views canvas{background:#000}
+.landscape-game .debug-map{display:none !important}
+.landscape-game .touch-layer{pointer-events:none}
+</style></head><body><div class="shell"><div id="launch-diagnostic" style="padding:10px;margin:8px 0;background:#fff3c8;border-radius:8px;font-size:13px">診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。</div><div class="landscape-hero"><div class="site-heading" style="display:flex;justify-content:space-between"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">d4a392a</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface"><div class="debug-map" id="debug-map" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas" width="256" height="256" role="img" aria-label="主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div><div class="views single" id="views"><div class="view-panel off" id="panel-a"><canvas id="a"></canvas></div><div class="view-panel" id="panel-b"><canvas id="b"></canvas></div></div><div class="touch-layer"><div class="touch-zone" id="pad" aria-label="左半分：キャラクター移動"></div><div class="touch-zone" id="camera-pad" aria-label="右半分：カメラ操作"></div></div></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
+<div class="test-panel-header">
+<strong class="test-panel-heading">🧪 テスト操作（開発用）</strong>
+<button type="button" class="panel-help-button test-help-button" id="test-help-button" aria-label="このエリアの名前：テスト操作パネル" aria-describedby="test-help-overlay"><span>ⓘ</span></button>
+<button id="reset" type="button" class="test-reset">↻ リセット（開発用）</button>
+</div>
+<div class="test-panel-body">
+<div class="test-section-title">🌍 ワールドワープ</div>
+<div class="buttons" role="group" aria-label="ワールド切替"><button type="button" data-world="forest" aria-pressed="true">🌳 森</button><button type="button" data-world="matsudo" aria-pressed="false">🏙️ 松戸</button></div>
+<div class="test-separator"></div>
+<!-- @screen-settings:start -->
+<div class="test-section-title">🎮 表示モード</div>
+<div class="mode-buttons" role="group" aria-label="表示モード"><button type="button" id="mode-a" data-mode="A" aria-pressed="false">A</button><button type="button" id="mode-b" data-mode="B" aria-pressed="false">B</button><button type="button" id="mode-compare" data-mode="compare" aria-pressed="true">A/B比較</button></div>
+<div id="mode-status" aria-live="polite">表示：画面A＋画面B</div>
+<div class="screen-settings" data-visible="compare">
+<div class="screen-card" data-screen="A">
+<div class="screen-title">画面A</div>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>旧500m</label><label><input type="radio" name="screen-map-A" value="new">新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A">WebGL</label><label><input type="radio" name="screen-engine-A" value="B" checked>Three.js</label></fieldset>
+</div>
+<div class="screen-card" data-screen="B">
+<div class="screen-title">画面B</div>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧500m</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A">WebGL</label><label><input type="radio" name="screen-engine-B" value="B" checked>Three.js</label></fieldset>
+</div>
+</div>
+<!-- @screen-settings:end -->
+<div class="test-separator"></div>
+<div class="test-section-title npc-anchor">🐹 NPC負荷・表示テスト</div>
+<div class="buttons"><button type="button" id="npc-stress-toggle" aria-pressed="false">🐹 ハムスター ×1000</button><button type="button" id="map-toggle" aria-pressed="false">🗺️ マップ表示</button></div>
+<div class="debug-controls">
+<label for="npc-render-limit">同時描画上限 <output id="npc-render-limit-value" for="npc-render-limit">65匹</output></label>
+<div class="slider-row"><button class="slider-step" type="button" data-step-target="npc-render-limit" data-step-amount="-25" aria-label="同時描画上限を25匹減らす">−</button><input id="npc-render-limit" type="range" min="1" max="1000" step="1" value="65" aria-label="ハムスターの3D同時描画上限"><button class="slider-step" type="button" data-step-target="npc-render-limit" data-step-amount="25" aria-label="同時描画上限を25匹増やす">＋</button></div>
+<label for="npc-render-distance">表示距離（主人公から） <output id="npc-render-distance-value" for="npc-render-distance">70m</output></label>
+<div class="slider-row"><button class="slider-step" type="button" data-step-target="npc-render-distance" data-step-amount="-5" aria-label="表示距離を5m短くする">−</button><input id="npc-render-distance" type="range" min="5" max="150" step="5" value="70" aria-label="ハムスターの3D表示距離"><button class="slider-step" type="button" data-step-target="npc-render-distance" data-step-amount="5" aria-label="表示距離を5m長くする">＋</button></div>
+</div>
+<div class="test-separator"></div><div class="test-section-title">📍 テスト位置へ移動</div>
+<div class="test-locations"><button type="button" data-spot="front">🏡 家の前</button><button type="button" data-spot="tree">🌳 木の近く</button><button type="button" data-spot="side">↔ 壁沿い</button><button type="button" data-spot="cafe">☕ カフェ前</button><button type="button" data-spot="west">西端</button><button type="button" data-spot="east">東端</button><button type="button" data-spot="north">奥端</button><button type="button" data-spot="south">手前端</button></div>
+</div>
+<div id="test-help-overlay" class="panel-help-overlay test-help-overlay" role="tooltip" hidden><div class="panel-help-label test-help-label">🧪 テスト操作パネル</div></div></section></div></div></div><div class="panel-slot panel-slot-bottom" data-panel-slot="bottom"><section data-panel-id="runtime" class="runtime-status" aria-label="実行ステータス"><h2 class="runtime-status-heading">📊 実行ステータス</h2><button type="button" id="runtime-help-button" class="panel-help-button runtime-help-button" aria-label="このエリアの名前：実行ステータス" aria-describedby="runtime-help-overlay"><span>ⓘ</span></button><div id="ea" aria-live="polite"></div><div id="eb" aria-live="polite"></div><div id="collision-status" style="margin-top:6px;font-weight:700">衝突判定：待機中</div><div id="sync-status">A/B：共通game座標</div><div id="map-source-status" aria-live="polite">🗺️ 地図：未読込</div><div id="label-status" style="font-size:11px;color:#436d73;margin-top:4px">🏙️ 屋上名：松戸ワープ後に診断表示</div><div class="stats"><span id="pos">X 0.0 / Z 4.5</span><span id="fps">FPS --</span><span id="edge">境界内</span><span id="npc-status">🐹 お散歩AI準備中</span></div><p id="status">描画準備中…</p><p id="input-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎮 Engine Input読み込み中…</p><p id="camera-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">📷 Engine Camera読み込み中…</p><p id="renderer-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎨 Engine Renderer読み込み中…</p><p id="core-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🧩 Engine Core・Collision読み込み中…</p><p style="font-size:10px;color:#8a765b">描画方式はAのみ・Bのみ・比較から変更できます。Bの初回起動にはThree.jsの読み込みが必要です。</p><div id="runtime-help-overlay" class="panel-help-overlay runtime-help-overlay" role="tooltip" hidden><div class="panel-help-label runtime-help-label">📊 実行ステータス</div></div></section></div></div>
+<script type="module">
+import {mountTestControlsPanel} from "./dev-panel-components.js";
+import {mountPanelLayoutEditor} from "./dev-panel-layout.js";
+const PANEL_LAYOUT=Object.freeze({top:'build',left:'game',right:'test',bottom:'runtime'});
+mountTestControlsPanel(document.querySelector('#test-ops-panel'));
+mountPanelLayoutEditor(document,PANEL_LAYOUT);
+</script></body></html>

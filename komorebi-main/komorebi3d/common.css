@@ -1,0 +1,54 @@
+/* Shared page and panel styles from canonical dev.html. */
+*{box-sizing:border-box}
+body{margin:0;padding:12px;background:#f2f0e4;color:#4d5540;font:12px system-ui}
+.shell{max-width:760px;margin:auto}
+.label{text-align:center;font-weight:700;margin:8px 0}
+button{flex:1;padding:12px 3px;border:1px solid #cbb48f;border-radius:9px;background:#fffaf0;color:#574934;font-weight:700;touch-action:none}
+.stats{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;font-size:11px;margin-top:9px}
+.note{padding:9px;background:#fffaf0;border-radius:9px;margin-top:8px}
+button.panel-help-button{position:absolute;top:0;right:0;width:44px;height:44px;min-width:44px;min-height:44px;flex:none;padding:0;border:0;border-radius:9px;background:transparent;color:var(--help-button-color);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;z-index:2}
+button.panel-help-button span{position:absolute;top:8px;right:8px;width:14px;height:14px;display:grid;place-items:center;font:700 12px/1 system-ui}
+button.panel-help-button:focus-visible{outline:var(--help-focus-outline);outline-offset:var(--help-focus-offset)}
+.panel-help-overlay{position:absolute;inset:0;z-index:3;border-radius:9px;pointer-events:none;display:grid;place-items:center;padding:12px;background:var(--help-overlay-bg)}
+.panel-help-overlay[hidden]{display:none}
+.panel-help-label{width:max-content;max-width:100%;padding:14px 19px;border-radius:13px;font-size:16px;font-weight:750;text-align:center;background:var(--help-label-bg);color:var(--help-label-color);box-shadow:0 4px 18px rgba(0,0,0,.25);box-shadow:0 4px 18px color-mix(in srgb,currentColor 25%,transparent)}
+.test-panel-body{padding:10px 11px 11px}
+/* Test controls: keep the reset header visible; scroll only the body. */
+.test-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:visible}
+.test-panel-header{position:sticky;top:0;flex:0 0 auto}
+.test-panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* Shared display-mode controls used by product and lightweight mocks. */
+.test-panel .mode-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0}
+.test-panel .mode-buttons button{min-width:0}
+.test-panel .mode-buttons button.selected{background:#d9ebd5;border-color:#64956c;color:#31563b}
+
+button.game-help-button{display:none}
+.game-help-overlay{display:none}
+.panel-slot{min-width:0;min-height:0}
+.panel-slot{position:relative}
+.panel-slot[data-panel="empty"]{display:block;min-height:110px}
+.panel-slot-top[data-panel="empty"]{min-height:70px}
+.panel-slot-main[data-panel="empty"]{min-height:220px}
+.panel-slot-bottom[data-panel="empty"]{min-height:130px}
+.panel-slot.panel-drop-target{outline:3px solid #438d61;outline-offset:2px;box-shadow:0 0 0 5px #53986930}
+button.panel-add-button{position:absolute;top:0;right:0;z-index:8;width:44px;height:44px;min-width:44px;min-height:44px;flex:none;border:0;border-radius:9px;padding:0;background:transparent;color:#31563b;cursor:pointer;touch-action:manipulation}
+button.panel-add-button span{position:absolute;top:8px;right:8px;width:14px;height:14px;display:grid;place-items:center;font:700 15px/1 system-ui}
+button.panel-add-button:focus-visible{outline:2px solid #397452;outline-offset:-3px}
+.panel-add-menu{position:absolute;top:46px;right:0;min-width:177px;max-width:min(230px,90vw);z-index:20;padding:8px;border:1px solid #bcccaf;border-radius:9px;background:#fffdf7;box-shadow:0 6px 18px #0003;color:#395c44}
+.panel-add-menu-title{padding:4px 5px;font-size:11px;font-weight:750;color:#667664}
+.panel-add-menu button{display:block;width:100%;min-height:44px;flex:none;margin:3px 0;padding:9px 7px;border:0;border-radius:7px;background:#eaf1e5;color:#395c44;text-align:left;font:700 11px system-ui;touch-action:manipulation}
+.panel-add-menu button:focus-visible{outline:2px solid #397452}
+.panel-help-overlay:not([hidden]){display:flex;flex-direction:column;gap:15px;align-items:center;justify-content:center}
+button.panel-trash-target{display:grid;place-items:center;flex:none;width:52px;height:52px;min-width:52px;min-height:52px;padding:0;border:2px solid rgba(255,255,255,.94);border-radius:50%;background:rgba(255,255,255,.19);color:#fff;box-shadow:0 0 0 4px #ffffff2b;pointer-events:none;touch-action:none}
+button.panel-trash-target[hidden],.panel-edit-hint[hidden]{display:none}
+button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6px #e9aca288;transform:scale(1.08)}
+.panel-editor-armed button.panel-trash-target{pointer-events:auto;cursor:pointer}
+.panel-edit-hint{font-size:10px;font-weight:700;color:#fff;text-align:center}
+
+/* Fixed geometry follows the slot, not the panel being moved into it. */
+.panel-slot[data-slot-size-fixed]{overflow:hidden}
+.panel-slot[data-slot-size-fixed][data-panel="empty"]{overflow:visible}
+.panel-slot[data-slot-size-fixed]>[data-panel-id]{height:100%;max-height:100%;min-height:0;margin:0;overflow-y:auto}
+.panel-slot[data-slot-size-fixed]>.test-panel{overflow:hidden}
+.panel-slot[data-slot-size-fixed]>.landscape-game{display:flex;align-items:center;justify-content:center;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;overflow:hidden}
+.panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){height:100%;max-width:100%;min-width:0;min-height:0;width:auto;aspect-ratio:3/4;flex:0 1 auto}

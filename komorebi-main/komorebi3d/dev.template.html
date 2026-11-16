@@ -1,0 +1,1222 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Komorebi 3D DEV｜NPC表示限界テスト</title><style>/* @component-styles */</style></head><body><div class="shell"><div id="launch-diagnostic" style="padding:10px;margin:8px 0;background:#fff3c8;border-radius:8px;font-size:13px">診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。</div><div class="landscape-hero"><div class="site-heading" style="display:flex;justify-content:space-between"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><!-- @panel:build --></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><!-- @panel:game --></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><!-- @panel:test --></div></div></div><div class="panel-slot panel-slot-bottom" data-panel-slot="bottom"><!-- @panel:runtime --></div></div><script>
+// Only this mapping controls which panel is displayed in each slot.
+// Set a slot to null to omit the panel. Removed panel markup is also safe.
+const PANEL_LAYOUT=Object.freeze({top:'build',left:'game',right:'test',bottom:'runtime'});
+function applyPanelLayout(layout){
+ const slotNames=['top','left','right','bottom'];
+ const slots=new Map(Array.from(document.querySelectorAll('[data-panel-slot]'),el=>[el.dataset.panelSlot,el]));
+ const panels=new Map(Array.from(document.querySelectorAll('[data-panel-id]'),el=>[el.dataset.panelId,el]));
+ const used=new Set();
+ for(const slotName of slotNames){
+  if(!slots.has(slotName))throw new Error('Missing panel slot: '+slotName);
+  const key=layout[slotName];
+  if(key==null)continue;
+  if(!['build','game','test','runtime'].includes(key)||used.has(key))
+   throw new Error('Unknown or repeated panel: '+key);
+  used.add(key);
+ }
+ // Must run before module initialization: moving a live WebGL canvas is avoided.
+ for(const slot of slots.values())slot.replaceChildren();
+ for(const slotName of slotNames){
+  const key=layout[slotName],slot=slots.get(slotName),panel=panels.get(key);
+  slot.dataset.panel=panel?key:'empty';
+  if(panel)slot.appendChild(panel);
+ }
+ for(const [key,panel] of panels)if(!used.has(key))panel.remove();
+ const main=document.querySelector('.landscape-main');
+ if(main)main.dataset.visiblePanels=String(['left','right'].filter(s=>slots.get(s).dataset.panel!=='empty').length);
+}
+applyPanelLayout(PANEL_LAYOUT);
+
+(async function () {
+  const hash = document.getElementById('github-commit');
+  const time = document.getElementById('github-commit-time');
+  if (!hash || !time) return;
+  const categories = ['forest', 'matsudo', 'common'];
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
+  // Saved descriptions and live commit metadata are independent fetches.
+  // A GitHub API failure must not erase the saved descriptions.
+  const infoRequest = fetch('./development-info.json', {cache:'no-store'})
+    .then(response => { if (!response.ok) throw new Error('development-info HTTP '+response.status); return response.json(); });
+  const commitRequest = fetch('https://api.github.com/repos/komorebi-3d/komorebi/commits/main', {
+    headers:{Accept:'application/vnd.github+json'},cache:'no-store',signal:controller.signal
+  }).then(response => { if (!response.ok) throw new Error('GitHub HTTP '+response.status); return response.json(); });
+  const [infoResult, commitResult] = await Promise.allSettled([infoRequest, commitRequest]);
+  clearTimeout(timeout);
+  const info = infoResult.status === 'fulfilled' ? infoResult.value : null;
+  for (const category of categories) {
+    const target = document.getElementById('dev-'+category);
+    if (target) target.textContent = info ? info[category] : '取得失敗';
+  }
+  const engine = document.getElementById('dev-engine');
+  if (engine && info && typeof info.engine === 'string' && /^[a-f0-9]{7,40}$/i.test(info.engine))
+    engine.textContent = info.engine;
+  if (commitResult.status !== 'fulfilled') {
+    hash.textContent = 'GitHub main最新：取得できません';
+    time.textContent = '最終コミット：取得できません';
+    return;
+  }
+  try {
+    const commit = commitResult.value;
+    const sha = typeof commit.sha === 'string' ? commit.sha.slice(0,7) : null;
+    const iso = commit.commit && (commit.commit.committer?.date || commit.commit.author?.date);
+    if (!sha || !iso || Number.isNaN(new Date(iso).getTime())) throw new Error('コミット情報なし');
+    const jst = new Intl.DateTimeFormat('ja-JP', {
+      timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',
+      day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false
+    }).format(new Date(iso));
+    hash.textContent = 'GitHub main最新：' + sha;
+    time.textContent = '最終コミット：' + jst + ' JST';
+    // Only the newest commit determines which headings receive 🆕.
+    // Check the subject and body, allowing multiple category lines in one commit.
+    const message = String(commit.commit?.message || '');
+    const changed = new Set();
+    for (const line of message.split(/\r?\n/)) {
+      const match = /^\s*(forest|matsudo|common):\s*\S/i.exec(line);
+      if (match) changed.add(match[1].toLowerCase());
+    }
+    for (const category of categories) {
+      const badge = document.getElementById('dev-'+category+'-new');
+      if (badge) badge.hidden = !(info && changed.has(category) && info[category]);
+    }
+  } catch (_) {
+    hash.textContent = 'GitHub main最新：取得できません';
+    time.textContent = '最終コミット：取得できません';
+  }
+})();
+
+// Live panel help/gestures are initialized after the Game API mounts.
+</script><script type="module">
+import { InputManager } from "https://cdn.jsdelivr.net/gh/komorebi-3d/komorebi@d4a392aba35c840e0bea8b585c6852515bf58f30/engine/input/InputManager.js";
+import { TouchStick } from "https://cdn.jsdelivr.net/gh/komorebi-3d/komorebi@d4a392aba35c840e0bea8b585c6852515bf58f30/engine/input/TouchStick.js";
+import { FollowCameraRig } from "https://cdn.jsdelivr.net/gh/komorebi-3d/komorebi@d4a392aba35c840e0bea8b585c6852515bf58f30/engine/camera/FollowCameraRig.js";
+import { createRenderer } from "https://cdn.jsdelivr.net/gh/komorebi-3d/komorebi@d4a392aba35c840e0bea8b585c6852515bf58f30/engine/renderer/RendererFactory.js";
+import { createMeshGeometry, createMeshRenderSnapshot } from "https://cdn.jsdelivr.net/gh/komorebi-3d/komorebi@d4a392aba35c840e0bea8b585c6852515bf58f30/engine/renderer/MeshRenderSnapshot.js";
+import { GroundBounds } from "https://cdn.jsdelivr.net/gh/komorebi-3d/komorebi@d4a392aba35c840e0bea8b585c6852515bf58f30/engine/collision/GroundBounds.js";
+import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/komorebi-3d/komorebi@d4a392aba35c840e0bea8b585c6852515bf58f30/engine/collision/CollisionWorld2D.js";
+import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/komorebi-3d/komorebi@d4a392aba35c840e0bea8b585c6852515bf58f30/engine/core/CharacterMotionCore2D.js";
+import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=ab-dual-minimap-20261115";
+import {mountPanelLayoutEditor} from "./dev-panel-layout.js?v=slot-size-20261110";
+import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=temporary-ueno--6_-4-20261115";
+import {createMapBuildSteps} from "./maps/map-builder.js?v=step5a-poi-name-index-20261115";
+import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
+import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=ab-minimap-label-canvas-fix-20261115";
+(function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
+
+const $=id=>document.getElementById(id);
+// Panel display logic is imported; game simulation remains here.
+const gameView=createGameView(document.querySelector('.landscape-game'));
+
+// Game-to-panel boundary: status events are buffered even when no status panel is mounted.
+const runtimeStatusValues=new Map();
+const gameStateListeners=new Set();
+function publishRuntimeStatus(id,value){
+ const text=String(value);
+ runtimeStatusValues.set(id,text);
+ for(const listener of gameStateListeners)listener({type:'status',id,value:text});
+}
+function publishGameState(){for(const listener of gameStateListeners)listener({type:'state'});}
+// House/tree/cafe obstacles remain game data; Engine owns physics.
+// Cafe location is provisional; no new surrounding landscape elements.
+// World scale: one engine unit equals one metre.
+const PLAYER_HEIGHT_METRES=1.8,HAMSTER_HEIGHT_METRES=1.5;
+const PLAYER_MESH_SCALE=PLAYER_HEIGHT_METRES/2.12;
+const HAMSTER_MESH_SCALE=HAMSTER_HEIGHT_METRES/2.47;
+const HAMSTER_LITE_SCALE=HAMSTER_HEIGHT_METRES/2.40;
+const BUILDING_HEIGHT_SCALE=.90;
+const HOUSE_UPPER_FLOOR_Y=3.35*BUILDING_HEIGHT_SCALE;
+const CAFE_X=-25,CAFE_Z=-20;
+const cafeRect=(id,x,z,width,depth)=>({id:'cafe-'+id,type:'rect',centerX:CAFE_X+x,centerZ:CAFE_Z+z,width,depth,enabled:true});
+/* @object:objects/forest/layout.js */
+const GAME_COLLISION_OBSTACLES = [
+  // The house foundation in v12 is centered at (4.5,-4.5), 14 x 10.
+  // House shell is four walls; front wall has a 2.1m open doorway.
+  {id:'house-back',type:'rect',centerX:4.5,centerZ:-9.45,width:14,depth:.24,enabled:true},
+  {id:'house-left',type:'rect',centerX:-2.45,centerZ:-4.5,width:.24,depth:10,enabled:true},
+  {id:'house-right',type:'rect',centerX:11.45,centerZ:-4.5,width:.24,depth:10,enabled:true},
+  {id:'house-front-left',type:'rect',centerX:.55,centerZ:.45,width:6.1,depth:.24,enabled:true},
+  {id:'house-front-right',type:'rect',centerX:8.45,centerZ:.45,width:6.1,depth:.24,enabled:true},
+  // Tree trunk is 0.8 x 0.8; this radius is a gameplay approximation.
+  {id:'tree',type:'circle',centerX:-18,centerZ:-40,radius:0.65,enabled:true,role:'tree'},
+  {id:'tree-v2',type:'circle',centerX:-5,centerZ:-40,radius:0.95,enabled:true,role:'tree'},
+  {id:'tree-v2-original-spot',type:'circle',centerX:-7,centerZ:-5,radius:0.95,enabled:true,role:'tree'},
+  {id:'tree-v3',type:'circle',centerX:10,centerZ:-40,radius:1.4,enabled:true,role:'tree'}
+];
+// The cafe has four walls with a 3m opening, and solid counter/table furniture.
+GAME_COLLISION_OBSTACLES.push(
+ cafeRect('back',0,-4.94,14,.22),
+ cafeRect('left',-6.94,0,.22,10),
+ cafeRect('right',6.94,0,.22,10),
+ cafeRect('front-left',-4.25,4.94,5.5,.22),
+ cafeRect('front-right',4.25,4.94,5.5,.22),
+ cafeRect('service-counter',4.25,.5,1.15,5),
+ cafeRect('window-counter',-1.65,-3.88,7.7,.7),
+ cafeRect('showcase',3.83,-2.27,1.3,1.25),
+ ...[-1.2,1.8].flatMap(z=>[-3.15,1.75].map(x=>cafeRect('table-'+x+'-'+z,x,z,1.45,1.2))),
+ cafeRect('deck-table-left',-3.1,7.05,1.4,1.3),
+ cafeRect('deck-table-right',3.1,7.05,1.4,1.3)
+);
+// New forest trunks have 2D collision; small ground details are decorative.
+GAME_COLLISION_OBSTACLES.push(...FOREST_TREE_POSITIONS.map(([x,z],i)=>({
+ id:'forest-v2-'+i,type:'circle',centerX:x,centerZ:z,radius:.95,enabled:true,role:'tree'
+})));
+// Comparison boxes are solid but have no branding or facade yet.
+GAME_COLLISION_OBSTACLES.push(...[
+ {id:'forest-store-test-familymart',centerX:18,centerZ:-12},
+ {id:'forest-store-test-seven-eleven',centerX:29,centerZ:-12},
+ {id:'forest-store-test-ministop',centerX:40,centerZ:-12}
+].map(box=>({...box,type:'rect',width:8,depth:6,enabled:true,role:'building'})));
+let groundSystem=new GroundBounds({centerX:0,centerZ:0,width:100,depth:100});
+const ground=groundSystem.getGround();
+let collisionSystem=new CollisionWorld2D({
+ obstacles:GAME_COLLISION_OBSTACLES,characterRadius:.30,maxStep:.12
+});
+let core=new CharacterMotionCore2D({
+ ground:groundSystem,collision:collisionSystem,
+ initialState:{x:0,z:4.5,angle:.55,spin:0},
+ tapRadians:.14,spinRadiansPerFrame:.025,moveUnitsPerFrame:.095,deadzone:.06
+});
+publishRuntimeStatus('core-status','🧩 Engine main正式接続：Core・Collision・Input・Camera・Renderer');
+const game=new Proxy({}, {get:(_,key)=>core.getState()[key]});
+// Lightweight outdoor NPC manager: shared collision map, 10Hz when on screen,
+// 1Hz when off screen. No per-NPC intervals, DOM handlers, or mesh allocations.
+const npcCollisionWorld=new CollisionWorld2D({
+ obstacles:[
+  ...GAME_COLLISION_OBSTACLES,
+  {id:'npc-no-house-interior',type:'rect',centerX:4.5,centerZ:-4.5,width:14,depth:10},
+  {id:'npc-no-cafe-interior',type:'rect',centerX:CAFE_X,centerZ:CAFE_Z,width:14,depth:10}
+ ],
+ characterRadius:.42,maxStep:.12
+});
+class OutdoorNpcManager {
+ constructor({collision,ground}){
+  this.collision=collision;
+  this.ground=ground;
+  this.agents=[];
+  this.ids=new Set();
+  this.drawCandidates=[];this.visibleCount=0;this.drawCount=0;
+  this.maxDrawn=65;this.maxDrawDistance=70;this.candidatesInRange=0;this.primaryDrawn=1;
+  this.visibleTicks=0;
+  this.offscreenTicks=0;
+ }
+ add(id,x,z){
+  if(this.ids.has(id)||this.collision.collides(x,z))throw new Error('Invalid NPC start: '+id);
+  const initialSeed=(0x7a4b91ce ^ Math.imul(this.agents.length+1,0x9e3779b9))>>>0;
+  const a={id,startX:x,startZ:z,x,z,drawX:x,drawZ:z,yaw:0,drawYaw:0,
+   moving:true,speed:.63,remaining:2.8,accumulated:0,visible:true,score:0,seed:initialSeed,initialSeed};
+  this.agents.push(a);this.ids.add(id);
+  return a;
+ }
+ setPopulation(target){
+  if(target!==1&&target!==1000)throw new RangeError('NPC count must be 1 or 1000');
+  if(target===1){
+   this.agents.length=1;this.ids.clear();this.ids.add(this.agents[0].id);
+   this.reset();return 1;
+  }
+  if(this.agents.length===1000)return 1000;
+  const base=this.agents[0],cell=92/35,total=36*36;
+  // Deterministically shuffle grid positions to distribute NPCs over the whole map.
+  for(let i=0;i<total&&this.agents.length<1000;i++){
+   const j=(i*325+217)%total;
+   const x=-46+(j%36)*cell,z=-46+Math.floor(j/36)*cell;
+   if(this.collision.collides(x,z)||Math.hypot(x-base.x,z-base.z)<1.8)continue;
+   const a=this.add('stress-'+i,x,z);
+   a.yaw=a.drawYaw=(a.initialSeed/4294967296)*Math.PI*2;
+   a.remaining=.6+((a.initialSeed>>>8)%350)/100;
+   a.accumulated=(a.initialSeed%1000)/1000;
+  }
+  if(this.agents.length!==1000)throw new Error('No 1000 safe spawn points');
+  return this.agents.length;
+ }
+ random(a){
+  // Fast per-agent deterministic generator; no repeated random object allocation.
+  a.seed=(Math.imul(1664525,a.seed)+1013904223)>>>0;
+  return a.seed/4294967296;
+ }
+ reset(){
+  for(const a of this.agents){
+   a.x=a.drawX=a.startX;a.z=a.drawZ=a.startZ;
+   a.yaw=a.drawYaw=0;a.moving=true;a.speed=.63;a.remaining=2.8;
+   a.accumulated=0;a.visible=true;a.seed=a.initialSeed;
+  }
+  this.visibleTicks=0;this.offscreenTicks=0;
+  this.visibleCount=0;this.drawCount=0;this.candidatesInRange=0;this.primaryDrawn=1;this.drawCandidates.length=0;
+ }
+ isVisible(a,view){
+  // Conservative perspective-frustum check. A margin prevents rapid LOD flipping.
+  const [ex,ey,ez]=view.eye,[tx,ty,tz]=view.target;
+  let fx=tx-ex,fy=ty-ey,fz=tz-ez;
+  const length=Math.hypot(fx,fy,fz)||1;
+  fx/=length;fy/=length;fz/=length;
+  const horizontal=Math.hypot(fx,fz)||1;
+  const rx=-fz/horizontal,rz=fx/horizontal;
+  const ux=-rz*fy,uy=rz*fx-rx*fz,uz=rx*fy;
+  const vx=a.x-ex,vy=1.15-ey,vz=a.z-ez;
+  const depth=vx*fx+vy*fy+vz*fz;
+  if(depth<-.8)return false;
+  const side=vx*rx+vz*rz,up=vx*ux+vy*uy+vz*uz;
+  const halfHeight=Math.max(0,depth)*.41421356+1.8;
+  const visible=Math.abs(up)<=halfHeight&&Math.abs(side)<=halfHeight*.75+1.0;
+  if(visible)a.score=vx*vx+vy*vy+vz*vz;
+  return visible;
+ }
+ chooseNext(a){
+  if(this.random(a)<.25){
+   a.moving=false;a.remaining=.9+this.random(a)*1.8;
+  }else{
+   a.moving=true;a.yaw=this.random(a)*Math.PI*2;
+   a.speed=.46+this.random(a)*.30;
+   a.remaining=2.0+this.random(a)*3.2;
+  }
+ }
+ step(a,elapsed){
+  let left=elapsed;
+  while(left>1e-6){
+   if(a.remaining<=1e-6)this.chooseNext(a);
+   const span=Math.min(left,.24,a.remaining);
+   if(a.moving){
+    const dx=Math.sin(a.yaw)*a.speed*span,dz=Math.cos(a.yaw)*a.speed*span;
+    const prevX=a.x,prevZ=a.z;
+    this.collision.move(a,dx,dz,this.ground);
+    // Wall or tree encountered: turn away, never enter building interiors.
+    if(Math.hypot(a.x-prevX,a.z-prevZ)<Math.hypot(dx,dz)*.65){
+     a.yaw+=Math.PI*.6+this.random(a)*Math.PI*.8;
+     a.remaining=Math.min(a.remaining,1.1);
+    }
+   }
+   a.remaining-=span;left-=span;
+  }
+ }
+ update(dt,view){
+  const seconds=Math.max(0,Math.min(.05,dt));
+  this.visibleCount=0;this.candidatesInRange=0;this.drawCandidates.length=0;
+  for(const a of this.agents){
+   a.visible=this.isVisible(a,view);
+   const cadence=a.visible?.1:1.0;
+   a.accumulated+=seconds;
+   if(a.accumulated>=cadence){
+    const elapsed=a.accumulated;a.accumulated=0;
+    this.step(a,elapsed);
+    if(a.visible)this.visibleTicks++;else this.offscreenTicks++;
+   }
+   if(a.visible){
+    this.visibleCount++;
+    if(a!==this.agents[0]&&(a.x-view.playerX)**2+(a.z-view.playerZ)**2<=this.maxDrawDistance*this.maxDrawDistance){this.drawCandidates.push(a);this.candidatesInRange++;}
+    const blend=Math.min(1,seconds*12);
+    a.drawX+=(a.x-a.drawX)*blend;
+    a.drawZ+=(a.z-a.drawZ)*blend;
+    const delta=Math.atan2(Math.sin(a.yaw-a.drawYaw),Math.cos(a.yaw-a.drawYaw));
+    a.drawYaw+=Math.max(-3*seconds,Math.min(3*seconds,delta));
+   }else{
+    a.drawX=a.x;a.drawZ=a.z;a.drawYaw=a.yaw;
+   }
+  }
+  const primary=this.agents[0];
+  this.primaryDrawn=primary.visible&&
+   (primary.x-view.playerX)**2+(primary.z-view.playerZ)**2<=this.maxDrawDistance*this.maxDrawDistance?1:0;
+  this.drawCandidates.sort((a,b)=>a.score-b.score);
+  const extraLimit=Math.max(0,this.maxDrawn-this.primaryDrawn);
+  if(this.drawCandidates.length>extraLimit)this.drawCandidates.length=extraLimit;
+  this.drawCount=this.drawCandidates.length+this.primaryDrawn;
+ }
+}
+const npcManager=new OutdoorNpcManager({collision:npcCollisionWorld,ground:groundSystem});
+const hamsterNpc=npcManager.add('hamster',4.5,3);
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+// Invisible floating movement (Engine TouchStick) and right-side swipe delta.
+// Keep the existing Engine InputManager contract and multi-pointer capture.
+// One relative distance factor works indoors and outdoors without abrupt zoom changes.
+// Shared safe ranges: outdoor approx 11..26m; indoor approx 3.6..8.5m.
+const MIN_ZOOM_FACTOR=Math.max(11/19,3.5/6.2);
+const MAX_ZOOM_FACTOR=Math.min(27/19,8.5/6.2);
+class InvisibleTouchAdapter {
+ constructor(movePad,cameraPad){
+  this.movement=new TouchStick({pad:movePad,radius:64,deadzone:.08});
+  this.cameraPad=cameraPad;this.active=true;
+  this.cameraPointers=new Map();this.pinchDistance=0;this.zoomFactor=1;
+  this.dragX=0;this.dragY=0;
+  this.listeners=[
+   ['pointerdown',e=>{
+    if(!this.active||this.cameraPointers.has(e.pointerId)||this.cameraPointers.size>=2)return;
+    e.preventDefault();
+    this.cameraPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(this.cameraPointers.size===2){
+     this.dragX=0;this.dragY=0;
+     this.pinchDistance=this.measurePinch();
+    }
+    try{cameraPad.setPointerCapture?.(e.pointerId)}catch(_){}
+   }],
+   ['pointermove',e=>{
+    const prev=this.cameraPointers.get(e.pointerId);
+    if(!this.active||!prev)return;
+    e.preventDefault();
+    if(this.cameraPointers.size===1){
+     this.dragX+=e.clientX-prev.x;this.dragY+=e.clientY-prev.y;
+    }
+    this.cameraPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(this.cameraPointers.size===2){
+     const distance=this.measurePinch();
+     if(this.pinchDistance>4&&distance>4){
+      this.zoomFactor=clamp(this.zoomFactor*this.pinchDistance/distance,MIN_ZOOM_FACTOR,MAX_ZOOM_FACTOR);
+     }
+     this.pinchDistance=distance;
+    }
+   }],
+   ['pointerup',e=>this.endCameraPointer(e)],
+   ['pointercancel',e=>this.endCameraPointer(e)],
+   ['lostpointercapture',e=>this.endCameraPointer(e)]
+  ];
+  cameraPad.style.touchAction='none';
+  for(const [name,handler] of this.listeners)cameraPad.addEventListener(name,handler);
+ }
+ measurePinch(){
+  if(this.cameraPointers.size!==2)return 0;
+  const [a,b]=[...this.cameraPointers.values()];
+  return Math.hypot(a.x-b.x,a.y-b.y);
+ }
+ endCameraPointer(e){
+  if(!this.cameraPointers.has(e.pointerId))return;
+  this.cameraPointers.delete(e.pointerId);
+  // Do not replay leftover swipe movement when returning to one finger.
+  this.dragX=0;this.dragY=0;this.pinchDistance=0;
+  try{if(this.cameraPad.hasPointerCapture?.(e.pointerId))this.cameraPad.releasePointerCapture(e.pointerId)}catch(_){}
+ }
+ poll(){
+  const move=this.movement.poll();
+  return {moveX:move.x,moveY:move.y,cameraX:0,cameraY:0,reset:false};
+ }
+ takeCameraDrag(){
+  const drag={x:this.dragX,y:this.dragY};
+  this.dragX=0;this.dragY=0;return drag;
+ }
+ resetZoom(){this.zoomFactor=1;}
+ clear(){
+  this.movement.clear();
+  const ids=[...this.cameraPointers.keys()];
+  this.cameraPointers.clear();
+  this.dragX=0;this.dragY=0;this.pinchDistance=0;
+  for(const id of ids){
+   try{if(this.cameraPad.hasPointerCapture?.(id))this.cameraPad.releasePointerCapture(id)}catch(_){}
+  }
+ }
+ pause(){this.active=false;this.movement.pause();this.clear();}
+ resume(){this.movement.resume();this.active=true;}
+ dispose(){
+  this.pause();this.movement.dispose();
+  for(const [name,handler] of this.listeners)this.cameraPad.removeEventListener(name,handler);
+  this.listeners=[];
+ }
+}
+const engineInputAdapter=gameView?new InvisibleTouchAdapter(gameView.movePad,gameView.cameraPad):null;
+const inputManager=new InputManager(engineInputAdapter);
+publishRuntimeStatus('input-status','🎮 タッチ操作準備OK：左側で移動・右側スワイプで視点変更');
+function readEngineInput(){return inputManager.poll();}
+function releaseEngineInput(){inputManager.clear();}
+function resetGameForTest(){
+ // Reset controls and actor without reloading the selected world or its renderer.
+ core.reset();resetHouse();engineInputAdapter?.resetZoom();
+ if(activeWorld==='matsudo'){
+  flightAltitude=20;
+  cameraRig.state.pitch=0;
+  cameraRig.state.yaw=Math.PI/2;
+  cameraRig.targetY=flightAltitude+1.65;
+ }
+ npcManager.setPopulation(1);npcManager.maxDrawn=65;npcManager.maxDrawDistance=70;
+ 
+ matsudoNpcStressSelected=false;
+ setMiniMapVisible(false);
+ setRenderMode('B');
+ publishRuntimeStatus('collision-status','衝突判定：待機中');publishGameState();
+}
+// The game owns house/stair logic; Engine owns orbit yaw, pitch, distance and pose.
+let houseLevel=0,characterY=0,cafeInside=false;
+const cameraRig=new FollowCameraRig({yaw:0,pitch:35*Math.PI/180,horizontalDistance:12,targetY:1.65,minPitch:-70*Math.PI/180,maxPitch:80*Math.PI/180,yawSpeed:1.5,pitchSpeed:1.08,followRate:5.1});
+publishRuntimeStatus('camera-status','📷 Engine Camera接続OK：右スワイプ・2指ピンチズーム・屋内外の追従');
+function cameraDirection(){return cameraRig.snapshot().yaw;}
+
+
+const insideHouse=(x,z)=>x>-2.25&&x<11.25&&z>-9.25&&z<.3;
+const insideCafe=(x,z)=>x>CAFE_X-6.82&&x<CAFE_X+6.82&&z>CAFE_Z-4.82&&z<CAFE_Z+4.82;
+const onStairs=(x,z)=>x>8.25&&x<10.65&&z>-8.25&&z<-.6;
+const stairHeight=z=>Math.max(0,Math.min(HOUSE_UPPER_FLOOR_Y,(-z-.6)/7.65*HOUSE_UPPER_FLOOR_Y));
+function update(dt,commands){
+ const before=core.getState(),wasStair=activeWorld==='forest'&&onStairs(before.x,before.z);
+ // Camera movement is derived from pixel deltas, not how long the finger is held.
+ const drag=engineInputAdapter?.takeCameraDrag()??{x:0,y:0};
+ cameraRig.state.applyInput(drag.x,drag.y,.0055);
+ // Left-stick displacement defines speed; heading is relative to the free camera.
+ const stickX=commands.moveX,stickY=commands.moveY,{yaw,pitch}=cameraRig.snapshot();
+ // The flight vector follows the shared camera pitch. The existing Engine
+ // CharacterMotionCore2D still owns horizontal movement and map boundaries.
+ const flying=activeWorld==='matsudo';
+ const forward=stickY*(flying?Math.cos(pitch):1);
+ const worldX=stickX*Math.cos(yaw)+forward*Math.sin(yaw);
+ const worldZ=-stickX*Math.sin(yaw)+forward*Math.cos(yaw);
+ if(Math.hypot(stickX,stickY)>.08){
+  const targetAngle=Math.atan2(-worldX,-worldZ);
+  const diff=Math.atan2(Math.sin(targetAngle-game.angle),Math.cos(targetAngle-game.angle));
+  const turn=clamp(diff,-.14*dt,.14*dt);
+  if(Math.abs(turn)>1e-5)core.rotate({direction:turn/.14,phase:'down'});
+  core.rotate({direction:0,phase:'hold'});
+ }
+ // Undo Core's actor-relative basis so travel stays camera-relative while turning.
+ const facing=core.getState().angle,co=Math.cos(facing),si=Math.sin(facing);
+ core.update(flying?dt*5:dt,{x:worldX*co-worldZ*si,y:worldX*si+worldZ*co});
+ if(flying)flightAltitude=clamp(flightAltitude+Math.sin(pitch)*stickY*.095*dt*5,0,500);
+ const now=core.getState(),isStair=activeWorld==='forest'&&onStairs(now.x,now.z);
+ if(activeWorld==='matsudo'){
+  characterY=0;houseLevel=0;cafeInside=false;
+  cameraRig.update(commands,dt/60,{horizontalDistance:12*(engineInputAdapter?.zoomFactor??1),targetY:flightAltitude+1.65});
+  return;
+ }
+ if(isStair){characterY=stairHeight(now.z);houseLevel=characterY>HOUSE_UPPER_FLOOR_Y/2?2:1;}
+ else if(wasStair&&insideHouse(now.x,now.z)){houseLevel=characterY>HOUSE_UPPER_FLOOR_Y/2?2:1;characterY=houseLevel===2?HOUSE_UPPER_FLOOR_Y:0;}
+ else if(!insideHouse(now.x,now.z)){houseLevel=0;characterY=0;}
+ else {if(houseLevel===0)houseLevel=1;characterY=houseLevel===2?HOUSE_UPPER_FLOOR_Y:0;}
+ cafeInside=insideCafe(now.x,now.z);
+ const indoor=houseLevel!==0||cafeInside;
+ // Legacy input commands use old frame units; Engine camera uses real seconds.
+ cameraRig.update(commands,dt/60,{
+   horizontalDistance:(indoor?5.5:12)*(engineInputAdapter?.zoomFactor??1),
+   targetY:indoor?characterY+1.35:1.65
+ });
+ npcManager.update(dt/60,{...cameraRig.getPose({x:now.x,z:now.z},0),playerX:now.x,playerZ:now.z});
+ wallFade+=(wallTarget()-wallFade)*Math.min(1,.16*dt);
+ cafeWallFade+=(cafeWallTarget()-cafeWallFade)*Math.min(1,.16*dt);
+ if(Math.abs(cafeWallFade-cafeWallTarget())<.005)cafeWallFade=cafeWallTarget();
+ if(Math.abs(wallFade-wallTarget())<.005)wallFade=wallTarget();
+}
+function resetHouse(){releaseEngineInput();cameraRig.reset();wallFade=1;cafeWallFade=1;houseLevel=0;cafeInside=false;characterY=0;}
+
+// Defaults are game state, not values read from the optional test panel.
+npcManager.maxDrawn=65;npcManager.maxDrawDistance=70;
+function setNpcRenderLimit(v){
+ if(activeWorld!=='forest')return;
+ const n=Number(v);if(!Number.isFinite(n))return;
+ npcManager.maxDrawn=Math.max(1,Math.min(1000,Math.round(n)));publishGameState();
+}
+function setNpcRenderDistance(v){
+ if(activeWorld!=='forest')return;
+ const n=Number(v);if(!Number.isFinite(n))return;
+ npcManager.maxDrawDistance=Math.max(5,Math.min(150,n));publishGameState();
+}
+function setNpcCount(v){
+ if(activeWorld==='matsudo'){
+  matsudoNpcStressSelected=Number(v)===1000;
+  publishGameState();return;
+ }
+ npcManager.setPopulation(v);publishGameState();
+}
+// Semi-transparent game overlay: draw every simulated NPC, including hidden 3D meshes.
+// 5Hz canvas redraw is decoupled from the 3D renderer, with pointer-events disabled.
+let miniMapVisible=false,lastMiniMapFrame=-1000;
+// Matsudo hamster stress remains a button-only test state; the map works in both worlds.
+let matsudoNpcStressSelected=false;
+function paintDebugMap(){
+ if(!miniMapVisible||!gameView)return;
+ for(const screen of ['A','B']){
+  if(renderMode!=='compare'&&renderMode!==screen)continue;
+  const source=screenConfigs[screen].map;
+  gameView.paintMap({screen,worldId:activeWorld,playerX:game.x,playerZ:game.z,
+   agents:activeWorld==='forest'?npcManager.agents:[],cafeX:CAFE_X,cafeZ:CAFE_Z,
+   features:activeWorld==='matsudo'?(matsudoMaps[source]?.mapFeatures??null):null,
+   mapSpan:activeWorld==='matsudo'&&source==='new'?2000:500});
+ }
+}
+function setMiniMapVisible(value){
+ miniMapVisible=Boolean(value);
+ gameView?.setMapVisible(miniMapVisible);
+ if(miniMapVisible)paintDebugMap();publishGameState();
+}
+const spots={front:[0,4.5],tree:[-8.4,-5],side:[-2.9,2],cafe:[CAFE_X,CAFE_Z+10.5],west:[-49.2,5],east:[49.2,6],north:[-8,-49.2],south:[0,49.2]};
+const spotNames={front:'🏡 家の前',tree:'🌳 木の近く',side:'↔ 壁沿い',cafe:'☕ カフェ前',west:'西端',east:'東端',north:'奥端',south:'手前端'};
+function teleportToTestSpot(name){
+ if(activeWorld!=='forest')return false;
+ const point=spots[name];if(!point)return false;
+ if(collisionSystem.collides(...point)){
+  publishRuntimeStatus('collision-status','配置エラー：障害物内');return false;
+ }
+ core.teleport(...point);resetHouse();
+ publishRuntimeStatus('collision-status','テスト位置：'+spotNames[name]);
+ publishGameState();return true;
+}
+const parts=[];function part(name,offset=[0,0,0]){const m={p:[],n:[],c:[]};parts.push({name,m,offset});return m}function rgb(c){return[(c>>16&255)/255,(c>>8&255)/255,(c&255)/255]}function tri(m,a,b,c,col){const u=b.map((v,i)=>v-a[i]),v=c.map((w,i)=>w-a[i]),n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],l=Math.hypot(...n)||1;for(const p of [a,b,c]){m.p.push(...p);m.n.push(...n.map(v=>v/l));m.c.push(...rgb(col))}}function quad(m,a,b,c,d,col){tri(m,a,b,c,col);tri(m,a,c,d,col)}function cube(m,x,y,z,w,h,d,col){const l=x-w/2,r=x+w/2,f=z+d/2,b=z-d/2,t=y+h;quad(m,[l,y,f],[r,y,f],[r,t,f],[l,t,f],col);quad(m,[r,y,b],[l,y,b],[l,t,b],[r,t,b],col);quad(m,[l,y,b],[l,y,f],[l,t,f],[l,t,b],col);quad(m,[r,y,f],[r,y,b],[r,t,b],[r,t,f],col);quad(m,[l,t,f],[r,t,f],[r,t,b],[l,t,b],col);quad(m,[l,y,b],[r,y,b],[r,y,f],[l,y,f],col)}function ellipsoid(m,x,y,z,rx,ry,rz,col,lat=10,lon=14){const p=(a,b)=>[x+rx*Math.sin(a)*Math.cos(b),y+ry*Math.cos(a),z+rz*Math.sin(a)*Math.sin(b)];for(let i=0;i<lat;i++)for(let j=0;j<lon;j++){const a=p(i*Math.PI/lat,j*2*Math.PI/lon),b=p((i+1)*Math.PI/lat,j*2*Math.PI/lon),c=p(i*Math.PI/lat,(j+1)*2*Math.PI/lon),d=p((i+1)*Math.PI/lat,(j+1)*2*Math.PI/lon);tri(m,a,b,c,col);tri(m,c,b,d,col)}}function sphere(m,x,y,z,r,col){ellipsoid(m,x,y,z,r,r,r,col)}function slab(m,a,b,c,d,t,col){const down=p=>[p[0],p[1]-t,p[2]];quad(m,a,b,c,d,col);quad(m,down(d),down(c),down(b),down(a),0x49352e);for(const [u,v] of [[a,b],[b,c],[c,d],[d,a]])quad(m,u,v,down(v),down(u),0x49352e)}
+const floor=part('ground');cube(floor,ground.centerX,-.22,ground.centerZ,ground.width,.22,ground.depth,0x9fce8d);/* @object:objects/trees/tree-v1.js */
+/* @object:objects/trees/tree-v2.js *//* @object:objects/trees/tree-v3.js */const avatar=part('avatar');cube(avatar,0,0,0,.7,1.25,.55,0xe6a97e);sphere(avatar,0,1.57,0,.47,0xf1d0a8);cube(avatar,0,1.92,-.06,.84,.2,.73,0x79543c);for(const x of [-.17,.17])sphere(avatar,x,1.6,-.42,.065,0x2c2a25);sphere(avatar,0,1.4,-.47,.08,0xc77c72);
+const ham=part('hamster',[4.5,0,3]),brown=0xbd854c,cream=0xf7e6c7;ellipsoid(ham,0,.77,0,.79,.84,.66,brown,12,16);ellipsoid(ham,0,.66,.43,.59,.66,.29,cream);ellipsoid(ham,0,1.67,.07,.72,.65,.63,brown);for(const x of [-.43,.43])ellipsoid(ham,x,1.47,.52,.33,.32,.22,cream);ellipsoid(ham,0,1.28,.63,.27,.18,.17,cream);for(const x of [-.51,.51]){ellipsoid(ham,x,2.19,.03,.22,.28,.14,brown);ellipsoid(ham,x,2.19,.16,.145,.19,.045,0xd99099)}for(const x of [-.29,.29])sphere(ham,x,1.76,.63,.105,0x161419);ellipsoid(ham,0,1.45,.82,.11,.075,.085,0xf09aaa);for(const x of [-.7,.7])ellipsoid(ham,x,.87,.29,.18,.29,.2,brown);for(const x of [-.46,.46])ellipsoid(ham,x,.13,.3,.27,.15,.37,cream);
+/* @object:objects/buildings/house.js *//* @object:objects/buildings/cafe.js *//* @object:objects/forest/details.js *//* @object:objects/characters/ghost-helicopter.js */function hiddenPart(name){if(cafeInside&&name==='cafe-roof')return true;if(!houseLevel)return false;if(['roof','chimney'].includes(name))return true;return houseLevel===1&&['interior-upper-floor','interior-bedroom','interior-bedroom-rug'].includes(name);}
+let wallFade=1,cafeWallFade=1;
+function wallTarget(){if(!houseLevel)return 1;return Math.cos(cameraDirection())>0.025?0:1;}
+function cafeWallTarget(){if(!cafeInside)return 1;return Math.cos(cameraDirection())>0.025?0:1;}
+function wallOpacity(name){if(name==='front-wall')return wallFade;if(['cafe-front-wall','cafe-front-glass','cafe-front-trim','cafe-sign'].includes(name))return cafeWallFade;return 1;}
+// v0.4 visual-only wildflower meadow. No changes to Core or collision boundaries.
+const meadow=part('meadow');
+for(let i=0;i<46;i++){
+ const x=-9.1+(i*1.61803398875%1)*17.8;
+ const z=1.7+(i*.754877666%1)*7.0;
+ if(Math.hypot(x+7,z+5)<2.1||Math.hypot(x-4.5,z-3)<1.3||Math.hypot(x,z-4.5)<1.1)continue;
+ const h=.13+(i%4)*.045;
+ cube(meadow,x,0,z,.045,h,.045,0x568c53);
+ const petals=[0xf5e6b2,0xf0b9a8,0xe8d8f3,0xffffff][i%4];
+ sphere(meadow,x,h+.055,z,.095,petals);
+ sphere(meadow,x,h+.065,z,.035,0xe4b955);
+}
+const grass=part('grass-details');
+for(let i=0;i<64;i++){
+ const x=-9.2+(i*.61803398875%1)*18.4,z=1.4+(i*.41421356237%1)*7.4;
+ if(Math.hypot(x-4.5,z-3)<1.25||Math.hypot(x,z-4.5)<1)continue;
+ cube(grass,x,0,z,.09,.12+(i%3)*.06,.065,[0x7cb96c,0x83bc70,0x69aa61][i%3]);
+}
+// Scale only scene objects: ground coordinates and terrain remain exactly unchanged.
+// Correct normals where building mesh scaling is nonuniform.
+const houseMeshNames=new Set(['foundation','walls','front-wall','siding','roof','windows',
+ 'door','porch','chimney','floorBase','interior-upper-floor','interior-stairs',
+ 'interior-furniture','interior-bedroom','interior-bedroom-rug']);
+function scalePartMesh(mesh,sx,sy,sz){
+ for(let i=0;i<mesh.p.length;i+=3){
+  mesh.p[i]*=sx;mesh.p[i+1]*=sy;mesh.p[i+2]*=sz;
+  const nx=mesh.n[i]/sx,ny=mesh.n[i+1]/sy,nz=mesh.n[i+2]/sz;
+  const length=Math.hypot(nx,ny,nz)||1;
+  mesh.n[i]=nx/length;mesh.n[i+1]=ny/length;mesh.n[i+2]=nz/length;
+ }
+}
+for(const piece of parts){
+ const n=piece.name;
+ const uniform=n==='avatar'?PLAYER_MESH_SCALE:n==='hamster'?HAMSTER_MESH_SCALE:
+  n==='tree'?1.05:n==='tree-v2'?1.08:n==='tree-v3'?1.10:1;
+ const vertical=n.startsWith('cafe-')||houseMeshNames.has(n)?BUILDING_HEIGHT_SCALE:1;
+ if(uniform!==1||vertical!==1)scalePartMesh(piece.m,uniform,uniform*vertical,uniform);
+}
+// Legacy scene contains some optional EMPTY parts which never drew anything.
+// Keep the geometry validator strict, but exclude fully empty draw objects.
+// No nonempty geometry will be skipped or modified.
+const emptyParts=parts.filter(p=>p.m.p.length===0&&p.m.n.length===0&&p.m.c.length===0);
+const renderParts=parts.filter(p=>!emptyParts.includes(p));
+const engineMeshes=renderParts.map((p,i)=>{
+ try {
+  return createMeshGeometry({
+   id:"komorebi3d:"+p.name+":"+i,
+   positions:p.m.p,normals:p.m.n,colors:p.m.c
+  });
+ }catch(error){
+  throw new Error("描画パーツ "+p.name+" が不正: "+String(error.message||error)+
+   " (positions="+p.m.p.length+", normals="+p.m.n.length+", colors="+p.m.c.length+")");
+ }
+});
+console.info("[Komorebi v0.5.1] 空の描画パーツを除外:",emptyParts.map(p=>p.name));
+// Extra NPCs share one inexpensive mesh (the original hamster stays detailed).
+const hamsterLiteMesh={p:[],n:[],c:[]};
+ellipsoid(hamsterLiteMesh,0,.78,0,.78,.79,.66,0xbd854c,4,6);
+ellipsoid(hamsterLiteMesh,0,.64,.43,.57,.58,.25,0xf7e6c7,4,6);
+ellipsoid(hamsterLiteMesh,0,1.63,.06,.7,.65,.59,0xbd854c,4,6);
+for(const x of [-.46,.46])ellipsoid(hamsterLiteMesh,x,1.45,.52,.3,.29,.20,0xf7e6c7,4,6);
+for(const x of [-.5,.5])ellipsoid(hamsterLiteMesh,x,2.13,.12,.22,.27,.14,0xbd854c,4,6);
+for(const x of [-.28,.28])ellipsoid(hamsterLiteMesh,x,1.75,.63,.11,.11,.10,0x161419,4,6);
+ellipsoid(hamsterLiteMesh,0,1.45,.8,.13,.09,.11,0xf09aaa,4,6);
+const hamsterLiteGeometry=createMeshGeometry({
+ id:'komorebi3d:hamster-lite-shared',
+ positions:hamsterLiteMesh.p.map(v=>v*HAMSTER_LITE_SCALE),normals:hamsterLiteMesh.n,colors:hamsterLiteMesh.c
+});
+
+let renderFrameId=0;
+const SAVED_WORLD_KEY='komorebi3d-last-world-dev';
+let activeWorld='forest',matsudoLabels={A:null,B:null},warpInProgress=false,worldGeneration=0;
+const matsudoMaps={old:null,new:null};
+let flightAltitude=0;
+function productRenderSnapshot(screen,frameId){
+ const pose=cameraRig.getPose({x:game.x,z:game.z},0);
+ if(activeWorld==='matsudo'){
+  const ghostIndex=renderParts.findIndex(p=>p.name==='ghost-helicopter');
+  const source=screenConfigs[screen].map;
+  const objs=(matsudoMaps[source]?.meshes||[]).map((geometry,i)=>({id:'matsudo:'+source+':'+i,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true}));
+  if(ghostIndex>=0)objs.push({id:'ghost-helicopter',geometry:engineMeshes[ghostIndex],position:[game.x,flightAltitude,game.z],yaw:game.angle,opacity:1,visible:true});
+  return createMeshRenderSnapshot({frameId,camera:{eye:pose.eye,target:pose.target,fovDegrees:45,near:.1,far:2200},objects:objs});
+ }
+ const objects=renderParts.map((p,i)=>({
+   id:p.name+":"+i,geometry:engineMeshes[i],
+   position:p.name==='avatar'?[game.x,characterY,game.z]:p.name==='hamster'?[hamsterNpc.drawX,0,hamsterNpc.drawZ]:p.offset,
+   yaw:p.name==='avatar'?game.angle:p.name==='hamster'?hamsterNpc.drawYaw:0,
+   opacity:wallOpacity(p.name),visible:p.name==='ghost-helicopter'?false:p.name==='hamster'?npcManager.primaryDrawn===1:!hiddenPart(p.name)
+ }));
+ // Reuse Tree v2's geometry at Tree v1's former position, without duplicating its mesh.
+ const v2Index=renderParts.findIndex(p=>p.name==='tree-v2');
+ if(v2Index>=0)objects.push({id:'tree-v2-original-spot',geometry:engineMeshes[v2Index],position:[-7,0,-5],yaw:0,opacity:1,visible:true});
+ // New forest trees reuse the exact same geometry in both renderers.
+ if(v2Index>=0)for(let i=0;i<FOREST_TREE_POSITIONS.length;i++){
+  const [x,z]=FOREST_TREE_POSITIONS[i];
+  objects.push({id:'forest-v2-'+i,geometry:engineMeshes[v2Index],position:[x,0,z],yaw:i*2.399963,opacity:1,visible:true});
+ }
+ // Only nearby visible extras, limited by the draw-count slider, reach Renderer A or B.
+ for(const a of npcManager.drawCandidates){
+  objects.push({id:'npc:'+a.id,geometry:hamsterLiteGeometry,
+   position:[a.drawX,0,a.drawZ],yaw:a.drawYaw,opacity:1,visible:true});
+ }
+ return createMeshRenderSnapshot({
+  frameId,
+  camera:{eye:pose.eye,target:pose.target,fovDegrees:45,near:.1,far:220},
+  objects
+ });
+}
+// Matsudo loads the local 500m JSON snapshot; requests remain cancellable on world switches.
+const MAP_BUILD_BUDGET_MS=6; // Tune after real-device performance measurements.
+// Step 5: aggregate only, keeping the 32-line map log limit unchanged.
+function createMapBuildProfiler(){
+ const stats=new Map();
+ return {
+  record(kind,ms,id){
+   const entry=stats.get(kind)??{total:0,max:0,count:0,maxId:null};
+   entry.total+=ms;entry.count++;
+   if(ms>entry.max){entry.max=ms;entry.maxId=id??null;}
+   stats.set(kind,entry);
+  },
+  total(kind){return stats.get(kind)?.total??0;},
+  format(kind){
+   const entry=stats.get(kind)??{total:0,max:0,count:0,maxId:null};
+   return kind+' '+entry.total.toFixed(1)+'ms合計 / 最大'+entry.max.toFixed(1)+'ms'
+    +(entry.maxId===null?'':' (OSM ID '+entry.maxId+')')+' / '+entry.count+'回';
+  }
+ };
+}
+let mapLoadToken=0,mapLoadController=null;
+let mapFrameProbe=null; // Step 5-F: existing game rAF frame cadence only.
+const mapDebugLog=[];
+function addMapDebug(line){
+ mapDebugLog.push(new Date().toLocaleTimeString('ja-JP',{hour12:false})+' '+line);
+ if(mapDebugLog.length>32)mapDebugLog.shift();
+ publishRuntimeStatus('map-debug-log',mapDebugLog.join('\n'));
+}
+// Matsudo owns the map request lifecycle. World switching only disposes the old session.
+function cancelMatsudoMapRequest(){
+ mapFrameProbe=null;
+ mapLoadController?.abort();
+ mapLoadController=null;
+ ++mapLoadToken;
+}
+function isCurrentMatsudoMapRequest(token,controller){
+ return token===mapLoadToken&&mapLoadController===controller&&!controller.signal.aborted;
+}
+async function loadMatsudoMapInBackground(){
+ cancelMatsudoMapRequest();
+ const controller=new AbortController();mapLoadController=controller;
+ const token=++mapLoadToken;
+ mapDebugLog.length=0;addMapDebug('開始 / A: matsudo.json / B: 2kmタイル '+TEST_TILE_ID);
+ const onLog=line=>{if(isCurrentMatsudoMapRequest(token,controller))addMapDebug(line);};
+ publishRuntimeStatus('map-source-status','🗺️ A/B地図 読み込み中');
+ try{
+  const ignoreRules=await loadOsmTagIgnore();
+  if(!isCurrentMatsudoMapRequest(token,controller))return;
+  for(const source of ['old','new']){
+   if(!isCurrentMatsudoMapRequest(token,controller))return;
+   const name=source==='old'?'500m matsudo.json':'2kmタイル '+TEST_TILE_ID;
+   try{
+    onLog('取得開始 / '+name);
+    const map=await loadMap({source,onLog,signal:controller.signal});
+    if(!isCurrentMatsudoMapRequest(token,controller))return;
+    onLog('地図生成: 開始 / '+name+' / 生成予算 '+MAP_BUILD_BUDGET_MS+'ms');
+    const profile=createMapBuildProfiler();
+    const builder=createMapBuildSteps(map,{
+     halfSize:source==='old'?250:1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
+    });
+    const displayed={meshes:[],mapFeatures:[],labels:[]};
+    matsudoMaps[source]=displayed;
+    const workStart=performance.now();
+    let result=builder.next(),batchIndex=0,processedInSlice=0;
+    let sliceStart=performance.now(),maxSliceMs=0,maxFeaturesInSlice=0,totalSlices=0;
+    const preparationMs=sliceStart-workStart;
+    profile.record('preparation',preparationMs);
+    // Step 5-D diagnostic only: count useful/empty batches and slice sizes.
+    // All batches, including empty ones, still publish and yield exactly as before.
+    const batchSample={lastProcessed:0,empty:0,meshless:0,small2:0,small5:0,
+     maxItems:0,minItems:Infinity,totalItems:0,withMesh:0,sliceOver12:0,sliceOver24:0};
+    // Step 5-E diagnostic only: four equal feature-progress ranges.
+    const progressQuarters=Array.from({length:4},()=>({batches:0,items:0,
+     featureMs:0,publishMs:0,waitMs:0,rafMs:0,timerMs:0,
+     meshCount:0,vertexCount:0,labelCount:0,meshMs:0,labelMs:0,miniMapMs:0,
+     frameCount:0,frameGapTotal:0,frameGapMax:0,frameOver33:0,frameOver50:0,renderMs:0}));
+    const frameProbe=source==='new'?{token,quarter:0,lastT:null,quarters:progressQuarters}:null;
+    if(frameProbe)mapFrameProbe=frameProbe;
+    let quarterFeatureRecorded=0;
+    // Existing rAF -> setTimeout(0) scheduling is preserved.
+    // rAF latency includes browser scheduling/rendering, not GPU-only time.
+    async function waitForMapPaint(kind){
+     const started=performance.now();
+     let frameAt=started;
+     await new Promise(resolve=>requestAnimationFrame(()=>{
+      frameAt=performance.now();
+      setTimeout(resolve,0);
+     }));
+     const ended=performance.now();
+     profile.record(kind,ended-started);
+     profile.record('wait-raf',frameAt-started);
+     profile.record('wait-timer',ended-frameAt);
+     return {waitMs:ended-started,rafMs:frameAt-started,timerMs:ended-frameAt};
+    }
+
+    // Step 5-G: conservative distance check on actual feature geometry.
+    // Roads whose bounding boxes reach the helicopter are always near.
+    const nearSq=300*300;
+    function isDistantBatch(batch){
+     if(source!=='new'||!batch.mapFeatures.length)return false;
+     const px=game.x,pz=game.z;
+     for(const f of batch.mapFeatures){
+      if(!f.points?.length)return false;
+      let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+      for(const p of f.points){
+       const x=p[0],z=p[1];
+       if(!Number.isFinite(x)||!Number.isFinite(z))return false;
+       minX=Math.min(minX,x);maxX=Math.max(maxX,x);
+       minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z);
+      }
+      const dx=Math.max(minX-px,0,px-maxX),dz=Math.max(minZ-pz,0,pz-maxZ);
+      if(dx*dx+dz*dz<=nearSq)return false;
+     }
+     for(const l of batch.labels){
+      if(!Number.isFinite(l.x)||!Number.isFinite(l.z))return false;
+      const dx=l.x-px,dz=l.z-pz;
+      if(dx*dx+dz*dz<=nearSq)return false;
+     }
+     return true;
+    }
+    const pendingDisplay=[];
+    const displayStats={near:0,far:0,groups:0,merged:0,meshTotal:0,vertexTotal:0};
+    function publishPendingDisplay(processed,total,q){
+     if(!pendingDisplay.length)return;
+     const start=performance.now(),entries=pendingDisplay.splice(0),allLabels=[];
+     displayStats.groups++;
+     if(entries.length>1)displayStats.merged++;
+     for(const entry of entries){
+      const {batch,index,quarterStats}=entry;
+      const meshStart=performance.now();
+      for(let i=0;i<batch.meshes.length;i++){
+       const mesh=batch.meshes[i];
+       // Vertex count is a geometry-size indicator, not measured GPU/RAM usage.
+       const vertices=mesh.positions.length/3;
+       quarterStats.vertexCount+=vertices;
+       displayStats.vertexTotal+=vertices;
+       displayed.meshes.push(createMeshGeometry({
+        id:'matsudo:'+source+':batch'+index+':'+i,
+        positions:mesh.positions,normals:mesh.normals,colors:mesh.colors
+       }));
+      }
+      quarterStats.meshCount+=batch.meshes.length;
+      displayStats.meshTotal+=batch.meshes.length;
+      quarterStats.meshMs+=performance.now()-meshStart;
+      displayed.labels.push(...batch.labels);
+      displayed.mapFeatures.push(...batch.mapFeatures);
+      allLabels.push(...batch.labels);
+      quarterStats.labelCount+=batch.labels.length;
+     }
+     const labelStart=performance.now();
+     for(const screen of ['A','B'])if(screenConfigs[screen].map===source){
+      const layer=matsudoLabels[screen];
+      if(layer)layer.appendLabels(allLabels);
+      else applyMatsudoScreenLabels(screen,ignoreRules);
+      const current=matsudoLabels[screen];
+      if(current){
+       const pose=cameraRig.getPose({x:game.x,z:game.z},0);
+       current.update({...pose,fovDegrees:45},{x:game.x,y:flightAltitude,z:game.z});
+      }
+     }
+     q.labelMs+=performance.now()-labelStart;
+     const miniMapStart=performance.now();
+     if(miniMapVisible&&(batchIndex%4===0||processed===total))paintDebugMap();
+     q.miniMapMs+=performance.now()-miniMapStart;
+     const publishMs=performance.now()-start;
+     profile.record('batch-publish',publishMs);
+     q.publishMs+=publishMs;
+    }
+    while(!result.done){
+     if(!isCurrentMatsudoMapRequest(token,controller))return;
+     const item=result.value;
+     if(item.type==='feature'){
+      processedInSlice++;
+      const elapsed=performance.now()-sliceStart;
+      const flush=elapsed>=MAP_BUILD_BUDGET_MS;
+      if(flush){
+       if(elapsed>12)batchSample.sliceOver12++;
+       if(elapsed>24)batchSample.sliceOver24++;
+       maxSliceMs=Math.max(maxSliceMs,elapsed);
+       maxFeaturesInSlice=Math.max(maxFeaturesInSlice,processedInSlice);
+       totalSlices++;
+      }
+      const stepStart=performance.now();
+      result=builder.next({flush,playerX:game.x,playerZ:game.z});
+      if(result.value?.type==='priority')profile.record('priority-work',performance.now()-stepStart);
+      if(result.done)profile.record('final-step',performance.now()-stepStart);
+      continue;
+     }
+     if(item.type==='priority'){
+      // Time-slice incremental sorting so controls/animation stay responsive.
+      const elapsed=performance.now()-sliceStart;
+      if(elapsed>=MAP_BUILD_BUDGET_MS){
+       maxSliceMs=Math.max(maxSliceMs,elapsed);
+       totalSlices++;
+       await waitForMapPaint('wait-priority');
+       if(!isCurrentMatsudoMapRequest(token,controller))return;
+       sliceStart=performance.now();processedInSlice=0;
+      }
+      const stepStart=performance.now();
+      result=builder.next();
+      if(result.value?.type==='priority'||item.type==='priority')profile.record('priority-work',performance.now()-stepStart);
+      if(result.done)profile.record('final-step',performance.now()-stepStart);
+      continue;
+     }
+     if(item.type==='batch'){
+     const batch=item.batch;
+     const itemsInBatch=item.processed-batchSample.lastProcessed;
+     const quarter=Math.min(3,Math.floor(Math.max(0,item.processed-1)/Math.max(1,item.total)*4));
+     const quarterStats=progressQuarters[quarter];
+     if(frameProbe)frameProbe.quarter=quarter;
+     quarterStats.batches++;
+     quarterStats.items+=itemsInBatch;
+     const featureCumulative=profile.total('feature');
+     quarterStats.featureMs+=featureCumulative-quarterFeatureRecorded;
+     quarterFeatureRecorded=featureCumulative;
+     batchSample.lastProcessed=item.processed;
+     batchSample.totalItems+=itemsInBatch;
+     batchSample.maxItems=Math.max(batchSample.maxItems,itemsInBatch);
+     batchSample.minItems=Math.min(batchSample.minItems,itemsInBatch);
+     if(itemsInBatch<=2)batchSample.small2++;
+     if(itemsInBatch<=5)batchSample.small5++;
+     if(!batch.meshes.length)batchSample.meshless++;
+     else batchSample.withMesh++;
+     if(!batch.meshes.length&&!batch.labels.length&&!batch.mapFeatures.length)batchSample.empty++;
+     const distanceStart=performance.now();
+     const distant=isDistantBatch(batch);
+     profile.record('distance-check',performance.now()-distanceStart);
+     if(distant)displayStats.far++;else displayStats.near++;
+     pendingDisplay.push({batch,index:batchIndex,quarterStats});
+     batchIndex++;
+     // Input/paint yield remains mandatory after every original 6ms batch.
+     if(!distant||pendingDisplay.length>=2||item.processed===item.total)
+      publishPendingDisplay(item.processed,item.total,quarterStats);
+     if(batchIndex%12===0)onLog('段階表示: '+name+' / '+item.processed+'/'+item.total+'件 / '+batchIndex+'回');
+     const waitSample=await waitForMapPaint('wait-batch');
+     quarterStats.waitMs+=waitSample.waitMs;
+     quarterStats.rafMs+=waitSample.rafMs;
+     quarterStats.timerMs+=waitSample.timerMs;
+     if(!isCurrentMatsudoMapRequest(token,controller))return;
+     sliceStart=performance.now();processedInSlice=0;
+    }
+    result=builder.next();
+    }
+    if(pendingDisplay.length)publishPendingDisplay(batchIndex,batchIndex,progressQuarters[3]);
+    maxSliceMs=Math.max(maxSliceMs,performance.now()-sliceStart);
+    maxFeaturesInSlice=Math.max(maxFeaturesInSlice,processedInSlice);
+    if(frameProbe&&mapFrameProbe===frameProbe)mapFrameProbe=null;
+    const next=result.value;
+    if(next.counts.buildings<10||next.counts.roads<10)throw Error('3D地図生成データ不足');
+    if(!isCurrentMatsudoMapRequest(token,controller))return;
+    // Final POI/building name dedup uses exactly the previous algorithm.
+    const reconcileStart=performance.now();
+    displayed.labels=next.labels;
+    displayed.mapFeatures=next.mapFeatures;
+    for(const screen of ['A','B'])if(screenConfigs[screen].map===source)matsudoLabels[screen]?.reconcileLabels(next.labels);
+    profile.record('screen-reconcile',performance.now()-reconcileStart);
+    onLog('計測: '+name+' / '+profile.format('preparation'));
+    onLog('計測: '+name+' / '+profile.format('feature'));
+    onLog('計測: '+name+' / '+profile.format('priority-work'));
+    onLog('計測: '+name+' / '+profile.format('batch-publish'));
+    onLog('計測: '+name+' / '+profile.format('final-sort')+' / '+profile.format('final-poi'));
+    onLog('計測: '+name+' / '+profile.format('final-batches')+' / '+profile.format('final-meshes')+' / '+profile.format('screen-reconcile'));
+    onLog('計測: '+name+' / '+profile.format('wait-batch')+' / '+profile.format('wait-priority'));
+    onLog('計測: '+name+' / '+profile.format('wait-raf')+' / '+profile.format('wait-timer'));
+    onLog('計測: '+name+' / バッチ内訳 空 '+batchSample.empty+'回 / メッシュなし '+batchSample.meshless+'回 / メッシュあり '+batchSample.withMesh+'回');
+    onLog('計測: '+name+' / バッチ処理件数 平均 '+(batchIndex?batchSample.totalItems/batchIndex:0).toFixed(1)
+     +'件 / 最小 '+(Number.isFinite(batchSample.minItems)?batchSample.minItems:0)+'件 / 最大 '+batchSample.maxItems+'件 / 2件以下 '+batchSample.small2+'回 / 5件以下 '+batchSample.small5+'回');
+    onLog('計測: '+name+' / 予算超過内訳 12ms超 '+batchSample.sliceOver12+'回 / 24ms超 '+batchSample.sliceOver24+'回');
+    for(let i=0;i<progressQuarters.length;i++){
+     const q=progressQuarters[i],n=q.batches||1;
+     onLog('計測: '+name+' / 進捗'+(i*25)+'-'+((i+1)*25)+'% / '+q.items+'件 / '+q.batches+'表示回'
+      +' / 地物 '+q.featureMs.toFixed(0)+'ms / 反映 '+q.publishMs.toFixed(0)+'ms'
+      +' / 待機 '+q.waitMs.toFixed(0)+'ms（平均'+(q.waitMs/n).toFixed(1)+'ms、rAF'+(q.rafMs/n).toFixed(1)+'ms、timer'+(q.timerMs/n).toFixed(1)+'ms）');
+    }
+    let cumulativeMeshes=0,cumulativeVertices=0;
+    for(let i=0;i<progressQuarters.length;i++){
+     const q=progressQuarters[i],n=q.frameCount||1,period=(i*25)+'-'+((i+1)*25)+'%';
+     cumulativeMeshes+=q.meshCount;
+     cumulativeVertices+=q.vertexCount;
+     onLog('計測: '+name+' / 負荷'+period+' / メッシュ追加 '+q.meshCount+'個・'+q.meshMs.toFixed(0)+'ms'
+      +' / ラベル反映 '+q.labelCount+'件・'+q.labelMs.toFixed(0)+'ms'
+      +' / ミニマップ更新 '+q.miniMapMs.toFixed(0)+'ms'
+      +' / ゲーム描画 '+q.renderMs.toFixed(0)+'ms'
+      +' / 累積メッシュ '+cumulativeMeshes+'個・頂点 '+cumulativeVertices.toFixed(0)+'個');
+     onLog('計測: '+name+' / フレーム'+period+' / '+q.frameCount+'標本 / 平均'+(q.frameGapTotal/n).toFixed(1)
+      +'ms / 最大'+q.frameGapMax.toFixed(1)+'ms / 33ms超 '+q.frameOver33+'回 / 50ms超 '+q.frameOver50+'回');
+    }
+    onLog('計測: '+name+' / '+profile.format('distance-check'));
+    onLog('計測: '+name+' / Step5-G近場 '+displayStats.near+'バッチ / 遠方 '+displayStats.far
+     +'バッチ / 画面反映 '+displayStats.groups+'回 / 2バッチ合流 '+displayStats.merged+'回 / 待機 '+batchIndex+'回');
+    const measuredKinds=['preparation','feature','priority-work','batch-publish','distance-check','final-sort',
+     'final-poi','final-batches','final-meshes','screen-reconcile','wait-batch','wait-priority'];
+    // The unclassified remainder can include loop/log bookkeeping and browser work.
+    // rAF/timer are subcategories of the wait buckets, not additional time.
+    const unclassifiedMs=Math.max(0,performance.now()-workStart-measuredKinds.reduce((sum,kind)=>sum+profile.total(kind),0));
+    onLog('計測: '+name+' / 未分類 '+unclassifiedMs.toFixed(1)+'ms / rAF待ちには描画スケジューリング含む');
+    onLog('分割生成: '+name+' / '+batchIndex+'表示回 / '+totalSlices+'予算超過回 / 最大片 '+maxSliceMs.toFixed(1)+'ms・'+maxFeaturesInSlice+'件 / 事前準備 '+preparationMs.toFixed(1)+'ms / 全体 '+(performance.now()-workStart).toFixed(0)+'ms');
+    onLog('地図生成: 完了 / '+name+' / 建物'+next.counts.buildings+' 道路'+next.counts.roads+' 鉄道'+next.counts.rails+' ラベル'+next.labels.length);
+    onLog('表示準備: 完了 / '+name);
+    publishRuntimeStatus('map-source-status','🗺️ '+name+' 読み込み完了');
+    publishRuntimeStatus('status','🏙️ '+name+'：建物'+next.counts.buildings+' / 道路'+next.counts.roads+' / 鉄道'+next.counts.rails);
+   }catch(error){
+    if(mapFrameProbe?.token===token)mapFrameProbe=null;
+    if(!isCurrentMatsudoMapRequest(token,controller))return;
+    onLog('失敗 / '+name+': '+String(error.name||'Error')+' / '+String(error.message||error));
+    publishRuntimeStatus('map-source-status','🗺️ '+name+' 読み込み失敗：'+String(error.message||error));
+   }
+  }
+ }catch(error){
+  if(!isCurrentMatsudoMapRequest(token,controller))return;
+  onLog('失敗: '+String(error.name||'Error')+' / '+String(error.message||error));
+  publishRuntimeStatus('map-source-status','🗺️ 地図準備失敗：'+String(error.message||error));
+ }finally{
+  if(mapLoadController===controller)mapLoadController=null;
+ }
+}
+function applyMatsudoScreenLabels(screen,ignoreRules){
+ matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;
+ const data=matsudoMaps[screenConfigs[screen].map];
+ if(data&&gameView?.surface){
+  matsudoLabels[screen]=createMapLabels(gameView.surface,ignoreRules,{screen});
+  matsudoLabels[screen].setLabels(data.labels);
+ }
+}
+// Only world-specific geometry changes; the common Engine input/camera are reused.
+async function setWorld(name){
+ if(name!=='forest'&&name!=='matsudo')return false;
+ if(warpInProgress)return false;
+ warpInProgress=true;
+ try{
+  // Invalidate outstanding map loads as soon as a world switch begins.
+  const generation=++worldGeneration;
+  // Release the previous world's Matsudo session, if any.
+  cancelMatsudoMapRequest();
+  // Reinitialize the common renderer to release the previous world's GPU meshes.
+  rendererGenerationA++;rendererGenerationB++;
+  await Promise.allSettled([loadingA,loadingB].filter(Boolean));
+  rendererA?.dispose?.();rendererB?.dispose?.();
+  rendererA=null;rendererB=null;loadingA=null;loadingB=null;okA=false;okB=false;
+  for(const screen of ['A','B']){matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;}
+   matsudoMaps.old=null;matsudoMaps.new=null;
+  // Both worlds use the same fixed Engine ground constraints; only their sizes differ.
+  groundSystem=new GroundBounds({centerX:0,centerZ:0,
+   width:name==='matsudo'?2000:100,depth:name==='matsudo'?2000:100});
+  collisionSystem=new CollisionWorld2D({obstacles:name==='forest'?GAME_COLLISION_OBSTACLES:[],characterRadius:.30,maxStep:.12});
+  core=new CharacterMotionCore2D({ground:groundSystem,collision:collisionSystem,
+   initialState:name==='forest'?{x:0,z:4.5,angle:.55,spin:0}:{x:-42,z:28,angle:-Math.PI/2,spin:0},
+   tapRadians:.14,spinRadiansPerFrame:.025,moveUnitsPerFrame:.095,deadzone:.06});
+  activeWorld=name;
+  resetHouse();engineInputAdapter?.resetZoom();
+  flightAltitude=name==='matsudo'?20:0;
+  cameraRig.targetY=flightAltitude+1.65;
+  npcManager.setPopulation(1);npcManager.maxDrawn=65;npcManager.maxDrawDistance=70;
+  matsudoNpcStressSelected=false;
+  
+  miniMapVisible=false;gameView?.setMapVisible(false);setRenderMode('B');
+  if(name==='matsudo'){
+   // Start facing west across town and allow flight before the map is ready.
+   cameraRig.state.pitch=0;
+   cameraRig.state.yaw=Math.PI/2;
+   publishRuntimeStatus('status','🏙️ 松戸：地図読み込み中（飛行できます）');
+    publishRuntimeStatus('map-source-status','🗺️ matsudo.json 読み込み待ち');
+   publishRuntimeStatus('label-status','🏙️ 屋上名：地図読み込み中');
+   // Give the renderer an opportunity to show the helicopter before map work begins.
+   requestAnimationFrame(()=>setTimeout(()=>{
+    if(generation===worldGeneration)void loadMatsudoMapInBackground();
+   },0));
+  }else {publishRuntimeStatus('map-source-status','🗺️ 松戸地図：未読込');publishRuntimeStatus('status','🌳 森にワープしました');publishRuntimeStatus('label-status','🏙️ 屋上名：森ワールドでは非表示');}
+  // Persist the selected world; map loading is independent of flight.
+  try{localStorage.setItem(SAVED_WORLD_KEY,name)}catch(_){/* storage unavailable */}
+  publishGameState();return true;
+ }catch(error){
+  publishRuntimeStatus('status','ワープ失敗：'+String(error.message||error));
+  throw error;
+ }finally{warpInProgress=false;}
+}
+let rendererA=null,rendererB=null,loadingA=null,loadingB=null;
+let okA=false,okB=false,renderMode='B';
+let rendererGenerationA=0,rendererGenerationB=0;
+let screenConfigs={A:{map:'new',engine:'A'},B:{map:'new',engine:'A'}};
+function setScreenConfig({screen,setting,value}={}){
+ if(!['A','B'].includes(screen)||!['map','engine'].includes(setting)||
+    !(setting==='map'?['old','new']:['A','B']).includes(value))return false;
+ if(screenConfigs[screen][setting]===value)return true;
+ screenConfigs={...screenConfigs,[screen]:{...screenConfigs[screen],[setting]:value}};
+ if(setting==='engine')void reconfigureScreenRenderer(screen);
+ if(setting==='map'&&activeWorld==='matsudo'){
+   if(matsudoMaps[value])loadOsmTagIgnore().then(rules=>applyMatsudoScreenLabels(screen,rules)).catch(error=>addMapDebug('ラベル切替失敗: '+error.message));
+   else{matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;}
+   if(miniMapVisible)paintDebugMap();
+  }
+ publishGameState();return true;
+}
+let last=0,start=0,frames=0;
+function isVisibleScreen(screen){return renderMode==='compare'||renderMode===screen;}
+function ensureScreen(screen){
+ if(!gameView)return Promise.resolve();
+ const isA=screen==='A';
+ if(isA?(okA||loadingA):(okB||loadingB))return (isA?loadingA:loadingB)||Promise.resolve();
+ const engine=screenConfigs[screen].engine;
+ const generation=isA?rendererGenerationA:rendererGenerationB;
+ publishRuntimeStatus(isA?'ea':'eb',screen+'：Engine '+engine+' 読み込み中…');
+ const promise=(async()=>{
+  const instance=await createRenderer(engine,{profile:'mesh'});
+  try{await instance.initialize({canvas:isA?gameView.canvasA:gameView.canvasB});}
+  catch(error){instance.dispose?.();throw error;}
+  if(generation!==(isA?rendererGenerationA:rendererGenerationB)){
+   instance.dispose?.();return;
+  }
+  if(isA){rendererA=instance;okA=true;}else{rendererB=instance;okB=true;}
+  publishRuntimeStatus(isA?'ea':'eb','');
+  publishRuntimeStatus('renderer-status','🎨 画面'+screen+' / Engine '+engine+' 準備OK');
+  if(engine==='B'){
+   const diagnostic=document.getElementById('launch-diagnostic');
+   if(diagnostic)diagnostic.textContent='診断：Engine Input・Camera・Renderer準備完了';
+  }
+ })().catch(error=>{
+  if(generation!==(isA?rendererGenerationA:rendererGenerationB))return;
+  publishRuntimeStatus(isA?'ea':'eb',screen+'：Engine '+engine+' 初期化エラー：'+String(error.message||error));
+  publishRuntimeStatus('renderer-status','🎨 画面'+screen+' / Engine '+engine+' 初期化失敗');
+ }).finally(()=>{
+  if(generation!==(isA?rendererGenerationA:rendererGenerationB))return;
+  if(isA)loadingA=null;else loadingB=null;
+ });
+ if(isA)loadingA=promise;else loadingB=promise;
+ return promise;
+}
+function ensureA(){return ensureScreen('A');}
+function ensureB(){return ensureScreen('B');}
+async function reconfigureScreenRenderer(screen){
+ const isA=screen==='A',generation=isA?++rendererGenerationA:++rendererGenerationB;
+ const pending=isA?loadingA:loadingB;
+ if(pending)await Promise.allSettled([pending]);
+ if(generation!==(isA?rendererGenerationA:rendererGenerationB))return;
+ const renderer=isA?rendererA:rendererB;
+ renderer?.dispose?.();
+ // A fresh canvas is needed when switching WebGL1 and Three.js/WebGL2 backends.
+ const nextCanvas=gameView?.replaceCanvas(screen);
+ matsudoLabels[screen]?.replaceCanvas(screen,nextCanvas);
+ if(isA){rendererA=null;loadingA=null;okA=false;}
+ else{rendererB=null;loadingB=null;okB=false;}
+ if(isVisibleScreen(screen))await ensureScreen(screen);
+}
+function setRenderMode(mode){
+ if(!['A','B','compare'].includes(mode))mode='B';
+ renderMode=mode;
+ const a=mode!=='B',b=mode!=='A';
+ gameView?.setRenderMode(mode);
+ if(miniMapVisible)paintDebugMap();
+ try{localStorage.setItem('komorebi3d-render-mode-dev',mode)}catch(e){}
+ if(gameView&&a&&!okA)ensureA();
+ if(gameView&&b&&!okB)ensureB();
+ publishGameState();
+}
+let initialMode='B';
+try{initialMode=localStorage.getItem('komorebi3d-render-mode-dev')||'B'}catch(e){}
+setRenderMode(initialMode);
+// Early Game API boundary: future controllers depend on this object, not panel DOM.
+const gameApi=Object.freeze({
+ getState(){
+  return {
+   ...core.getState(),houseLevel,renderMode,screens:screenConfigs,worldId:activeWorld,flightAltitude:activeWorld==='matsudo'?flightAltitude:0,
+   npcCount:activeWorld==='forest'?npcManager.agents.length:(matsudoNpcStressSelected?1000:0),npcVisible:activeWorld==='forest'?npcManager.visibleCount:0,
+   npcDrawn:activeWorld==='forest'?npcManager.drawCount:0,npcRenderLimit:npcManager.maxDrawn,
+   npcRenderDistance:npcManager.maxDrawDistance,mapVisible:miniMapVisible,
+   status:Object.fromEntries(runtimeStatusValues)
+  };
+ },
+ subscribe(listener){
+  if(typeof listener!=='function')throw new TypeError('Game API listener must be a function');
+  gameStateListeners.add(listener);
+  return ()=>gameStateListeners.delete(listener);
+ },
+ reset:resetGameForTest,setRenderMode,setScreenConfig,setNpcCount,setNpcRenderLimit,setNpcRenderDistance,
+ setMapVisible:setMiniMapVisible,teleport:teleportToTestSpot,setWorld
+});
+// Panel views subscribe to Game API without controlling each other.
+const unmountRuntimeStatusPanel=mountRuntimeStatusPanel(document.querySelector('.runtime-status'),gameApi);
+
+const unmountTestControlsPanel=mountTestControlsPanel(document.querySelector('#test-ops-panel'),gameApi);
+// Reparent existing nodes only; Game API subscriptions and canvases survive edits.
+mountPanelLayoutEditor(document,PANEL_LAYOUT,{preserveSlotSize:true});
+function frame(t){
+ // Step 5-F: record actual consecutive game rAF callbacks, no extra frames.
+ const frameProbe=mapFrameProbe;
+ if(frameProbe&&activeWorld==='matsudo'){
+  if(frameProbe.lastT!==null){
+   const gap=t-frameProbe.lastT,q=frameProbe.quarters[frameProbe.quarter];
+   if(gap>=0){
+    q.frameCount++;q.frameGapTotal+=gap;
+    q.frameGapMax=Math.max(q.frameGapMax,gap);
+    if(gap>33)q.frameOver33++;
+    if(gap>50)q.frameOver50++;
+   }
+  }
+  frameProbe.lastT=t;
+ }
+ const dt=Math.min(2,(t-last)/16.67||1);last=t;
+ const commands=readEngineInput(),oldX=game.x,oldZ=game.z;
+ update(dt,commands);
+ if(Math.hypot(commands.moveX,commands.moveY)>.06){
+  const moved=Math.hypot(game.x-oldX,game.z-oldZ);
+  publishRuntimeStatus('collision-status',moved<.001?'● 移動停止（障害物または地面端）':'● 移動中（壁沿い移動も確認）');
+ }
+ publishRuntimeStatus('pos',activeWorld==='matsudo'?`X ${game.x.toFixed(1)} / Z ${game.z.toFixed(1)} / 🚁 高度 ${flightAltitude.toFixed(1)}m`:`X ${game.x.toFixed(1)} / Z ${game.z.toFixed(1)} / ${houseLevel===2?'2階':houseLevel===1?'1階':cafeInside?'カフェ店内':'屋外'}`);
+ publishRuntimeStatus('edge',(()=>{const b=groundSystem.getBounds(),r=collisionSystem.characterRadius;return game.x<=b.minX+r+.01||game.x>=b.maxX-r-.01||game.z<=b.minZ+r+.01||game.z>=b.maxZ-r-.01})()?'● 地面の端':'● 境界内');
+ // HUD updates are independent of the GPU renderer, so failures remain diagnosable.
+ if(activeWorld==='matsudo'){
+  try{
+   const hudPose=cameraRig.getPose({x:game.x,z:game.z},0);
+    const descriptions=[];
+    for(const screen of ['A','B']){
+     const layer=matsudoLabels[screen];
+     if(!layer){descriptions.push(screen+':未作成');continue;}
+     const stats=layer.update({...hudPose,fovDegrees:45},{x:game.x,y:flightAltitude,z:game.z});
+     descriptions.push(screen+':'+stats.shown+'/'+stats.total);
+    }
+    publishRuntimeStatus('label-status','🏙️ 屋上名：'+descriptions.join(' / '));
+  }catch(error){publishRuntimeStatus('label-status','🏙️ 屋上名：描画診断エラー '+String(error.message||error));}
+ }
+ // When the game panel is removed, keep simulation state but pause GPU drawing.
+ const renderProbeStart=frameProbe&&activeWorld==='matsudo'?performance.now():null;
+ if(gameView?.canvasB.isConnected){
+  try{
+   const frameId=++renderFrameId;
+   if(renderMode!=='B'&&okA)rendererA.render(productRenderSnapshot('A',frameId));
+   if(renderMode!=='A'&&okB)rendererB.render(productRenderSnapshot('B',frameId));
+   const a=renderMode!=='B'&&okA?rendererA.lastFrameId:'―';
+   const b=renderMode!=='A'&&okB?rendererB.lastFrameId:'―';
+   publishRuntimeStatus('sync-status','共通Snapshot #'+frameId+' / 画面A(Engine '+screenConfigs.A.engine+'):'+a+' / 画面B(Engine '+screenConfigs.B.engine+'):'+b+
+     (renderMode==='compare'&&okA&&okB?(a===b?' / 同期OK':' / 同期ずれ'):''));
+  }catch(error){
+   publishRuntimeStatus('renderer-status','🎨 描画エラー：'+String(error.message||error));
+   console.error(error);
+  }
+ }
+ if(renderProbeStart!==null)frameProbe.quarters[frameProbe.quarter].renderMs+=performance.now()-renderProbeStart;
+ frames++;
+ if(t-start>1000){
+  const fps=Math.round(frames*1000/(t-start));
+  publishRuntimeStatus('fps','FPS '+fps);
+  publishRuntimeStatus('npc-status','🐹 全'+(activeWorld==='forest'?npcManager.agents.length:0)+'匹 / 視界内'+npcManager.visibleCount+' / 距離内候補'+npcManager.candidatesInRange+' / 3D表示'+npcManager.drawCount+' / 上限'+npcManager.maxDrawn);
+  start=t;frames=0;
+ }
+ if(miniMapVisible&&t-lastMiniMapFrame>=200){paintDebugMap();lastMiniMapFrame=t;}
+ requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// Startup has completed: restore the last world, or remain in the Forest.
+let savedWorld='forest';
+try{if(localStorage.getItem(SAVED_WORLD_KEY)==='matsudo')savedWorld='matsudo'}catch(_){/* storage unavailable */}
+if(savedWorld==='matsudo')setWorld('matsudo').catch(()=>setWorld('forest').catch(()=>{}));
+function pauseProductInput(){inputManager.pause();core.rotate({direction:0,phase:'hold'});last=0;}
+function resumeProductInput(){inputManager.resume();last=0;}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseProductInput();else resumeProductInput();});
+window.addEventListener('blur',pauseProductInput);
+window.addEventListener('focus',()=>{if(!document.hidden)resumeProductInput();});
+// Keep initialized GL resources when Safari stores this page in its back/forward cache.
+window.addEventListener('pagehide',pauseProductInput);
+window.addEventListener('pageshow',()=>{if(!document.hidden)resumeProductInput();});
+</script></body></html>

@@ -1,0 +1,40 @@
+<section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
+<div class="test-panel-header">
+<strong class="test-panel-heading">🧪 テスト操作（開発用）</strong>
+<button type="button" class="panel-help-button test-help-button" id="test-help-button" aria-label="このエリアの名前：テスト操作パネル" aria-describedby="test-help-overlay"><span>ⓘ</span></button>
+<button id="reset" type="button" class="test-reset">↻ リセット（開発用）</button>
+</div>
+<div class="test-panel-body">
+<div class="test-section-title">🌍 ワールドワープ</div>
+<div class="buttons" role="group" aria-label="ワールド切替"><button type="button" data-world="forest" aria-pressed="true">🌳 森</button><button type="button" data-world="matsudo" aria-pressed="false">🏙️ 松戸</button></div>
+<div class="test-separator"></div>
+<!-- @screen-settings:start -->
+<div class="test-section-title">🎮 表示モード</div>
+<div class="mode-buttons" role="group" aria-label="表示モード"><button type="button" id="mode-a" data-mode="A" aria-pressed="false">A</button><button type="button" id="mode-b" data-mode="B" aria-pressed="false">B</button><button type="button" id="mode-compare" data-mode="compare" aria-pressed="true">A/B比較</button></div>
+<div id="mode-status" aria-live="polite">表示：画面A＋画面B</div>
+<div class="screen-settings" data-visible="compare">
+<div class="screen-card" data-screen="A">
+<div class="screen-title">画面A</div>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old">旧500m</label><label><input type="radio" name="screen-map-A" value="new" checked>新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
+</div>
+<div class="screen-card" data-screen="B">
+<div class="screen-title">画面B</div>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧500m</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
+</div>
+</div>
+<!-- @screen-settings:end -->
+<div class="test-separator"></div>
+<div class="test-section-title npc-anchor">🐹 NPC負荷・表示テスト</div>
+<div class="buttons"><button type="button" id="npc-stress-toggle" aria-pressed="false">🐹 ハムスター ×1000</button><button type="button" id="map-toggle" aria-pressed="false">🗺️ マップ表示</button></div>
+<div class="debug-controls">
+<label for="npc-render-limit">同時描画上限 <output id="npc-render-limit-value" for="npc-render-limit">65匹</output></label>
+<div class="slider-row"><button class="slider-step" type="button" data-step-target="npc-render-limit" data-step-amount="-25" aria-label="同時描画上限を25匹減らす">−</button><input id="npc-render-limit" type="range" min="1" max="1000" step="1" value="65" aria-label="ハムスターの3D同時描画上限"><button class="slider-step" type="button" data-step-target="npc-render-limit" data-step-amount="25" aria-label="同時描画上限を25匹増やす">＋</button></div>
+<label for="npc-render-distance">表示距離（主人公から） <output id="npc-render-distance-value" for="npc-render-distance">70m</output></label>
+<div class="slider-row"><button class="slider-step" type="button" data-step-target="npc-render-distance" data-step-amount="-5" aria-label="表示距離を5m短くする">−</button><input id="npc-render-distance" type="range" min="5" max="150" step="5" value="70" aria-label="ハムスターの3D表示距離"><button class="slider-step" type="button" data-step-target="npc-render-distance" data-step-amount="5" aria-label="表示距離を5m長くする">＋</button></div>
+</div>
+<div class="test-separator"></div><div class="test-section-title">📍 テスト位置へ移動</div>
+<div class="test-locations"><button type="button" data-spot="front">🏡 家の前</button><button type="button" data-spot="tree">🌳 木の近く</button><button type="button" data-spot="side">↔ 壁沿い</button><button type="button" data-spot="cafe">☕ カフェ前</button><button type="button" data-spot="west">西端</button><button type="button" data-spot="east">東端</button><button type="button" data-spot="north">奥端</button><button type="button" data-spot="south">手前端</button></div>
+</div>
+<div id="test-help-overlay" class="panel-help-overlay test-help-overlay" role="tooltip" hidden><div class="panel-help-label test-help-label">🧪 テスト操作パネル</div></div></section>
