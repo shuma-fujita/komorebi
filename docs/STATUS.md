@@ -66,13 +66,15 @@
 
 **今回の第一段階（2026-11-14）：** A=旧500m、B=中央2kmタイル1枚を初期選択とし、どちらの画面も切替可能。地図ソース別メッシュ、A/B別ラベル、ミニマップ縮尺、HTTP・生成ログを追加。移動境界は森100m四方・松戸2000m四方で共通の固定Engine `GroundBounds` を使用。Aの描画がない領域へも移動可能。A/Bの同一フレームIDを維持。初回A/B実機PASS済み。今回のリファクタでは0_0の旧方式／新方式のOSMサンプルから作るメッシュ・ラベル・地図要素が完全一致し、座標計算もpyproj(EPSG:6677)との数値照合PASS。リファクタ後の松戸表示もユーザー実機PASS。中央実タイルはGitHubコネクタの大容量ファイル取得制約で全文解析できていない。
 
-**今回のリファクタ（2026-11-14）：** `maps/map-loader.js` の `TEST_TILE_ID` だけでBのタイルを指定（現在は `'-6_-4'`）。`index.json` で対応ファイルを解決しJSON内のID/サイズを照合。新設 `maps/tile-grid.js` が `split-map-tiles.py` と同じ固定EPSG:6677グリッドの中心座標を計算し、`map-builder.js` がタイルメタ情報から表示原点を自動設定する。0_0は旧原点を正確に維持し、Aは従来どおり。将来は `TEST_TILE_ID='-6_-4'` に1か所変更するだけで上野側タイルへ切替可能（模擬ローダーテストPASS、上野実機表示は未実施）。マスタJSON559枚・index・分割Python・固定Engine・カメラ初期値は未変更。`dev.template.html` と `dev.html` の生成モジュール部分一致を確認。
+**今回のリファクタ（2026-11-14）：** `maps/map-loader.js` の `TEST_TILE_ID` だけでBのタイルを指定（現在は `'0_0'`）。`index.json` で対応ファイルを解決しJSON内のID/サイズを照合。新設 `maps/tile-grid.js` が `split-map-tiles.py` と同じ固定EPSG:6677グリッドの中心座標を計算し、`map-builder.js` がタイルメタ情報から表示原点を自動設定する。0_0は旧原点を正確に維持し、Aは従来どおり。将来は `TEST_TILE_ID='-6_-4'` に1か所変更するだけで上野側タイルへ切替可能（模擬ローダーテストPASS、上野実機表示は未実施）。マスタJSON559枚・index・分割Python・固定Engine・カメラ初期値は未変更。`dev.template.html` と `dev.html` の生成モジュール部分一致を確認。
 
 **未決定・今後の設計事項：** 先読み範囲／同時保持タイル枚数／ロード・アンロード条件／メッシュの結合粒度／既存500m境界の扱い。実装前にコードと実データで適切な段階分けを行う。具体的な性能値や動作のPASSはまだない。
 
 **上野負荷テスト切替（2026-11-14）：** Bの `TEST_TILE_ID` を `0_0` から `-6_-4` に1行変更。索引では `tile_-6_-4_20261114023930.json` を参照する。ローダー構文チェック・索引/JSON検証の模擬テストPASS。JSONマスタ・index・座標投影・A・Engine・カメラは変更なし。Safari表示・実測負荷は未確認。
 
 **上野切替の表示修正（2026-11-14）：** ユーザーよりBが松戸のまま・開発情報も松戸のままとの報告。`map-loader.js` 本体の `TEST_TILE_ID='-6_-4'` はmainで確認済み。`dev.template.html`/`dev.html` の `map-loader.js` importクエリが従来と同じだったため、Safariの旧モジュールキャッシュが疑われる（原因の実機確証は未取得）。参照URLのバージョンを更新し、`development-info.json` の松戸欄を上野テスト表示へ更新。main再取得と構文チェックはPASS。GitHub Pages配信・Safari実機での上野表示は再確認待ち。JSONマスタとindexは変更なし。
+
+**松戸中央タイルへの再復帰（2026-11-16）：** リポジトリ移行後、上野 `-6_-4` のタイルがPCで非常に重いとのユーザー報告により、Bの `TEST_TILE_ID` を `0_0` に戻し、`dev.template.html`／`dev.html` のmap-loader importバージョンを `matsudo-0_0-20261116` に更新。構文チェックPASS／実機確認待ち。なお移行時のアップロード漏れで2kmタイルは559枚中84枚のみ `main` にあり、残りは再アップロード待ち。
 
 **松戸中央タイルへの復帰（2026-11-15）：** 上野 `-6_-4` の実機表示PASS・3D生成約22秒・JSON 22,815件を記録。次の目的を隣接タイルへのシームレス移動とし、Bの `TEST_TILE_ID` を `0_0` に戻した。Safariキャッシュ対策として `dev.template.html` と生成版 `dev.html` のmap-loader importバージョンを同時更新。`development-info.json` の松戸欄も更新。上野テストで得た基準ログは保持。コード構文PASS／復帰後のSafari実機確認待ち。マスタJSON・index・固定Engineは変更なし。
 
@@ -166,7 +168,7 @@
 ## 7. 新しいチャットでの進め方
 
 1. [`docs/rules/README.md`](rules/README.md) と [`docs/rules/chat.md`](rules/chat.md)、[`docs/rules/mock.md`](rules/mock.md)、[`docs/rules/development.md`](rules/development.md)、そして**このSTATUS**を読む。最新コードをGitHub `main` で再取得する。
-2. タイル座標自動計算リファクタ後の B=0_0 松戸表示はユーザー実機PASS。ユーザーの指示により `maps/map-loader.js` の `TEST_TILE_ID` だけを `-6_-4` に変更済み。次は上野の表示・生成時間・FPSを実機確認する。
+2. タイル座標自動計算リファクタ後の B=0_0 松戸表示はユーザー実機PASS。2026-11-16、上野 `-6_-4` がPCで非常に重いとのユーザー報告により、`maps/map-loader.js` の `TEST_TILE_ID` を `0_0` に戻した（map-loader importバージョンも更新／構文チェックPASS・実機確認待ち）。
 3. **「🧪 地図JSON読み込みログ」を残すことが明示的な希望。** ログは新しい取得方式に合わせて見直すが、削除しない。
 4. 森ワールド、固定Engine、元500m JSON、559タイルの原本を不用意に変更しない。ユーザー実機PASSと未検証部分を区別し、必要なファイルだけ小さく変更する。
 5. GitHub書込みはユーザーの明示許可に沿って行い、静的検証と実機確認を区別して `STATUS.md` を更新する。今回のチャットから次へ移ったという理由だけで、新機能を実装済み扱いにしない。
