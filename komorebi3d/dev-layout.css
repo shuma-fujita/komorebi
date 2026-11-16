@@ -34,3 +34,20 @@
  .panel-slot-bottom>.landscape-game{height:min(55svh,420px);margin-top:12px}
  .panel-slot-bottom>.test-panel,.panel-slot-bottom>.build-info{margin-top:12px}
 }
+
+/* PC layout (same as mock): wider game panel, horizontal build info, 3-column runtime status. */
+/* Product-only file, so mock.chat.html stays small. IDs raise priority over panel and fixed-slot CSS. */
+@media (orientation:landscape) and (min-width:1000px) and (min-height:600px){
+ .shell .landscape-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+ .shell .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
+ .shell .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
+ .shell .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px}
+ .shell .panel-slot-bottom>.runtime-status>:is(.runtime-status-heading,#collision-status,#sync-status,.stats,#status,p:not([id])){grid-column:1/-1}
+ .shell .panel-slot-bottom>.runtime-status>p{margin:0;min-width:0}
+ .shell .panel-slot-bottom>.runtime-status>:is(#ea,#eb):empty{display:none}
+ /* Game panel: A only / B only fills the whole panel; compare splits it in two. */
+ .shell .landscape-game,.shell .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
+ #play-surface{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;border-radius:9px}
+ #play-surface>#views{width:100%;height:100%;gap:1px}
+ #play-surface .view-panel>canvas{width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:auto}
+}
