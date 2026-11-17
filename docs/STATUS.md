@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 UI共通化 Step 2（静的PASS／実機待ち）：** モック基準で共通 `common.css` にパネル間隔・PC列比率・実行ステータス列数・テスト操作パネルの色と見出し装飾を集約。`mock-layout.css`／`dev-layout.css` は既存のコンテナ幅／横画面メディア条件を保持し、`panels/test.mock.css`／`panels/test.css` の重複指定を整理した。`mock.html`・`dev.html` のCSSはGitHub `main` 上の生成元と全文一致（静的チェックPASS）。ゲームロジック・固定Engine・地図描画は変更なし。**GitHub Actionsおよび変更後のSafari実機は未確認。** 次段階は実機PASS後、幅別・パネル移動時のレイアウト挙動の共通化を検討する。
+
 > **2026-11-17 UI共通化（段階実装中）：** モックをデザイン正本として、実機PASS済みゲーム画面の0px外周余白・A/B間1px・中央角丸6pxを `common.css` の共通デザイン値に抽出。モックの生成順序問題を解消し、最終CSSを `mock-approved.css` として生成元に保存。生成元から組み立てたCSSと `mock.html`／`dev.html` のCSS全文一致を静的確認。ゲームのJS・WebGL・固定Engineは未変更。**共通化はゲーム画面のデザイントークン段階まで。ユーザーより2026-11-17に変更後の実機PASS報告あり。パネル全体・レスポンシブ配置・テスト操作UIの完全共通化は未実施。GitHub Actionsの実行結果は未確認。**
 
 > **2026-11-17 運用変更：** UI検証はGitHub Pagesの `komorebi3d/mock.html` を直接使用し、モック専用チャット運用を終了。`mock.chat.html` は削除し、`build-dev.mjs` のチャット用生成モードも廃止。開発は「00｜統合開発」に集約。コミット後は Actions／本体／モックの3リンクを送る。既存の本体・モックへの実機PASSと、今回の生成スクリプト変更の検証は区別する。
