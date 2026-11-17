@@ -411,6 +411,32 @@ class InvisibleTouchAdapter {
 }
 const engineInputAdapter=gameView?new InvisibleTouchAdapter(gameView.movePad,gameView.cameraPad):null;
 const inputManager=new InputManager(engineInputAdapter);
+// Some embedded iOS webviews can scroll the outer document despite touch-action:none.
+// Only suppress native scrolling for touches that BEGIN on a game control zone.
+// A document capture listener keeps guarding a gesture even if it leaves the zone;
+// OSM editor form scrolling and the other panels remain untouched.
+const gameTouchIds=new Set();
+if(gameView){
+ const touchStart=event=>{
+  for(const touch of event.changedTouches)gameTouchIds.add(touch.identifier);
+ };
+ const touchMove=event=>{
+  if(!event.cancelable||!gameTouchIds.size)return;
+  for(const touch of event.changedTouches){
+   if(gameTouchIds.has(touch.identifier)){event.preventDefault();return;}
+  }
+ };
+ const touchEnd=event=>{
+  for(const touch of event.changedTouches)gameTouchIds.delete(touch.identifier);
+ };
+ for(const zone of [gameView.movePad,gameView.cameraPad])
+  zone.addEventListener('touchstart',touchStart,{passive:true});
+ document.addEventListener('touchmove',touchMove,{capture:true,passive:false});
+ document.addEventListener('touchend',touchEnd,{capture:true,passive:true});
+ document.addEventListener('touchcancel',touchEnd,{capture:true,passive:true});
+ window.addEventListener('blur',()=>gameTouchIds.clear());
+ window.addEventListener('pagehide',()=>gameTouchIds.clear());
+}
 // Tag cards do not intercept game pointer input; recognize only stationary primary taps.
 const LABEL_TAP_TOLERANCE_PX=8;
 const labelTapPointers=new Map();
