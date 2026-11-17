@@ -68,6 +68,8 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
 .panel-slot-top>.build-info{margin:0}
 .panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
+.panel-slot-bottom{margin-top:var(--ui-panel-gap)}
+.panel-slot-bottom>[data-panel-id]{margin-top:0}
 
 /* Shared responsive geometry. The nearest inline-size container is
    .mock-root in the mock and .shell in the product. */
@@ -176,7 +178,6 @@ button.slider-step:active{background:#c4dec1}
  .mock-root .landscape-main .panel-slot-main[data-panel="empty"]{height:100%;min-height:0;overflow:visible}
 }
 .mock-root .panel-slot[data-panel="empty"]{display:block}
-.mock-root .panel-slot-bottom{margin-top:8px}
 .mock-root .panel-slot-bottom[data-panel="empty"]{height:130px;min-height:130px;overflow:visible}
 /* 3-panel prototype: runtime in any of the four slots. */
 .mock-root .panel-slot-bottom:not([data-panel="empty"]){min-height:250px}
