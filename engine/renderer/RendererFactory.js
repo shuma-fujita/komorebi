@@ -1,7 +1,7 @@
 import { assertRenderer } from "./RendererContract.js";
 
 /**
- * Renderer factory. Two renderer backends, two geometry profiles:
+ * Renderer factory. A/B backends plus the optional Three.js-based C style backend:
  * - box (default): the v0.3 primitive comparison, unchanged.
  * - mesh: production-ready arbitrary triangle geometry with translucency.
  *
@@ -17,9 +17,12 @@ export async function createRenderer(backend, options = {}) {
   }else if(backend==="B"){
     if(profile==="mesh")({MeshRendererB:Renderer}=await import("./MeshRendererB.js"));
     else ({RendererB:Renderer}=await import("./RendererB.js"));
+  }else if(backend==="C"){
+    if(profile!=="mesh")throw new Error("Renderer C supports mesh profile only");
+    ({MeshRendererC:Renderer}=await import("./MeshRendererC.js"));
   }else{
     throw new Error("Unknown Renderer backend: "+backend);
   }
-  // Mesh backends validate and retain optional shared settings without applying them yet.
+  // Mesh renderers accept validated optional settings; each preserves its own drawing policy.
   return assertRenderer(new Renderer(options));
 }
