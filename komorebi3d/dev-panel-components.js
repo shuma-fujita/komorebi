@@ -237,3 +237,38 @@ export function mountTestControlsPanel(root,api){
  const unsubscribe=api?api.subscribe(e=>{if(e.type==='state')render();}):()=>{};
  render();return ()=>{unsubscribe();for(const off of cleanups)off();};
 }
+
+/* Mock-only input sink. Shares the live game's pointer targets and lifecycle,
+   but deliberately has no Engine, camera, game state, or visual side effects. */
+export function mountMockTouchInput(root){
+ if(!root)return ()=>{};
+ const cleanups=[];
+ for(const id of ['pad','camera-pad']){
+  const zone=root.querySelector('#'+id);
+  if(!zone)continue;
+  const active=new Map();
+  const start=e=>{
+   if(active.has(e.pointerId))return;
+   e.preventDefault();
+   active.set(e.pointerId,{x:e.clientX,y:e.clientY});
+   try{zone.setPointerCapture?.(e.pointerId)}catch(_){}
+  };
+  const move=e=>{
+   if(!active.has(e.pointerId))return;
+   e.preventDefault();
+   active.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  };
+  const finish=e=>{
+   if(!active.delete(e.pointerId))return;
+   if(e.cancelable)e.preventDefault();
+   try{if(zone.hasPointerCapture?.(e.pointerId))zone.releasePointerCapture(e.pointerId)}catch(_){}
+  };
+  const handlers=[['pointerdown',start],['pointermove',move],['pointerup',finish],['pointercancel',finish],['lostpointercapture',finish]];
+  for(const [type,handler] of handlers)zone.addEventListener(type,handler);
+  cleanups.push(()=>{
+   for(const [type,handler] of handlers)zone.removeEventListener(type,handler);
+   active.clear();
+  });
+ }
+ return ()=>{for(const cleanup of cleanups)cleanup();};
+}
