@@ -138,7 +138,9 @@ button.panel-add-button{color:var(--g-accent)}
 @container (min-width:1000px){.mock-root .panel-slot-top>.build-info{gap:6px}.mock-root .panel-slot-top>.build-info .build-line{margin:0}}
 
 /* ---- Test panel ---- */
-.test-panel-header{display:flex;align-items:center;gap:10px;padding:10px 52px 10px 14px;border-bottom:1px solid var(--m-hair)}
+.test-panel-header{display:flex;align-items:center;gap:10px;padding:10px 44px 10px 14px;border-bottom:1px solid var(--m-hair)}
+/* Sticky header: a lighter brown band, like build info, so it reads as fixed */
+.test-panel-header{background:linear-gradient(180deg,#3a2e21,#2f261c);border-bottom:1px solid #7a6650;box-shadow:0 4px 10px rgba(0,0,0,.3);border-radius:calc(var(--m-r) - 1px) calc(var(--m-r) - 1px) 0 0}
 .test-panel-heading{flex:none;min-height:0!important;padding-right:0!important;white-space:nowrap}
 .test-panel button.test-reset{flex:1;min-width:0;width:auto!important;min-height:44px!important;padding:6px 10px!important;border-radius:10px!important;white-space:nowrap}
 .test-panel-body{padding:14px}
@@ -152,6 +154,13 @@ button.panel-add-button{color:var(--g-accent)}
 .test-panel .buttons[role="group"] button:hover,.test-panel .mode-buttons button:hover{color:#f3e7d6!important}
 .test-panel .buttons[role="group"] button.selected,.test-panel .mode-buttons button.selected{background:#1d3324!important;color:var(--g-accent)!important;box-shadow:inset 0 0 0 1px rgba(62,224,127,.35),0 2px 8px rgba(0,0,0,.4)!important}
 .test-panel #mode-status{margin-top:6px;font-size:10.5px}
+/* Joined segments: straight inner edges, rounded outer corners only */
+.test-panel .buttons[role="group"],.test-panel .mode-buttons{gap:0!important;padding:0!important;border-radius:10px!important}
+.test-panel .buttons[role="group"] button,.test-panel .mode-buttons button{border-radius:0!important}
+.test-panel .buttons[role="group"] button:first-child,.test-panel .mode-buttons button:first-child{border-radius:9px 0 0 9px!important}
+.test-panel .buttons[role="group"] button:last-child,.test-panel .mode-buttons button:last-child{border-radius:0 9px 9px 0!important}
+.test-panel .buttons[role="group"] button+button,.test-panel .mode-buttons button+button{border-left:1px solid var(--m-hair)!important}
+.test-panel .buttons[role="group"] button.selected,.test-panel .mode-buttons button.selected{box-shadow:inset 0 0 0 1px rgba(62,224,127,.35)!important}
 
 /* A/B settings: flat columns with segmented choices */
 .screen-settings{height:auto;gap:10px;margin-top:12px}
@@ -160,7 +169,11 @@ button.panel-add-button{color:var(--g-accent)}
 .setting-group{margin:0 0 10px;padding:0;border:0;background:none}
 .setting-group legend{margin:0 0 5px;font-size:10.5px;color:#b3a28c}
 .setting-group label{position:relative;display:inline-flex;justify-content:center;width:calc(50% - 2px);min-height:36px;margin:0;padding:0 6px;border-radius:9px;background:var(--m-well);border:1px solid var(--m-hair);color:#cdbfa9;font-weight:600;transition:background .15s,color .15s}
-.setting-group label+label{margin-left:4px}
+.setting-group label{width:50%;border-radius:0}
+.setting-group label:first-of-type{border-radius:9px 0 0 9px}
+.setting-group label:last-of-type{border-radius:0 9px 9px 0}
+.setting-group label+label{margin-left:-1px}
+.setting-group label:has(input:checked){z-index:1}
 .setting-group input{position:absolute;opacity:0;pointer-events:none}
 .setting-group label:has(input:checked){background:#30281f;border-color:#8f7355;color:#f3e7d6}
 .setting-group label:has(input:focus-visible){outline:2px solid var(--g-accent);outline-offset:1px}

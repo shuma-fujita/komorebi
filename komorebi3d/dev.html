@@ -405,7 +405,9 @@ button.panel-add-button{color:var(--g-accent)}
 @container (min-width:1000px){.mock-root .panel-slot-top>.build-info{gap:6px}.mock-root .panel-slot-top>.build-info .build-line{margin:0}}
 
 /* ---- Test panel ---- */
-.test-panel-header{display:flex;align-items:center;gap:10px;padding:10px 52px 10px 14px;border-bottom:1px solid var(--m-hair)}
+.test-panel-header{display:flex;align-items:center;gap:10px;padding:10px 44px 10px 14px;border-bottom:1px solid var(--m-hair)}
+/* Sticky header: a lighter brown band, like build info, so it reads as fixed */
+.test-panel-header{background:linear-gradient(180deg,#3a2e21,#2f261c);border-bottom:1px solid #7a6650;box-shadow:0 4px 10px rgba(0,0,0,.3);border-radius:calc(var(--m-r) - 1px) calc(var(--m-r) - 1px) 0 0}
 .test-panel-heading{flex:none;min-height:0!important;padding-right:0!important;white-space:nowrap}
 .test-panel button.test-reset{flex:1;min-width:0;width:auto!important;min-height:44px!important;padding:6px 10px!important;border-radius:10px!important;white-space:nowrap}
 .test-panel-body{padding:14px}
@@ -419,6 +421,13 @@ button.panel-add-button{color:var(--g-accent)}
 .test-panel .buttons[role="group"] button:hover,.test-panel .mode-buttons button:hover{color:#f3e7d6!important}
 .test-panel .buttons[role="group"] button.selected,.test-panel .mode-buttons button.selected{background:#1d3324!important;color:var(--g-accent)!important;box-shadow:inset 0 0 0 1px rgba(62,224,127,.35),0 2px 8px rgba(0,0,0,.4)!important}
 .test-panel #mode-status{margin-top:6px;font-size:10.5px}
+/* Joined segments: straight inner edges, rounded outer corners only */
+.test-panel .buttons[role="group"],.test-panel .mode-buttons{gap:0!important;padding:0!important;border-radius:10px!important}
+.test-panel .buttons[role="group"] button,.test-panel .mode-buttons button{border-radius:0!important}
+.test-panel .buttons[role="group"] button:first-child,.test-panel .mode-buttons button:first-child{border-radius:9px 0 0 9px!important}
+.test-panel .buttons[role="group"] button:last-child,.test-panel .mode-buttons button:last-child{border-radius:0 9px 9px 0!important}
+.test-panel .buttons[role="group"] button+button,.test-panel .mode-buttons button+button{border-left:1px solid var(--m-hair)!important}
+.test-panel .buttons[role="group"] button.selected,.test-panel .mode-buttons button.selected{box-shadow:inset 0 0 0 1px rgba(62,224,127,.35)!important}
 
 /* A/B settings: flat columns with segmented choices */
 .screen-settings{height:auto;gap:10px;margin-top:12px}
@@ -427,7 +436,11 @@ button.panel-add-button{color:var(--g-accent)}
 .setting-group{margin:0 0 10px;padding:0;border:0;background:none}
 .setting-group legend{margin:0 0 5px;font-size:10.5px;color:#b3a28c}
 .setting-group label{position:relative;display:inline-flex;justify-content:center;width:calc(50% - 2px);min-height:36px;margin:0;padding:0 6px;border-radius:9px;background:var(--m-well);border:1px solid var(--m-hair);color:#cdbfa9;font-weight:600;transition:background .15s,color .15s}
-.setting-group label+label{margin-left:4px}
+.setting-group label{width:50%;border-radius:0}
+.setting-group label:first-of-type{border-radius:9px 0 0 9px}
+.setting-group label:last-of-type{border-radius:0 9px 9px 0}
+.setting-group label+label{margin-left:-1px}
+.setting-group label:has(input:checked){z-index:1}
 .setting-group input{position:absolute;opacity:0;pointer-events:none}
 .setting-group label:has(input:checked){background:#30281f;border-color:#8f7355;color:#f3e7d6}
 .setting-group label:has(input:focus-visible){outline:2px solid var(--g-accent);outline-offset:1px}
@@ -460,7 +473,7 @@ button.panel-add-button{color:var(--g-accent)}
 .runtime-status .stats span{padding:10px 12px;border-radius:var(--m-r-sm);background:var(--m-well);border:1px solid var(--m-hair);font-size:12px;color:#e4eee5;min-width:0;overflow-wrap:anywhere}
 .runtime-status #status{font-size:11px;color:#86a98f}</style></head><body><div class="mock-root"><div class="mock-frame"><div class="shell"><div id="launch-diagnostic" style="padding:10px;margin:8px 0;background:#fff3c8;border-radius:8px;font-size:13px">診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。</div><div class="landscape-hero"><div class="site-heading" style="display:flex;justify-content:space-between"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">56bb2bc</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface"><div class="views single" id="views"><div class="view-panel off" id="panel-a"><canvas id="a"></canvas><div class="debug-map" id="debug-map-a" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas-a" width="256" height="256" role="img" aria-label="画面A：主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div></div><div class="view-panel" id="panel-b"><canvas id="b"></canvas><div class="debug-map" id="debug-map-b" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas-b" width="256" height="256" role="img" aria-label="画面B：主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div></div></div><div class="touch-layer"><div class="touch-zone" id="pad" aria-label="左半分：キャラクター移動"></div><div class="touch-zone" id="camera-pad" aria-label="右半分：カメラ操作"></div></div></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
 <div class="test-panel-header">
-<strong class="test-panel-heading">🧪 テスト操作（開発用）</strong>
+<strong class="test-panel-heading">🧪 テスト操作</strong>
 <button type="button" class="panel-help-button test-help-button" id="test-help-button" aria-label="このエリアの名前：テスト操作パネル" aria-describedby="test-help-overlay"><span>ⓘ</span></button>
 <button id="reset" type="button" class="test-reset">↻ リセット（開発用）</button>
 </div>
