@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 Step 1・2 共通描画設定（GitHub反映／Safari実機待ち）：** ユーザー承認によりRenderer A/BでFogと背景色を共通化した。Step 1の設定APIを通じ、Step 2では設定指定時のみ描画へ適用。Fogはカメラビュー空間の奥行きに基づくlinear方式、松戸1000〜2200m、森120〜220m。Snapshotの描画距離は松戸2200m、森220mのまま。ゲームのRendererFactory参照だけ新固定SHA 7183cc541d5a83e8e008671a6010c79a97bdd790 に変更し、他のEngine参照は旧固定SHAを維持。dev.template.htmlと生成済みdev.htmlを同期、development-info.json commonも更新。照明・色変換はまだ統一されておらずStep 3候補。**Node全テスト実行・配信確認・Safari実機PASSは未実施。** 110svhのSafari実機PASSは既報。
+
 > **2026-11-17 Engine共通描画設定 Step 1（実装／検証待ち）：** ユーザーQ3承認。新規 `engine/renderer/RenderSettings.js` でcamera・fog・background・lighting・colorProcessing・resolutionの任意設定を検証し、複製・読み取り専用化する。`MeshRendererA`／`MeshRendererB` は `createRenderer(...,{profile:'mesh',settings})` から同一形式の設定を保持するが描画には**まだ適用しない**。省略時は`renderSettings=null`、従来の霧・背景・照明・カメラ・DPR挙動は不変。設定値の共通化と実際の見た目の一致は次工程。固定Engine `56bb2bc...` のCDN参照、`dev.template.html`／`dev.html`、ゲーム処理・地図・ヘリは変更しない。`engine/tests/render-settings.test.mjs` を追加。**ローカルNodeテスト／GitHub Actions／Safari実機の結果は未確認。** なお110svhのiPhone 13 Safari実機PASSはユーザー報告済み。
 
 > **2026-11-17 iPhone縦画面ゲームパネル110svhへ再調整（静的反映／Safari実機PASS）：** ユーザー希望で120svhから110svhへ変更。対象は縦画面・幅600px以下のゲームパネルが初期配置されたスロットのみ。共通 `layout.css` と生成版 `dev.html`／`mock.html` の高さルールを同期し、開発情報 `development-info.json` の `common` も更新。120svhは2026-11-17にユーザーよりiPhone 13 Safari実機PASS報告あり。110svhはユーザーよりiPhone 13 Safari実機PASS報告あり。従来の100svh・120svhは履歴であり現在値ではない。テスト操作、横画面／PC、固定Engine、ヘリ・描画処理には変更なし。GitHub Actions／Safari実機確認は別。
