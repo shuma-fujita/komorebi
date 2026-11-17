@@ -6,8 +6,6 @@
 #panel-a,#panel-b{min-width:0}
 .view-panel > canvas{display:block;width:100%;aspect-ratio:3/4;border-radius:9px;background:#a7d9e9}
 .play-surface{position:relative}
-.touch-layer{position:absolute;inset:0;display:flex;z-index:2;touch-action:none}
-.touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .debug-map{position:absolute;top:8px;left:8px;z-index:3;width:min(47%,210px);padding:6px;border-radius:9px;background:rgba(17,35,29,.65);box-shadow:0 2px 12px #2133247a;pointer-events:none;color:#fff;user-select:none}
 .debug-map[hidden]{display:none}
 .debug-map canvas{width:100%;height:auto;aspect-ratio:1;background:transparent;border-radius:3px}
