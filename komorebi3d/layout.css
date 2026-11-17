@@ -81,3 +81,9 @@ body{padding:6px}
 /* Shared invisible touch surface, regardless of whether the view renders WebGL. */
 .touch-layer{position:absolute;inset:0;display:flex;z-index:2;touch-action:none}
 .touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+
+/* iPhone-sized portrait view: grow only the slot holding the game at initial layout. */
+@media (orientation:portrait) and (max-width:600px){
+ .mock-root .landscape-main .panel-slot-main:has(> .landscape-game){height:100svh}
+ .mock-root .landscape-main .panel-slot-main:has(> .landscape-game)>.landscape-game{height:100%}
+}
