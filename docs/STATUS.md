@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 ゲームパネル外枠・ヘルプ表示HTML共通化（静的PASS／Safari実機待ち）：** ユーザー了承により `komorebi3d/panels/game.frame.html` を新設し、`game.html` / `game.mock.html` で重複していた `.landscape-game` 外枠・ヘルプボタン・ヘルプ表示を単一ソース化。両game HTMLにはそれぞれの表示本体のみを残し、`build-dev.mjs` が共通frameの `<!-- @game-view -->` に組み込んだ後、従来の `<!-- @game-touch -->` を展開。タッチ領域の挿入位置（devはplay-surface内、mockはplay-surface外）は従来どおり維持。**両生成済みHTMLに共通frameから生成したゲームパネル文字列が各1回・完全一致することを確認。** `dev.html` / `mock.html` の生成済みファイル自体は変更なし。CSS・Engine・ゲームJS・モック疑似描画・パネル移動には変更なし。**実際のビルドコマンド／Safari実機／Actionsは未確認**。次はモックとdevのパネルヘルプ・パネル移動・左右タッチ・ゲーム描画を実機確認。
+
+
 > **2026-11-17 旧モック生成ファイル整理（静的PASS／Safari実機待ち）：** ユーザー承認により未使用の `komorebi3d/build-mock-panel.mjs` と生成済み `komorebi3d/mock-panel.html` を削除。`build-dev.mjs` は `--mode=mock` → `mock.html`、`--mode=dev` → `dev.html` を生成し、旧2ファイルは参照しない。README・ルール・STATUSに旧ファイル参照なし、`.github/workflows` もなし（外部リンクまでは保証しない）。GitHub main の最新ツリーで**旧2ファイル削除済み／現行 `mock.html`・`dev.html`・`build-dev.mjs` は存在**を静的確認。現行モック・dev のHTML/CSS/JS、固定Engine、4パネル構造に変更なし。**Safari実機／Actions未確認**。現行モックとdevの表示・操作が従来どおりかを実機で確認する。
 
 
