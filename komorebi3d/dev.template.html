@@ -91,7 +91,7 @@ applyPanelLayout(PANEL_LAYOUT);
 import { InputManager } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/input/InputManager.js";
 import { TouchStick } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/input/TouchStick.js";
 import { FollowCameraRig } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/camera/FollowCameraRig.js";
-import { createRenderer } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@890e501969c2906b4d5666d7a4611e4223397f7a/engine/renderer/RendererFactory.js";
+import { createRenderer } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@d74c71d37b0da4d44daa788d6a2543f3ea7df65b/engine/renderer/RendererFactory.js";
 import { createMeshGeometry, createMeshRenderSnapshot } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/renderer/MeshRenderSnapshot.js";
 import { GroundBounds } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/GroundBounds.js";
 import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/CollisionWorld2D.js";
@@ -1041,7 +1041,7 @@ let rendererGenerationA=0,rendererGenerationB=0;
 let screenConfigs={A:{map:'new',engine:'A'},B:{map:'new',engine:'A'}};
 function setScreenConfig({screen,setting,value}={}){
  if(!['A','B'].includes(screen)||!['map','engine'].includes(setting)||
-    !(setting==='map'?['old','new']:['A','B','C']).includes(value))return false;
+    !(setting==='map'?['old','new']:['A','B']).includes(value))return false;
  if(screenConfigs[screen][setting]===value)return true;
  screenConfigs={...screenConfigs,[screen]:{...screenConfigs[screen],[setting]:value}};
  if(setting==='engine')void reconfigureScreenRenderer(screen);
@@ -1076,7 +1076,7 @@ function ensureScreen(screen){
   if(isA){rendererA=instance;okA=true;}else{rendererB=instance;okB=true;}
   publishRuntimeStatus(isA?'ea':'eb','');
   publishRuntimeStatus('renderer-status','🎨 画面'+screen+' / Engine '+engine+' 準備OK');
-  if(engine==='B'||engine==='C'){
+  if(engine==='B'){
    const diagnostic=document.getElementById('launch-diagnostic');
    if(diagnostic)diagnostic.textContent='診断：Engine Input・Camera・Renderer準備完了';
   }

@@ -5,7 +5,7 @@ function renderFauxGame(state){
  const surface=document.getElementById('play-surface');
  if(!surface)return;
  const mode=state.renderMode;
- const names={map:{old:'旧500m',new:'新2km'},engine:{A:'WebGL',B:'Three.js',C:'Komorebi'}};
+ const names={map:{old:'旧500m',new:'新2km'},engine:{A:'WebGL',B:'Three.js'}};
  const shown=mode==='compare'?['A','B']:[mode];
  surface.classList.toggle('ab-compare',mode==='compare');
  surface.replaceChildren();
@@ -30,7 +30,7 @@ function renderFauxGame(state){
   for(const screen of ['A','B']){
    screens[screen]={};
    for(const kind of ['map','engine']){
-    screens[screen][kind]=(kind==='engine'?panel.querySelector('[data-screen="'+screen+'"] [data-setting="engine"] [data-engine][aria-pressed="true"]')?.dataset.engine:panel.querySelector('[data-screen="'+screen+'"] [data-setting="map"] input:checked')?.value)||(kind==='map'?'new':'B');
+    screens[screen][kind]=panel.querySelector('[data-screen="'+screen+'"] [data-setting="'+kind+'"] input:checked')?.value||(kind==='map'?'new':'B');
    }
   }
   return {renderMode,screens};
@@ -38,7 +38,6 @@ function renderFauxGame(state){
  const update=()=>renderFauxGame(readState());
  panel.addEventListener('click',event=>{if(event.target.closest('[data-mode]'))update();});
  panel.addEventListener('change',event=>{if(event.target.closest('.screen-settings input'))update();});
- panel.addEventListener('click',event=>{if(event.target.closest('.screen-settings [data-engine]'))queueMicrotask(update);});
  update();
 })();
 import {mountDefaultPanelLayoutEditor} from './dev-panel-layout.js?v=shared-initializer-20261117';
