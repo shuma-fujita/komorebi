@@ -79,8 +79,6 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 #panel-a,#panel-b{min-width:0}
 .view-panel > canvas{display:block;width:100%;aspect-ratio:3/4;border-radius:9px;background:#a7d9e9}
 .play-surface{position:relative}
-.touch-layer{position:absolute;inset:0;display:flex;z-index:2;touch-action:none}
-.touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .debug-map{position:absolute;top:8px;left:8px;z-index:3;width:min(47%,210px);padding:6px;border-radius:9px;background:rgba(17,35,29,.65);box-shadow:0 2px 12px #2133247a;pointer-events:none;color:#fff;user-select:none}
 .debug-map[hidden]{display:none}
 .debug-map canvas{width:100%;height:auto;aspect-ratio:1;background:transparent;border-radius:3px}
@@ -230,6 +228,10 @@ body{padding:6px}
 .landscape-game{position:relative;min-width:0;min-height:0;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden;--help-button-color:#31563b;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
 .landscape-game button.game-help-button{display:block;z-index:4}
 .landscape-game .game-help-overlay:not([hidden]){display:flex}
+
+/* Shared invisible touch surface, regardless of whether the view renders WebGL. */
+.touch-layer{position:absolute;inset:0;display:flex;z-index:2;touch-action:none}
+.touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 
 @media (orientation:landscape) and (min-width:900px) and (min-height:600px){
  .landscape-game .play-surface{height:100%;width:auto;max-width:100%;min-width:0;min-height:0;aspect-ratio:3/4;flex:0 1 auto}
