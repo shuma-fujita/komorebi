@@ -315,6 +315,6 @@ function renderFauxGame(state){
  panel.addEventListener('change',event=>{if(event.target.closest('.screen-settings input'))update();});
  update();
 })();
-import {mountPanelLayoutEditor} from './dev-panel-layout.js?v=slot-size-20261110';
-mountPanelLayoutEditor(document,{top:'build',left:'game',right:'test',bottom:'runtime'},{preserveSlotSize:true});
+import {mountDefaultPanelLayoutEditor} from './dev-panel-layout.js?v=shared-initializer-20261117';
+mountDefaultPanelLayoutEditor(document);
 </script></body></html>
