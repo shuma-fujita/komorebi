@@ -164,12 +164,12 @@
 | 開発情報 | `komorebi3d/development-info.json`（`engine`、`forest`、`matsudo`、`common`） |
 | 固定Engine | `shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e`。固定参照と `engine/` を保護 |
 | 実機PASS済みの状態 | Git履歴で管理。旧v0.6／v0.7テストHTMLは整理済み |
-| モック | `komorebi3d/mock.html`／`mock.chat.html` はUI確認用。安定版とは別 |
+| モック | `komorebi3d/mock.html` はUI確認用。チャット専用HTMLは廃止済み。安定版とは別 |
 | 削除済み旧アーカイブ | `dev-before-decouple.html` は `1144253b7af98ad6c28f5c4bdf4f3434f2cb9aaa` のGit履歴から復元可能 |
 
 ## 7. 新しいチャットでの進め方
 
-1. [`docs/rules/README.md`](rules/README.md) と [`docs/rules/chat.md`](rules/chat.md)、[`docs/rules/mock.md`](rules/mock.md)、[`docs/rules/development.md`](rules/development.md)、そして**このSTATUS**を読む。最新コードをGitHub `main` で再取得する。
+1. [`docs/rules/README.md`](rules/README.md) と [`docs/rules/mock.md`](rules/mock.md)、[`docs/rules/development.md`](rules/development.md)、そして**このSTATUS**を読む。最新コードをGitHub `main` で再取得する。
 2. タイル座標自動計算リファクタ後の B=0_0 松戸表示はユーザー実機PASS。2026-11-16、上野 `-6_-4` がPCで非常に重いとのユーザー報告により、`maps/map-loader.js` の `TEST_TILE_ID` を `0_0` に戻した（map-loader importバージョンも更新／構文チェックPASS・実機確認待ち）。
 3. **「🧪 地図JSON読み込みログ」を残すことが明示的な希望。** ログは新しい取得方式に合わせて見直すが、削除しない。
 4. 森ワールド、固定Engine、元500m JSON、559タイルの原本を不用意に変更しない。ユーザー実機PASSと未検証部分を区別し、必要なファイルだけ小さく変更する。
