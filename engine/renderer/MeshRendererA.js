@@ -152,7 +152,7 @@ export class MeshRendererA {
     gl.uniformMatrix4fv(this.location.matrix,false,matrix);
     gl.uniformMatrix4fv(this.location.view,false,view);
     const fog=this.renderSettings?.fog;
-    const mode=!fog?0:!fog.enabled?3:fog.mode==='exp2'?2:1;
+    const mode=!fog?0:fog.enabled===false?3:fog.mode==='exp2'?2:1;
     gl.uniform1f(this.location.sharedFogMode,mode);
     gl.uniform1f(this.location.fogStart,fog?.start??1000);
     gl.uniform1f(this.location.fogEnd,fog?.end??2200);
