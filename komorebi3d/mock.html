@@ -71,24 +71,13 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .build-help-overlay{padding:14px}
 .build-help-label{padding:14px 20px}
 
-.landscape-game{position:relative;min-width:0;min-height:0;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden;--help-button-color:#31563b;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
+/* Faux black game rendering only; layout and panel chrome are shared. */
 .landscape-game .play-surface{height:100%;max-width:100%;aspect-ratio:3/4;background:#000;border-radius:9px}
-.landscape-game button.game-help-button{display:block;z-index:4}
-.landscape-game .game-help-overlay:not([hidden]){display:flex}
 
 /* Only the mock replaces rendered canvases with faux black screen views. */
 /* PC: single A / B mode uses the whole game panel. */
 @container (min-width:1000px){
- .mock-root .landscape-game .play-surface:not(.ab-compare),
- .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
- .mock-root .landscape-game .play-surface.ab-compare,
- .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;gap:6px}
  .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:9px}
- .mock-root .landscape-game,
- .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
- .mock-root .landscape-game .play-surface,
- .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface{border-radius:9px}
- .mock-root .landscape-game .play-surface.ab-compare{gap:1px}
 }
 
 /* Mock-only faux game surface: shows each screen's label and settings. */
@@ -235,6 +224,11 @@ body{padding:6px}
 .mock-root .landscape-game .play-surface.ab-compare{background:var(--ui-ab-seam-bg)}
 .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:0 var(--ui-ab-inner-radius) var(--ui-ab-inner-radius) 0;overflow:hidden}
 .mock-root .landscape-game .play-surface.ab-compare .screen-view+.screen-view{border-left:0;border-radius:var(--ui-ab-inner-radius) 0 0 var(--ui-ab-inner-radius)}
+
+/* Shared game-panel chrome: identical for the faux view and live WebGL view. */
+.landscape-game{position:relative;min-width:0;min-height:0;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden;--help-button-color:#31563b;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
+.landscape-game button.game-help-button{display:block;z-index:4}
+.landscape-game .game-help-overlay:not([hidden]){display:flex}
 
 @media (orientation:landscape) and (min-width:900px) and (min-height:600px){
  .runtime-status{margin-top:12px;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49}
