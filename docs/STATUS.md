@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 旧モック生成ファイル整理（静的PASS／Safari実機待ち）：** ユーザー承認により未使用の `komorebi3d/build-mock-panel.mjs` と生成済み `komorebi3d/mock-panel.html` を削除。`build-dev.mjs` は `--mode=mock` → `mock.html`、`--mode=dev` → `dev.html` を生成し、旧2ファイルは参照しない。README・ルール・STATUSに旧ファイル参照なし、`.github/workflows` もなし（外部リンクまでは保証しない）。GitHub main の最新ツリーで**旧2ファイル削除済み／現行 `mock.html`・`dev.html`・`build-dev.mjs` は存在**を静的確認。現行モック・dev のHTML/CSS/JS、固定Engine、4パネル構造に変更なし。**Safari実機／Actions未確認**。現行モックとdevの表示・操作が従来どおりかを実機で確認する。
+
+
 > **2026-11-17 4パネル外枠HTML共通化（静的PASS／Safari実機PASS）：** ユーザー承認により `komorebi3d/page-shell.html` を新設し、`mock.template.html` / `dev.template.html` で二重管理していた `.mock-root > .mock-frame > .shell` とタイトル・4パネルスロットの外側HTMLを一本化。各テンプレートは `<!-- @page-shell -->` のみ参照し、`build-dev.mjs` が `--mode=mock` / `--mode=dev` に応じて展開する。dev固有の起動診断は `dev-launch-diagnostic.html` に分離、見出しのdev固有属性もビルド時に保持。**共通外枠展開後の両テンプレートが変更前Git履歴の元テンプレートと全文完全一致（mock 2,972文字・dev 67,773文字）することを確認。** 生成済み `mock.html` / `dev.html` は変更不要・変更なし。4パネル各HTML/CSS・共通CSS・パネル移動・モック疑似表示・実ゲームJS・固定Engineに変更なし。静的PASS、**ユーザーより2026-11-17にSafari実機PASS報告あり**。ビルドコマンドの実行／Actionsは未確認。共通外枠HTML化は完了。
 
 
