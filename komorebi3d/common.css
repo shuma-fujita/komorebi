@@ -1,4 +1,6 @@
 /* Shared page and panel styles from canonical dev.html. */
+/* Mock and product share these game-panel design values. */
+:root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb}
 *{box-sizing:border-box}
 body{margin:0;padding:12px;background:#f2f0e4;color:#4d5540;font:12px system-ui}
 .shell{max-width:760px;margin:auto}
