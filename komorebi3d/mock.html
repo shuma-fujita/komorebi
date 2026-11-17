@@ -1,6 +1,6 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Komorebi 3D｜4パネルモック</title><style>/* Shared page and panel styles from canonical dev.html. */
 /* Mock and product share these game-panel design values. */
-:root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb}
+:root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb;--ui-panel-gap:8px;--ui-pc-panel-columns:minmax(0,2fr) minmax(0,1fr);--ui-runtime-columns:repeat(3,minmax(0,1fr));--ui-test-border:#d5c8b6;--ui-test-bg:#f5ede0;--ui-test-text:#554a3f;--ui-test-divider:#dccbb5;--ui-test-button-bg:#fffaf3;--ui-test-button-border:#c4b29c;--ui-test-selected-bg:#d9ebd5;--ui-test-selected-border:#64956c;--ui-test-selected-text:#31563b}
 *{box-sizing:border-box}
 body{margin:0;padding:12px;background:#f2f0e4;color:#4d5540;font:12px system-ui}
 .shell{max-width:760px;margin:auto}
@@ -17,7 +17,8 @@ button.panel-help-button:focus-visible{outline:var(--help-focus-outline);outline
 .test-panel-body{padding:10px 11px 11px}
 /* Test controls: keep the reset header visible; scroll only the body. */
 .test-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:visible}
-.test-panel-header{position:sticky;top:0;flex:0 0 auto}
+.test-panel-header{position:sticky;top:0;flex:0 0 auto;padding:10px 11px 9px;border-bottom:1px solid var(--ui-test-divider)}
+.test-panel-heading{display:block;min-height:38px;padding-right:43px;font-size:12px;font-weight:750}
 .test-panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 /* Shared display-mode controls used by product and lightweight mocks. */
 .test-panel .mode-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0}
@@ -70,14 +71,12 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .landscape-game .game-help-overlay:not([hidden]){display:flex}
 
 /* Display-only test controls; shared help, trash and layout are in common.css. */
-.test-panel{position:relative;height:100%;margin:0;border:1px solid #d5c8b6;border-radius:9px;background:#f5ede0;color:#554a3f;font:12px/1.65 system-ui;--help-button-color:#554a3f;--help-overlay-bg:rgba(69,50,28,.34);--help-label-bg:#fffdf8;--help-label-color:#554a3f;--help-focus-outline:2px solid #8a6b4a;--help-focus-offset:-4px}
-.test-panel-header{padding:10px 11px 9px;border-bottom:1px solid #dccbb5}
-.test-panel-heading{display:block;min-height:38px;padding-right:43px;font-size:12px;font-weight:750}
-.test-panel button.test-reset,.test-panel .test-panel-body button{min-width:0;min-height:44px;padding:8px 6px;border:1px solid #c4b29c;border-radius:9px;background:#fffaf3;color:#554a3f;font:700 12px system-ui}
+.test-panel{position:relative;height:100%;margin:0;border:1px solid var(--ui-test-border);border-radius:9px;background:var(--ui-test-bg);color:var(--ui-test-text);font:12px/1.65 system-ui;--help-button-color:#554a3f;--help-overlay-bg:rgba(69,50,28,.34);--help-label-bg:#fffdf8;--help-label-color:#554a3f;--help-focus-outline:2px solid #8a6b4a;--help-focus-offset:-4px}
+.test-panel button.test-reset,.test-panel .test-panel-body button{min-width:0;min-height:44px;padding:8px 6px;border:1px solid var(--ui-test-button-border);border-radius:9px;background:var(--ui-test-button-bg);color:var(--ui-test-text);font:700 12px system-ui}
 .test-panel button:disabled{opacity:1;cursor:default}
 .test-panel button.test-reset{display:block;width:100%;background:#f6e5da;border-color:#d0a793;color:#8a4a38}
 .test-section-title{font-weight:750;margin:5px 0 8px}
-.test-panel .selected{background:#d9ebd5;border-color:#64956c;color:#31563b}
+.test-panel .selected{background:var(--ui-test-selected-bg);border-color:var(--ui-test-selected-border);color:var(--ui-test-selected-text)}
 .test-caption{font-size:11px;color:#81715f;margin-top:5px}
 .test-separator{height:1px;background:#d9c9b4;margin:13px 0 10px}
 .test-two-buttons,.test-locations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
@@ -108,9 +107,9 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .mock-root{--test-panel-height:max(640px,calc(100vh - 330px));width:100%;max-width:100%;container-type:inline-size}
 .mock-root .mock-frame{width:100%;max-width:none;margin:0 auto;padding:12px;background:#f2f0e4;border:0;border-radius:0;color:#4d5540;font:12px system-ui}
 .mock-root .shell{width:100%;max-width:none;margin:0;min-width:0}
-.mock-root .landscape-hero{display:flex;flex-direction:column;gap:8px;min-height:0;height:auto;overflow:visible}
+.mock-root .landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
 .mock-root .site-heading{flex:0 0 auto;display:flex;justify-content:space-between;font-size:12px;color:#385c42}
-.mock-root .landscape-main{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0;flex:none}
+.mock-root .landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
 .mock-root .panel-slot{min-width:0;min-height:0;position:relative}
 .mock-root .panel-slot-top{flex:0 0 auto;overflow:hidden}
 .mock-root .panel-slot-top[data-panel="empty"]{overflow:visible}
@@ -158,8 +157,8 @@ body{padding:6px}
 /* PC layout: wider frame, 3-column runtime status, roomier panels. */
 @container (min-width:1000px){
  .mock-root .mock-frame{padding:18px}
- .mock-root .landscape-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
- .mock-root .panel-slot-bottom>.runtime-status{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .mock-root .landscape-main{grid-template-columns:var(--ui-pc-panel-columns)}
+ .mock-root .panel-slot-bottom>.runtime-status{grid-template-columns:var(--ui-runtime-columns)}
  .mock-root .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
  .mock-root .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
 }
