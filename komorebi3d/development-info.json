@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "Bの2kmタイルを上野-6_-4から松戸中央0_0に戻した（PCで重いため／実機未確認）",
-  "common": "ゲームパネル外枠・ヘルプHTMLを game.frame.html に共通化。両HTMLの生成形状は従来と同一（静的PASS／Safari実機待ち）"
+  "common": "iPhone縦画面のゲームパネルを110svhに調整（120svhはSafari実機PASS済み／110svhは実機確認待ち）"
 }

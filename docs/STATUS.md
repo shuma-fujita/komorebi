@@ -1,8 +1,6 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
-> **2026-11-17 iPhone縦画面ゲームパネル高さ120svh（静的反映／Safari実機待ち）：** ユーザーがiPhone 13の100svh表示を確認し、さらに縦長を希望。Q2で120svhへの変更とGitHub書込みを明示承認。幅600px以下・縦画面でゲームが初期配置されたスロットの高さのみ `100svh` から `120svh` に更新。`layout.css` と生成済み `dev.html`／`mock.html` の同一ルールを同期。従来の100svh工程はこの変更により置換。テスト操作パネル、横画面／PC、固定Engine、ヘリ、地図描画処理は変更なし。**GitHub反映後の静的整合確認とSafari実機・Actionsは区別する。Safari実機PASSは未取得。**
-
-> **2026-11-17 iPhone縦画面ゲームパネル高さ100svh（静的確認／Safari実機待ち）：** ユーザーがiPhone 13でのゲーム領域拡大を希望し、B=100svhを明示承認。共通 `komorebi3d/layout.css` の幅600px以下・縦向きの条件で、初期配置で `.landscape-main` 内にゲームパネルを直接含むスロットだけ `height:100svh`、ゲームパネル自身を `height:100%` とする。テスト操作パネルの既存高さ変数、PC/横画面、固定Engine・ヘリ・描画JSには変更なし。パネル移動エディタは初期高さをスロットに固定する既存仕様なので、移動後は元スロット寸法を維持する。`dev.html`／`mock.html` の埋め込みCSSを共通ソースと同期し、差分静的確認。**Safari実機・Actionsは未確認**。iPhone 13 Safari縦画面でゲーム画面の伸長、タッチ操作、ページスクロール、モック表示を確認する。
+> **2026-11-17 iPhone縦画面ゲームパネル110svhへ再調整（静的反映／Safari実機待ち）：** ユーザー希望で120svhから110svhへ変更。対象は縦画面・幅600px以下のゲームパネルが初期配置されたスロットのみ。共通 `layout.css` と生成版 `dev.html`／`mock.html` の高さルールを同期し、開発情報 `development-info.json` の `common` も更新。120svhは2026-11-17にユーザーよりiPhone 13 Safari実機PASS報告あり。110svhは実機未確認。従来の100svh・120svhは履歴であり現在値ではない。テスト操作、横画面／PC、固定Engine、ヘリ・描画処理には変更なし。GitHub Actions／Safari実機確認は別。
 
 > **2026-11-17 ゲームパネル外枠・ヘルプ表示HTML共通化（静的PASS／Safari実機PASS）：** ユーザー了承により `komorebi3d/panels/game.frame.html` を新設し、`game.html` / `game.mock.html` で重複していた `.landscape-game` 外枠・ヘルプボタン・ヘルプ表示を単一ソース化。両game HTMLにはそれぞれの表示本体のみを残し、`build-dev.mjs` が共通frameの `<!-- @game-view -->` に組み込んだ後、従来の `<!-- @game-touch -->` を展開。タッチ領域の挿入位置（devはplay-surface内、mockはplay-surface外）は従来どおり維持。**両生成済みHTMLに共通frameから生成したゲームパネル文字列が各1回・完全一致することを確認。** `dev.html` / `mock.html` の生成済みファイル自体は変更なし。CSS・Engine・ゲームJS・モック疑似描画・パネル移動には変更なし。**ユーザーより2026-11-17にSafari実機PASS報告あり。** 実際のビルドコマンド／Actionsは未確認。ゲームパネル外枠・ヘルプ表示HTMLの共通化は完了。
 
