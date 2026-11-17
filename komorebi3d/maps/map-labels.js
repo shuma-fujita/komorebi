@@ -15,7 +15,7 @@ export async function loadOsmTagIgnore(url='./maps/osm-tags.ignore'){
 export function visibleOsmTags(tags={},rules=[]){
  return Object.entries(tags).filter(([key])=>!rules.some(rule=>rule.exact===key||(rule.prefix!==undefined&&key.startsWith(rule.prefix))));
 }
-export function createMapLabels(host,ignoreRules=[],{screen=null}={}){
+export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
@@ -24,9 +24,14 @@ export function createMapLabels(host,ignoreRules=[],{screen=null}={}){
 
  // JSON edit/confirm, with strictly isolated OSM development-server level test.
  let editor=null;
+ function closeEditor(){
+  if(!editor)return;
+  editor.remove();editor=null;
+  onEditorStateChange?.(false);
+ }
  function openEditor(item){
   if(!item.osmType||!item.osmId)return;
-  editor?.remove();
+  closeEditor();
   const baseTags={...(item.originalTags||item.tags||{})};
   const initial={...baseTags};
   const mask=document.createElement('div');
@@ -265,7 +270,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null}={}){
   review.appendChild(testPane);
 
   const close=makeButton('閉じる'),confirm=makeButton('確認',true),back=makeButton('編集に戻る');
-  const dismiss=()=>{mask.remove();editor=null;};
+  const dismiss=()=>closeEditor();
   close.addEventListener('click',dismiss);
   function collect(){
    const tags={};
@@ -309,6 +314,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null}={}){
   controls.append(close,confirm);
   form.append(header,copyPane,note,metadata,tagsHeader,rows,add,review,error,controls);
   mask.appendChild(form);host.appendChild(mask);editor=mask;
+  onEditorStateChange?.(true);
  }
  // Add only newly completed feature labels; preserve the existing HTML
  // cards and their OSM editing callbacks between progressive display batches.
@@ -354,9 +360,9 @@ export function createMapLabels(host,ignoreRules=[],{screen=null}={}){
  // Instantiate HTML only when a feature enters the screen, not for every OSM POI.
  function createItem(item,widthLimit,heightLimit){
     const el=document.createElement('div');
-    el.style.cssText='position:absolute;display:none;pointer-events:auto;touch-action:manipulation;cursor:pointer;transform:translate(-50%,-100%);flex-direction:column;align-items:center;white-space:normal;';
+    el.style.cssText='position:absolute;display:none;pointer-events:none;cursor:pointer;transform:translate(-50%,-100%);flex-direction:column;align-items:center;white-space:normal;';
     const card=document.createElement('div');
-    card.style.cssText='box-sizing:border-box;min-width:0;overflow-wrap:anywhere;overflow-y:auto;touch-action:pan-y;padding:7px 11px 8px;border:1px solid rgba(123,234,216,.72);border-radius:10px;background:rgba(23,40,56,.75);box-shadow:0 3px 14px rgba(6,15,29,.22);color:white;font-family:system-ui,-apple-system,sans-serif;text-align:left;';
+    card.style.cssText='box-sizing:border-box;min-width:0;overflow-wrap:anywhere;overflow-y:auto;padding:7px 11px 8px;border:1px solid rgba(123,234,216,.72);border-radius:10px;background:rgba(23,40,56,.75);box-shadow:0 3px 14px rgba(6,15,29,.22);color:white;font-family:system-ui,-apple-system,sans-serif;text-align:left;';
     const header=document.createElement('div');
     header.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;';
     for(const [key,value] of item.visibleTags){
@@ -388,6 +394,28 @@ export function createMapLabels(host,ignoreRules=[],{screen=null}={}){
     el.style.display='none';
     el.style.visibility='';
     return {...item,el,width,height,widthLimit,heightLimit};
+ }
+ // Pointer-transparent cards keep the existing left/right game controls active.
+ // Hit testing is limited to the visible card, not its decorative stem/dot.
+ function hitTest(clientX,clientY){
+  if(editor||!layer.isConnected)return null;
+  for(const viewport of viewports){
+   if(!viewport.canvas.isConnected)continue;
+   for(const measured of viewport.items){
+    if(!measured||measured.el.style.display!=='flex')continue;
+    const card=measured.el.firstElementChild;
+    const rect=card.getBoundingClientRect();
+    if(clientX>=rect.left&&clientX<=rect.right&&clientY>=rect.top&&clientY<=rect.bottom)
+     return measured;
+   }
+  }
+  return null;
+ }
+ function openHit(measured){
+  if(!measured||editor||!layer.isConnected||measured.el.style.display!=='flex')return false;
+  if(!viewports.some(viewport=>viewport.items.includes(measured)))return false;
+  openEditor(measured);
+  return Boolean(editor);
  }
  function sizeItem(measured,widthLimit,heightLimit){
   if(measured.widthLimit===widthLimit&&measured.heightLimit===heightLimit)return;
@@ -466,5 +494,5 @@ export function createMapLabels(host,ignoreRules=[],{screen=null}={}){
   }
   return {total:entries.length,inRange:ranked.length,inView,shown};
  }
- return {setLabels,appendLabels,reconcileLabels,replaceCanvas,update,dispose(){editor?.remove();editor=null;layer.remove();entries=[];}};
+ return {setLabels,appendLabels,reconcileLabels,replaceCanvas,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
