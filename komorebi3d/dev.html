@@ -68,6 +68,8 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
 .panel-slot-top>.build-info{margin:0}
 .panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
+.panel-slot-bottom{margin-top:var(--ui-panel-gap)}
+.panel-slot-bottom>[data-panel-id]{margin-top:0}
 
 /* Shared responsive geometry. The nearest inline-size container is
    .mock-root in the mock and .shell in the product. */
@@ -217,8 +219,7 @@ button.slider-step:active{background:#c4dec1}
  .landscape-main .panel-slot-main>.test-panel{height:100%;max-height:100%;margin:0}
  .panel-slot .test-panel-header{box-shadow:0 3px 8px #65432113}
  .panel-slot-top>.runtime-status,.panel-slot-main>.runtime-status{margin-top:0}
- .panel-slot-bottom>.landscape-game{height:min(55svh,420px);margin-top:12px}
- .panel-slot-bottom>.test-panel,.panel-slot-bottom>.build-info{margin-top:12px}
+ .panel-slot-bottom>.landscape-game{height:min(55svh,420px)}
 }
 
 /* PC layout (same as mock): wider game panel, horizontal build info, 3-column runtime status. */
@@ -240,8 +241,6 @@ button.slider-step:active{background:#c4dec1}
  body{padding:18px}
  .shell{width:100%;max-width:none}
  /* Mirror the mock's outer panel spacing rather than inheriting panel margins. */
- .panel-slot-bottom{margin-top:var(--ui-panel-gap)}
- .panel-slot-bottom>.runtime-status{margin:0}
  .landscape-main .panel-slot-main{height:var(--test-panel-height);flex:none}
  .landscape-main .panel-slot-main[data-panel="empty"]{height:72px;min-height:72px;overflow:visible}
  .landscape-main .panel-slot-main>.landscape-game{height:100%;display:flex;align-items:center;justify-content:center;min-height:0}
