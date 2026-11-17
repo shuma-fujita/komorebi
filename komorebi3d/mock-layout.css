@@ -24,7 +24,6 @@
 }
 /* 3-panel prototype: runtime in any of the four slots. */
 .mock-root .panel-slot-bottom:not([data-panel="empty"]){min-height:250px}
-.mock-root .panel-slot>.runtime-status{margin:0;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49;min-width:0;overflow:auto;overflow-wrap:anywhere}
 .mock-root .panel-slot .runtime-status-heading{margin:0 0 4px}
 .mock-root .panel-slot .mock-runtime-notice{margin:0 0 6px;padding:6px 8px;background:#fffdf3;border-radius:6px;color:#64614b;font-size:11px;grid-column:1/-1}
 .mock-root .panel-slot .runtime-status>.stats{margin-top:0;display:flex;gap:6px;flex-wrap:wrap}
