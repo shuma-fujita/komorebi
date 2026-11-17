@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "Bの2kmタイルを上野-6_-4から松戸中央0_0に戻した（PCで重いため／実機未確認）",
-  "common": "ゲーム画面の左右タッチ領域HTML/CSSを共通化。モックはEngineなしでPointer入力を受信、黒画面は不変（生成HTML完全一致・Safari実機待ち）"
+  "common": "ビルドモード名をproduct→devに変更。デフォルトdev／mockは維持、将来のproductionは未実装（静的PASS・実機未確認）"
 }
