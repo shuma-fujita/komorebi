@@ -62,6 +62,13 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .panel-slot[data-slot-size-fixed]>.landscape-game{display:flex;align-items:center;justify-content:center;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;overflow:hidden}
 .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){height:100%;max-width:100%;min-width:0;min-height:0;width:auto;aspect-ratio:3/4;flex:0 1 auto}
 
+/* Shared baseline layout for mock and product.
+   Breakpoint-specific rules remain separate until verified on real devices. */
+.landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
+.landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
+.panel-slot-top>.build-info{margin:0}
+.panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
+
 /* Styles for build panel from canonical dev.html. */
 .build-info{margin:9px 0 12px;padding:10px 11px;border:1px solid #aec2a8;border-radius:9px;background:#e8f2e4;color:#31563b;font-size:11px;line-height:1.65;overflow-wrap:anywhere}
 .build-info strong{font-size:12px}
@@ -137,14 +144,11 @@ button.slider-step:active{background:#c4dec1}
 .mock-root{--test-panel-height:max(640px,calc(100vh - 330px));width:100%;max-width:100%;container-type:inline-size}
 .mock-root .mock-frame{width:100%;max-width:none;margin:0 auto;padding:12px;background:#f2f0e4;border:0;border-radius:0;color:#4d5540;font:12px system-ui}
 .mock-root .shell{width:100%;max-width:none;margin:0;min-width:0}
-.mock-root .landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
 .mock-root .site-heading{flex:0 0 auto;display:flex;justify-content:space-between;font-size:12px;color:#385c42}
-.mock-root .landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
 .mock-root .panel-slot{min-width:0;min-height:0;position:relative}
 .mock-root .panel-slot-top{flex:0 0 auto;overflow:hidden}
 .mock-root .panel-slot-top[data-panel="empty"]{overflow:visible}
-.mock-root .panel-slot-top>.build-info{margin:0}
-.mock-root .panel-slot-top>[data-panel-id]:not(.build-info){height:100%;margin:0}
+.mock-root .panel-slot-top>[data-panel-id]:not(.build-info){height:100%}
 .mock-root .landscape-main .panel-slot-main>.landscape-game{height:var(--test-panel-height)}
 .mock-root .landscape-main .panel-slot-main[data-slot-size-fixed]>.landscape-game{height:100%}
 .mock-root .landscape-main .panel-slot-main>.build-info{overflow-y:auto}
