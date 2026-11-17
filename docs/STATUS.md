@@ -169,7 +169,7 @@
 
 ## 7. 新しいチャットでの進め方
 
-1. [`docs/rules/README.md`](rules/README.md) と [`docs/rules/chat.md`](rules/chat.md)、[`docs/rules/mock.md`](rules/mock.md)、[`docs/rules/development.md`](rules/development.md)、そして**このSTATUS**を読む。最新コードをGitHub `main` で再取得する。
+1. [`docs/rules/README.md`](rules/README.md) と [`docs/rules/chat.md`](rules/chat.md)、[`docs/rules/development.md`](rules/development.md)、そして**このSTATUS**を読む。最新コードをGitHub `main` で再取得する。
 2. タイル座標自動計算リファクタ後の B=0_0 松戸表示はユーザー実機PASS。2026-11-16、上野 `-6_-4` がPCで非常に重いとのユーザー報告により、`maps/map-loader.js` の `TEST_TILE_ID` を `0_0` に戻した（map-loader importバージョンも更新／構文チェックPASS・実機確認待ち）。
 3. **「🧪 地図JSON読み込みログ」を残すことが明示的な希望。** ログは新しい取得方式に合わせて見直すが、削除しない。
 4. 森ワールド、固定Engine、元500m JSON、559タイルの原本を不用意に変更しない。ユーザー実機PASSと未検証部分を区別し、必要なファイルだけ小さく変更する。
