@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Build product or lightweight web mock.
+// Build the development page or lightweight web mock. Production mode is reserved for later.
 import {readFileSync,writeFileSync} from 'node:fs';
 import {dirname,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const dir=dirname(fileURLToPath(import.meta.url));
 const modeArgs=process.argv.filter(arg=>arg.startsWith('--mode='));
 if(modeArgs.length>1)throw Error('Specify --mode only once');
-const mode=modeArgs[0]?.slice('--mode='.length)??'product';
-if(!['product','mock'].includes(mode))throw Error('Unknown mode: '+mode);
+const mode=modeArgs[0]?.slice('--mode='.length)??'dev';
+if(!['dev','mock'].includes(mode))throw Error('Unknown mode: '+mode);
 const mock=mode==='mock';
 const panelIds=['build','game','test','runtime'];
 const variant=id=>mock&&id==='game'?id+'.mock':id;
@@ -57,6 +57,6 @@ const output=join(dir,outputName);
 if(process.argv.includes('--check')){
  let actual='';
  try{actual=readFileSync(output,'utf8')}catch{}
- if(actual!==html){console.error(outputName+' out of sync; run node komorebi3d/build-dev.mjs'+(mode==='product'?'':' --mode='+mode));process.exitCode=1;}
+ if(actual!==html){console.error(outputName+' out of sync; run node komorebi3d/build-dev.mjs'+(mode==='dev'?'':' --mode='+mode));process.exitCode=1;}
  else console.log(outputName+' sync: OK');
 }else{writeFileSync(output,html,'utf8');console.log('Updated '+outputName);}
