@@ -2,3 +2,30 @@
 .landscape-game .play-surface{height:100%;max-width:100%;aspect-ratio:3/4;background:#000;border-radius:9px}
 .landscape-game button.game-help-button{display:block;z-index:4}
 .landscape-game .game-help-overlay:not([hidden]){display:flex}
+
+/* Only the mock replaces rendered canvases with faux black screen views. */
+/* PC: single A / B mode uses the whole game panel. */
+@container (min-width:1000px){
+ .mock-root .landscape-game .play-surface:not(.ab-compare),
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
+ .mock-root .landscape-game .play-surface.ab-compare,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;gap:6px}
+ .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:9px}
+ .mock-root .landscape-game,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
+ .mock-root .landscape-game .play-surface,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface{border-radius:9px}
+ .mock-root .landscape-game .play-surface.ab-compare{gap:1px}
+}
+
+/* Mock-only faux game surface: shows each screen's label and settings. */
+.play-surface{position:relative;overflow:hidden;display:flex}
+.play-surface .screen-view{flex:1 1 0;min-width:0;position:relative;display:grid;place-items:center;color:#cfe0c8;font:700 11px/1.5 system-ui;text-align:center;
+ background:radial-gradient(circle at 50% 38%,#1f3a26 0,#0b150e 62%,#000 100%)}
+.play-surface .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-view small{display:block;font-weight:500;color:#8fae93;font-size:10px}
+/* A/B compare (below PC width): each screen keeps the same 3:4 size as in single A / B mode. */
+.landscape-game .play-surface.ab-compare{aspect-ratio:auto;width:auto;max-width:100%;gap:6px;background:transparent;justify-content:center}
+.play-surface.ab-compare .screen-view{flex:0 1 auto;height:100%;aspect-ratio:3/4;min-width:0;border:1px solid #2c4a33;border-radius:9px}
+.play-surface.ab-compare .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-tag{position:absolute;top:6px;left:8px;font-size:10px;color:#a6c4aa}
