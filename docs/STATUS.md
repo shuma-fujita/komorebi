@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-18 ゲーム領域スクロール抑制・ユーザー実機PASS：** ユーザーからゲーム操作中のアプリ内ブラウザのページスクロール抑制について「実機PASS」と報告。`development-info.json` の `common` を実機PASSに更新。端末別・PC/通常Safari・他パネルやOSM編集モーダルの個別網羅テストまで確認済みとは扱わない。既存の固定Engine・ゲーム入力・タグ・地図データを変更せず、今回の更新は開発情報とSTATUSの記録のみ。
+
 > **2026-11-18 ゲーム領域タッチ時のページスクロール抑制（main反映／実機未確認）：** ChatGPTアプリ内ブラウザでゲーム移動・カメラスワイプ時に外側ページがスクロールするとの報告。既存 `.touch-layer` / `.touch-zone` の `touch-action:none` に加え、共通 `layout.css` のゲーム表示領域 `.landscape-game .play-surface` に `touch-action:none;overscroll-behavior:contain` を追加。`dev.template.html` と生成済み `dev.html` に、左右ゲーム操作領域で開始したタッチIDのみを追跡し `document` 捕捉段階の非passive `touchmove` でスクロール既定動作を抑える処理を追加。touchend/cancel・blur・pagehideで追跡を解除。OSM編集モーダル内部・他の3パネルから始まるタッチは抑制対象外。固定Engine・ラベル操作判定・地図JSON・モックの入力JS・表示サイズは変更なし。開発情報 `common` 更新。**GitHub main再取得によるコード一致／静的確認PASS。実際のビルド実行、Actions、Safari／アプリ内ブラウザ実機PASS、Pages配信は未確認。** ChatGPTアプリ固有の親WebViewジェスチャーはページ側から完全抑制できない可能性がある。
 
 > **2026-11-18 ビルタグ操作改善のユーザー実機PASS：** ビルタグ上からの移動・カメラ操作と、タップ・クリックによるOSM編集モーダル起動についてユーザーより実機PASS報告。確認した端末別・操作別の網羅範囲は未記録のため、PC/Safari各条件を一律PASS扱いしない。
