@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 テスト操作パネルの完全共通化（静的PASS／Safari実機待ち）：** ユーザーから前工程の実行ステータス枠修正についてSafari実機PASS報告あり。モック専用の `panels/test.mock.html` / `panels/test.mock.css` を削除し、モックも本体と同じ `panels/test.html` / `panels/test.css` で生成。`build-dev.mjs` のモック専用テストUI抽出処理を廃止。モックは既存 `dev-panel-components.js` の `mountTestControlsPanel(root,null)` によりGame APIなしのローカル状態で操作可能。ゲーム面は既存の疑似描画を維持し、A/Bモード・設定の選択に追従。本体のゲーム処理・固定Engine・`dev.html` は変更なし。`mock.html` は最新生成元と全文一致、CSSとテストパネルDOMが単一ソースであることを静的確認。**今回の生成後のSafari実機およびActionsは未確認。** 注意：共通化によりモックの見本ボタンの見た目・操作状態は本体HTML仕様に変わるため、ゲーム負荷なしの操作・レイアウト・スライダー・スクロール・A/B疑似画面を実機確認する。
+
+
 > **2026-11-17 実行ステータス枠の共通CSS修正（静的PASS／実機待ち）：** ユーザーより縦画面で実行ステータスの枠が消えたと報告。原因：`runtime.css` の背景・枠線・内余白は横画面900px以上／高さ600px以上の条件付き、モック側だけは `mock-layout.css` で常時指定されていた。モック基準の枠・背景・余白を `common.css` の `.runtime-status` に移し、モック固有の重複ルールを削除。`dev.html`／`mock.html` をCSS生成元に同期。描画JS／固定Engine／パネル移動JSは未変更。**Safari再実機・Actions未確認。** 共通化の現状：実行ステータス・開発情報HTMLとパネル移動JSは共通、ゲーム・テストUIとレイアウトCSSは一部別系統。将来はゲーム疑似表示などのモック固有処理以外の共通化を継続する。
 
 
