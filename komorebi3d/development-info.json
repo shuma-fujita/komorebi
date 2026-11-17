@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "Bの2kmタイルを上野-6_-4から松戸中央0_0に戻した（PCで重いため／実機未確認）",
-  "common": "モック正本でレイアウトCSSをlayout.cssへ一本化。旧mock/dev-layout・mock-approvedを廃止し本体にもモックと同じ外枠を適用（静的PASS／Safari実機待ち）"
+  "common": "ゲームパネル共通枠・ヘルプ表示をlayout.cssへ集約。game.mock.cssは疑似表示、game.cssはCanvas/操作描画用に整理（静的PASS・Safari実機未確認）"
 }
