@@ -62,34 +62,6 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .panel-slot[data-slot-size-fixed]>.landscape-game{display:flex;align-items:center;justify-content:center;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;overflow:hidden}
 .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){height:100%;max-width:100%;min-width:0;min-height:0;width:auto;aspect-ratio:3/4;flex:0 1 auto}
 
-/* Shared baseline layout for mock and product.
-   Breakpoint-specific rules remain separate until verified on real devices. */
-.landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
-.landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
-.panel-slot-top>.build-info{margin:0}
-.panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
-.panel-slot-bottom{margin-top:var(--ui-panel-gap)}
-.panel-slot-bottom>[data-panel-id]{margin-top:0}
-
-/* Shared responsive geometry. The nearest inline-size container is
-   .mock-root in the mock and .shell in the product. */
-.landscape-main .panel-slot-main{height:var(--test-panel-height);flex:none}
-.landscape-main .panel-slot-main>.landscape-game{height:var(--test-panel-height)}
-@container (min-width:650px){
- .landscape-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);height:var(--test-panel-height);min-height:0;flex:none}
- .landscape-main .panel-slot-main{height:100%;overflow:hidden}
- .landscape-main .panel-slot-main[data-panel="empty"]{height:100%;min-height:0;overflow:visible}
- .landscape-main .panel-slot-main>.landscape-game{height:100%}
- .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
- .panel-slot-bottom .runtime-status-heading,.panel-slot-bottom .mock-runtime-notice,.panel-slot-bottom #collision-status,.panel-slot-bottom #sync-status,.panel-slot-bottom .stats,.panel-slot-bottom #status{grid-column:1/-1}
-}
-@container (min-width:1000px){
- .landscape-main{grid-template-columns:var(--ui-pc-panel-columns)}
- .panel-slot-bottom>.runtime-status{grid-template-columns:var(--ui-runtime-columns)}
- .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
- .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
-}
-
 /* Styles for build panel from canonical dev.html. */
 .build-info{margin:9px 0 12px;padding:10px 11px;border:1px solid #aec2a8;border-radius:9px;background:#e8f2e4;color:#31563b;font-size:11px;line-height:1.65;overflow-wrap:anywhere}
 .build-info strong{font-size:12px}
@@ -103,6 +75,33 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .landscape-game .play-surface{height:100%;max-width:100%;aspect-ratio:3/4;background:#000;border-radius:9px}
 .landscape-game button.game-help-button{display:block;z-index:4}
 .landscape-game .game-help-overlay:not([hidden]){display:flex}
+
+/* Only the mock replaces rendered canvases with faux black screen views. */
+/* PC: single A / B mode uses the whole game panel. */
+@container (min-width:1000px){
+ .mock-root .landscape-game .play-surface:not(.ab-compare),
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
+ .mock-root .landscape-game .play-surface.ab-compare,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;gap:6px}
+ .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:9px}
+ .mock-root .landscape-game,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
+ .mock-root .landscape-game .play-surface,
+ .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface{border-radius:9px}
+ .mock-root .landscape-game .play-surface.ab-compare{gap:1px}
+}
+
+/* Mock-only faux game surface: shows each screen's label and settings. */
+.play-surface{position:relative;overflow:hidden;display:flex}
+.play-surface .screen-view{flex:1 1 0;min-width:0;position:relative;display:grid;place-items:center;color:#cfe0c8;font:700 11px/1.5 system-ui;text-align:center;
+ background:radial-gradient(circle at 50% 38%,#1f3a26 0,#0b150e 62%,#000 100%)}
+.play-surface .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-view small{display:block;font-weight:500;color:#8fae93;font-size:10px}
+/* A/B compare (below PC width): each screen keeps the same 3:4 size as in single A / B mode. */
+.landscape-game .play-surface.ab-compare{aspect-ratio:auto;width:auto;max-width:100%;gap:6px;background:transparent;justify-content:center}
+.play-surface.ab-compare .screen-view{flex:0 1 auto;height:100%;aspect-ratio:3/4;min-width:0;border:1px solid #2c4a33;border-radius:9px}
+.play-surface.ab-compare .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-tag{position:absolute;top:6px;left:8px;font-size:10px;color:#a6c4aa}
 
 /* Styles for test panel from canonical dev.html. */
 .mode-buttons button{min-width:0;padding:11px 3px}
@@ -162,6 +161,35 @@ button.slider-step:active{background:#c4dec1}
 .runtime-status{position:relative;--help-button-color:#455a49;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
 .runtime-status-heading{display:block;min-height:36px;margin:0 0 8px;padding-right:43px;font-size:13px}
 
+/* Shared baseline layout for mock and product.
+   Breakpoint-specific rules remain separate until verified on real devices. */
+.landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
+.landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
+.panel-slot-top>.build-info{margin:0}
+.panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
+.panel-slot-bottom{margin-top:var(--ui-panel-gap)}
+.panel-slot-bottom>[data-panel-id]{margin-top:0}
+
+/* Shared responsive geometry. The nearest inline-size container is
+   .mock-root in the mock and .shell in the product. */
+.landscape-main .panel-slot-main{height:var(--test-panel-height);flex:none}
+.landscape-main .panel-slot-main>.landscape-game{height:var(--test-panel-height)}
+@container (min-width:650px){
+ .landscape-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);height:var(--test-panel-height);min-height:0;flex:none}
+ .landscape-main .panel-slot-main{height:100%;overflow:hidden}
+ .landscape-main .panel-slot-main[data-panel="empty"]{height:100%;min-height:0;overflow:visible}
+ .landscape-main .panel-slot-main>.landscape-game{height:100%}
+ .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
+ .panel-slot-bottom .runtime-status-heading,.panel-slot-bottom .mock-runtime-notice,.panel-slot-bottom #collision-status,.panel-slot-bottom #sync-status,.panel-slot-bottom .stats,.panel-slot-bottom #status{grid-column:1/-1}
+}
+@container (min-width:1000px){
+ .landscape-main{grid-template-columns:var(--ui-pc-panel-columns)}
+ .panel-slot-bottom>.runtime-status{grid-template-columns:var(--ui-runtime-columns)}
+ .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
+ .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
+}
+
+/* Approved mock layout, now shared by both pages. */
 .mock-root{--test-panel-height:max(640px,calc(100vh - 330px));width:100%;max-width:100%;container-type:inline-size}
 .mock-root .mock-frame{width:100%;max-width:none;margin:0 auto;padding:12px;background:#f2f0e4;border:0;border-radius:0;color:#4d5540;font:12px system-ui}
 .mock-root .shell{width:100%;max-width:none;margin:0;min-width:0}
@@ -196,37 +224,7 @@ body{padding:6px}
  .mock-root .mock-frame{padding:18px}
 }
 
-/* PC: single A / B mode uses the whole game panel. */
-@container (min-width:1000px){
- .mock-root .landscape-game .play-surface:not(.ab-compare),
- .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
- .mock-root .landscape-game .play-surface.ab-compare,
- .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;gap:6px}
- .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:9px}
- .mock-root .landscape-game,
- .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
- .mock-root .landscape-game .play-surface,
- .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface{border-radius:9px}
- .mock-root .landscape-game .play-surface.ab-compare{gap:1px}
-}
-
-/* Mock-only faux game surface: shows each screen's label and settings. */
-.play-surface{position:relative;overflow:hidden;display:flex}
-.play-surface .screen-view{flex:1 1 0;min-width:0;position:relative;display:grid;place-items:center;color:#cfe0c8;font:700 11px/1.5 system-ui;text-align:center;
- background:radial-gradient(circle at 50% 38%,#1f3a26 0,#0b150e 62%,#000 100%)}
-.play-surface .screen-view+.screen-view{border-left:1px solid #2c4a33}
-.play-surface .screen-view small{display:block;font-weight:500;color:#8fae93;font-size:10px}
-/* A/B compare (below PC width): each screen keeps the same 3:4 size as in single A / B mode. */
-.landscape-game .play-surface.ab-compare{aspect-ratio:auto;width:auto;max-width:100%;gap:6px;background:transparent;justify-content:center}
-.play-surface.ab-compare .screen-view{flex:0 1 auto;height:100%;aspect-ratio:3/4;min-width:0;border:1px solid #2c4a33;border-radius:9px}
-.play-surface.ab-compare .screen-view+.screen-view{border-left:1px solid #2c4a33}
-.play-surface .screen-tag{position:absolute;top:6px;left:8px;font-size:10px;color:#a6c4aa}
-
-@media (orientation:landscape) and (min-width:900px) and (min-height:600px){
- .runtime-status{margin-top:12px;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49}
- .runtime-status-heading{display:block;font-size:13px;margin:0 0 8px}
- .runtime-status .stats{margin-top:8px}
-}
+/* Approved game-frame geometry, shared across real and faux game surfaces. */
 /* Game viewport flush to panel edges; only A/B seam remains 1px. */
 .mock-root .landscape-game,
 .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{padding:var(--ui-game-panel-padding);border:0}
@@ -237,7 +235,12 @@ body{padding:6px}
 .mock-root .landscape-game .play-surface.ab-compare{background:var(--ui-ab-seam-bg)}
 .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:0 var(--ui-ab-inner-radius) var(--ui-ab-inner-radius) 0;overflow:hidden}
 .mock-root .landscape-game .play-surface.ab-compare .screen-view+.screen-view{border-left:0;border-radius:var(--ui-ab-inner-radius) 0 0 var(--ui-ab-inner-radius)}
-</style></head><body><div class="mock-root"><div class="mock-frame"><div class="shell"><div class="landscape-hero"><div class="site-heading"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">000000</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface" aria-label="ゲーム画面（描画なし）"></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
+
+@media (orientation:landscape) and (min-width:900px) and (min-height:600px){
+ .runtime-status{margin-top:12px;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49}
+ .runtime-status-heading{display:block;font-size:13px;margin:0 0 8px}
+ .runtime-status .stats{margin-top:8px}
+}</style></head><body><div class="mock-root"><div class="mock-frame"><div class="shell"><div class="landscape-hero"><div class="site-heading"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">000000</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface" aria-label="ゲーム画面（描画なし）"></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
 <div class="test-panel-header">
 <strong class="test-panel-heading">🧪 テスト操作（開発用）</strong>
 <button type="button" class="panel-help-button test-help-button" id="test-help-button" aria-label="このエリアの名前：テスト操作パネル" aria-describedby="test-help-overlay"><span>ⓘ</span></button>
