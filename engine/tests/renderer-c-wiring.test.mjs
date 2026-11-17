@@ -16,8 +16,8 @@ test("both screen cards offer three distinct Engine choices with initial WebGL s
 
 test("game uses a C-enabled pinned factory and rejects no existing engine option",()=>{
  const live=read("dev.template.html");
- assert.match(live,/RendererFactory\\.js/);
- assert.match(live,/@890e501969c2906b4d5666d7a4611e4223397f7a\\/engine\\/renderer\\/RendererFactory\\.js/);
+ assert.ok(live.includes("RendererFactory.js"));
+ assert.ok(live.includes("@890e501969c2906b4d5666d7a4611e4223397f7a/engine/renderer/RendererFactory.js"));
  assert.ok(live.includes("(setting==='map'?['old','new']:['A','B','C']).includes(value)"));
  for(const name of ["dev.html","mock.html"]){
   const html=read(name);
