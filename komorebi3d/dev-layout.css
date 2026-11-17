@@ -23,8 +23,7 @@
  .landscape-hero .panel-slot-top[data-panel="empty"]{min-height:70px;z-index:6}
  .landscape-main .panel-slot-main[data-panel="empty"]{overflow:visible;min-height:0}
  .panel-slot-bottom[data-panel="empty"]{min-height:130px}
- .landscape-main .panel-slot-main{min-width:0;min-height:0;height:100%;overflow:hidden}
- .landscape-main .panel-slot-main>[data-panel-id]{min-width:0;min-height:0;height:100%;margin:0}
+ .landscape-main .panel-slot-main{height:100%}
  .landscape-main .panel-slot-main>.build-info,.landscape-main .panel-slot-main>.runtime-status{overflow-y:auto}
  .landscape-hero .test-panel{overflow:hidden}
  .landscape-main .panel-slot-main[data-panel="test"]:not([data-slot-size-fixed]){height:100%}
