@@ -29,6 +29,8 @@ button.game-help-button{display:none}
 .game-help-overlay{display:none}
 .panel-slot{min-width:0;min-height:0}
 .panel-slot{position:relative}
+/* Shared runtime panel frame: mock is the visual reference at every viewport size. */
+.runtime-status{margin:0;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49;min-width:0;overflow:auto;overflow-wrap:anywhere}
 /* Slot geometry is shared: panel contents retain their dimensions when moved. */
 .landscape-main .panel-slot-main{min-width:0;min-height:0;overflow:hidden}
 .landscape-main .panel-slot-main>[data-panel-id]{min-width:0;min-height:0;height:100%;margin:0}
