@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 実行ステータス枠の共通CSS修正（静的PASS／実機待ち）：** ユーザーより縦画面で実行ステータスの枠が消えたと報告。原因：`runtime.css` の背景・枠線・内余白は横画面900px以上／高さ600px以上の条件付き、モック側だけは `mock-layout.css` で常時指定されていた。モック基準の枠・背景・余白を `common.css` の `.runtime-status` に移し、モック固有の重複ルールを削除。`dev.html`／`mock.html` をCSS生成元に同期。描画JS／固定Engine／パネル移動JSは未変更。**Safari再実機・Actions未確認。** 共通化の現状：実行ステータス・開発情報HTMLとパネル移動JSは共通、ゲーム・テストUIとレイアウトCSSは一部別系統。将来はゲーム疑似表示などのモック固有処理以外の共通化を継続する。
+
+
 > **2026-11-17 Step 3-A パネル間隔調整（静的PASS／実機待ち）：** ユーザーよりスマホ縦のゲーム高さ実機PASS、ただしモックと本体のパネル間余白不一致の報告。モックの `.landscape-hero`／`.landscape-main` は8pxのgap・下段8px余白・上段buildのmargin 0を使用。本体の縦画面CSSへ同等のgap・上段パネルのmargin 0・下段margin-top 8pxを追加。変更は本体 `dev-layout.css` と生成済み `dev.html` のCSSのみ（ゲームJS／Engine／モック未変更）。**Actionsと今回の余白調整後のSafari実機は未確認。** 横画面・PCの配置差分は別途継続確認。
 
 
