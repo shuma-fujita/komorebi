@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Build product, lightweight web mock, or a self-contained chat-ready mock.
+// Build product or lightweight web mock.
 import {readFileSync,writeFileSync} from 'node:fs';
 import {dirname,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -7,10 +7,9 @@ const dir=dirname(fileURLToPath(import.meta.url));
 const modeArgs=process.argv.filter(arg=>arg.startsWith('--mode='));
 if(modeArgs.length>1)throw Error('Specify --mode only once');
 const mode=modeArgs[0]?.slice('--mode='.length)??'product';
-if(!['product','mock','chat'].includes(mode))throw Error('Unknown mode: '+mode);
-const chat=mode==='chat';
-const mock=mode!=='product';
-const panelIds=mock?['build','game','test','runtime']:['build','game','test','runtime'];
+if(!['product','mock'].includes(mode))throw Error('Unknown mode: '+mode);
+const mock=mode==='mock';
+const panelIds=['build','game','test','runtime'];
 const variant=id=>mock&&['game','test'].includes(id)?id+'.mock':id;
 const names=['common',...panelIds.map(variant),...(mock?['mock-layout']:[])];
 const read=path=>readFileSync(join(dir,path),'utf8');
@@ -63,27 +62,7 @@ if(mock){
  if(!html.includes('/* @screen-settings-ui */'))throw Error('Missing shared UI function');
  html=html.replace('/* @screen-settings-ui */',screenJS);
 }
-if(chat){
- // Inline the canonical layout editor in a classic script for chat HTML sandboxes.
- // Keep its runtime logic intact: only the ES-module export prefixes are removed.
- const editor=read('dev-panel-layout.js');
- if(/^\s*import\b/m.test(editor))throw Error('Chat mock needs a dependency-free editor');
- const standalone=editor.replace(/^export (?=(?:const|function)\b)/gm,'');
- // Chat only: discard standalone comments, blank lines, and indentation; keep behavior intact.
- const compact=standalone.replace(/^[ \t]*\/\/[^\n]*(?:\n|$)/gm,'').replace(/^[ \t]*\n/gm,'').replace(/^[ \t]+/gm,'');
- if(/^\s*export\b/m.test(standalone))throw Error('Unsupported editor export syntax');
- const moduleTag='<script type="module">';
- const importRule=/^import \{mountPanelLayoutEditor\} from '\.\/dev-panel-layout\.js\?v=[^']+';$/gm;
- if(!html.includes(moduleTag)||[...html.matchAll(importRule)].length!==1)
-  throw Error('Expected exactly one mock layout editor import');
- html=html.replace(moduleTag,'<script>').replace(importRule,compact.trimEnd());
- // The output is an embeddable fragment: no document-level wrapper or external JS.
- const start=html.indexOf('<style>');
- if(!html.startsWith('<!doctype html>')||start<0||!html.includes('</head><body>')||!/<\/body><\/html>\s*$/.test(html))
-  throw Error('Unexpected mock document wrapper');
- html=html.slice(start).replace('</head><body>','').replace(/<\/body><\/html>\s*$/,'');
-}
-const outputName=chat?'mock.chat.html':mock?'mock.html':'dev.html';
+const outputName=mock?'mock.html':'dev.html';
 const output=join(dir,outputName);
 if(process.argv.includes('--check')){
  let actual='';
