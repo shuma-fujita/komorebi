@@ -13,11 +13,6 @@ const panelIds=['build','game','test','runtime'];
 const variant=id=>mock&&id==='game'?id+'.mock':id;
 const names=['common',...panelIds.map(variant),...(mock?['mock-layout']:[])];
 const read=path=>readFileSync(join(dir,path),'utf8');
-const extract=(source,start,end)=>{
- const a=source.indexOf(start),b=source.indexOf(end,a+start.length);
- if(a<0||b<0||source.indexOf(start,a+1)>=0||source.indexOf(end,b+1)>=0)throw Error('Invalid shared UI markers');
- return source.slice(a+start.length,b).trim();
-};
 const split=css=>{
  const pos=css.indexOf('@media ');
  return pos<0?[css.trim(),'']:[css.slice(0,pos).trim(),css.slice(pos).trim()];
