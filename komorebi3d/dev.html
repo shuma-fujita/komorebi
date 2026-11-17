@@ -61,6 +61,14 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .panel-slot[data-slot-size-fixed]>.test-panel{overflow:hidden}
 .panel-slot[data-slot-size-fixed]>.landscape-game{display:flex;align-items:center;justify-content:center;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;overflow:hidden}
 .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){height:100%;max-width:100%;min-width:0;min-height:0;width:auto;aspect-ratio:3/4;flex:0 1 auto}
+
+/* Shared baseline layout for mock and product.
+   Breakpoint-specific rules remain separate until verified on real devices. */
+.landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
+.landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
+.panel-slot-top>.build-info{margin:0}
+.panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
+
 :root{--test-panel-height:min(640px,75svh)}
 .landscape-main .panel-slot-main[data-panel="test"]:not([data-slot-size-fixed]){height:var(--test-panel-height)}
 .landscape-main .panel-slot-main>.test-panel{height:100%;margin:0;overflow:hidden}
@@ -216,10 +224,6 @@ button.slider-step:active{background:#c4dec1}
  body{padding:18px}
  .shell{width:100%;max-width:none}
  /* Mirror the mock's outer panel spacing rather than inheriting panel margins. */
- .landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
- .landscape-hero .panel-slot-top>.build-info{margin:0}
- .landscape-hero .panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
- .landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap)}
  .panel-slot-bottom{margin-top:var(--ui-panel-gap)}
  .panel-slot-bottom>.runtime-status{margin:0}
  .landscape-main .panel-slot-main{height:var(--test-panel-height);flex:none}
