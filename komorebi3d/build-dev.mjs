@@ -23,6 +23,14 @@ const commonCSS=read('common.css');
 const pieces=names.map(name=>split(name==='common'?commonCSS:read(cssPath(name))));
 const css=[...pieces.map(x=>x[0]),...pieces.map(x=>x[1])].filter(Boolean).join('\n\n');
 let html=read(mock?'mock.template.html':'dev.template.html');
+if(!html.includes('<!-- @page-shell -->'))throw Error('Missing shared page shell marker');
+let shell=read('page-shell.html').trimEnd();
+const diagnostic=mock?'':read('dev-launch-diagnostic.html').trimEnd();
+shell=shell.replace('<!-- @launch-diagnostic -->',diagnostic);
+shell=shell.replace('/* @heading-attrs */',mock?'':' style="display:flex;justify-content:space-between"');
+if(shell.includes('<!-- @launch-diagnostic -->')||shell.includes('/* @heading-attrs */'))
+ throw Error('Unresolved page shell marker');
+html=html.replace('<!-- @page-shell -->',shell);
 if(!mock){
  // Inline object fragments verbatim into their original game script scope.
  for(const path of ['objects/forest/layout.js','objects/trees/tree-v1.js','objects/trees/tree-v2.js','objects/trees/tree-v3.js','objects/buildings/house.js','objects/buildings/cafe.js','objects/forest/details.js','objects/characters/ghost-helicopter.js']){
@@ -50,6 +58,7 @@ for(const id of panelIds){
  }
  html=html.replace(marker,panelHtml);
 }
+if(html.includes('<!-- @page-shell -->'))throw Error('Unresolved shared page shell');
 if(html.includes('<!-- @game-touch -->'))throw Error('Unresolved touch layer');
 if(html.includes('<!-- @panel:')||html.includes('/* @component-styles */'))throw Error('Unresolved placeholder');
 const outputName=mock?'mock.html':'dev.html';
