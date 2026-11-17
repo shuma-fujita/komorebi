@@ -163,10 +163,10 @@ export function mountTestControlsPanel(root,api){
   if(api)return api[method](value);
   if(method==='reset')localState={...initial,screens:{A:{...initial.screens.A},B:{...initial.screens.B}}};
   else if(method==='setScreenConfig'){
-   const {screen,setting,value}=value||{};
+   const {screen,setting,value:next}=value||{};
    if(['A','B'].includes(screen)&&['map','engine'].includes(setting)&&
-      (setting==='map'?['old','new']:['A','B']).includes(value))
-    localState={...localState,screens:{...localState.screens,[screen]:{...localState.screens[screen],[setting]:value}}};
+      (setting==='map'?['old','new']:['A','B']).includes(next))
+    localState={...localState,screens:{...localState.screens,[screen]:{...localState.screens[screen],[setting]:next}}};
   }
   else if(method==='setWorld')localState.worldId=value;
   else if(method==='setRenderMode')localState.renderMode=value;
