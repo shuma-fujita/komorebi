@@ -29,7 +29,7 @@ const cssPath=name=>name==='common'?'common.css':name==='mock-layout'?'mock-layo
 // Keep production CSS byte-for-byte identical while excluding dev styles from mocks.
 const commonCSS=read('common.css')+(mock?'':read('dev-layout.css'));
 const pieces=names.map(name=>split(name==='common'?commonCSS:(read(cssPath(name))+(mock&&name==='test.mock'?'\n'+screenCSS:''))));
-const css=[...pieces.map(x=>x[0]),...pieces.map(x=>x[1])].filter(Boolean).join('\n\n')+(mock?'\n\n'+read('mock-approved.css').trimEnd()+'\n':'');
+const css=[...pieces.map(x=>x[0]),...pieces.map(x=>x[1])].filter(Boolean).join('\n\n')+(mock?'\n'+read('mock-approved.css').trimEnd()+'\n':'');
 let html=read(mock?'mock.template.html':'dev.template.html');
 if(!mock){
  // Inline object fragments verbatim into their original game script scope.
