@@ -19,7 +19,7 @@ const split=css=>{
 };
 const cssPath=name=>name==='common'?'common.css':name==='mock-layout'?'mock-layout.css':'panels/'+name+'.css';
 // Both pages use the canonical test panel markup and CSS; only the game viewport differs.
-const commonCSS=read('common.css')+(mock?'':read('dev-layout.css'));
+const commonCSS=read('common.css')+'\n'+read('layout.css')+(mock?'':'\n'+read('dev-layout.css'));
 const pieces=names.map(name=>split(name==='common'?commonCSS:read(cssPath(name))));
 const css=[...pieces.map(x=>x[0]),...pieces.map(x=>x[1])].filter(Boolean).join('\n\n')+(mock?'\n'+read('mock-approved.css').trimEnd()+'\n':'');
 let html=read(mock?'mock.template.html':'dev.template.html');
