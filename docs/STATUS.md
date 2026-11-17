@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 ビルドモード名 `product` → `dev`（静的PASS／実機未確認）：** ユーザー承認により `komorebi3d/build-dev.mjs` の受け付けモードを `dev` / `mock` に変更し、省略時のデフォルトを `dev` に変更。`--check` の案内も更新。`dev` は従来どおり `dev.template.html` → `dev.html`（4パネル・実ゲーム）、`mock` は `mock.template.html` → `mock.html`（4パネル・疑似ゲーム）を生成。旧 `--mode=product` は無効。将来の商用ゲームパネル専用 `production` は今回未実装。ゲームHTML・JS・CSS・Engine SHA、既存 `dev.html` / `mock.html` は変更なし。**モード設定・分岐・出力先の静的チェックPASS。ビルド実行／Safari実機／Actionsは未確認。**
+
+
 > **2026-11-17 ゲーム画面タッチ領域共通化（静的PASS／Safari実機PASS）：** ユーザー了承で `panels/game.touch.html` を新設し、`game.html` と `game.mock.html` の両方から同じ左右タッチ領域（`#pad`／`#camera-pad`）を生成時に挿入。タッチ領域CSSを `game.css` から共通 `layout.css` に移動。モック側では `dev-panel-components.js` の `mountMockTouchInput()` でPointer down/move/up/cancel・キャプチャを受け取るが、画面やゲーム状態には反映せずEngineは読み込まない。本体のEngine TouchStick／InputManager／カメラ入力処理、ゲーム処理・固定Engineは変更なし。`mock.template.html` のみモック入力受信初期化を追加。生成済み `mock.html`／`dev.html` と生成ソースの**HTML全文一致・CSS全文一致を静的確認済み**。**ユーザーより2026-11-17にSafari実機PASS報告あり。Actionsは未確認。** 共通タッチ領域とEngineなしモックの入力受信は実機確認済み。
 
 
