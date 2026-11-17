@@ -6,7 +6,7 @@
 
 | 文書 | 内容 |
 | --- | --- |
-| [mock.md](mock.md) | GitHub完成モックの取得・無加工でのAppBlock表示・最新版再取得ボタン |
+| [mock.md](mock.md) | ブラウザ版モックの確認・UI検証・本体への反映手順 |
 | [chat.md](chat.md) | 「00｜統合開発」の質問番号、ラジオボタン形式、コメント、一括送信 |
 | [development.md](development.md) | GitHub変更時の許可、保護資材、検証結果の区別、引き継ぎ |
 
