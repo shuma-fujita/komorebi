@@ -26,10 +26,8 @@ const css=[...pieces.map(x=>x[0]),...pieces.map(x=>x[1]),read('theme.css').trim(
 let html=read(mock?'mock.template.html':'dev.template.html');
 if(!html.includes('<!-- @page-shell -->'))throw Error('Missing shared page shell marker');
 let shell=read('page-shell.html').trimEnd();
-const diagnostic=mock?'':read('dev-launch-diagnostic.html').trimEnd();
-shell=shell.replace('<!-- @launch-diagnostic -->',diagnostic);
 shell=shell.replace('/* @heading-attrs */',mock?'':' style="display:flex;justify-content:space-between"');
-if(shell.includes('<!-- @launch-diagnostic -->')||shell.includes('/* @heading-attrs */'))
+if(shell.includes('/* @heading-attrs */'))
  throw Error('Unresolved page shell marker');
 html=html.replace('<!-- @page-shell -->',shell);
 if(!mock){
@@ -47,6 +45,10 @@ for(const id of panelIds){
  const marker='<!-- @panel:'+id+' -->';
  if(!html.includes(marker))throw Error('Missing panel '+id);
  let panelHtml=read('panels/'+variant(id)+'.html').trimEnd();
+ if(id==='runtime'){
+  if(!panelHtml.includes('<!-- @launch-diagnostic -->'))throw Error('Missing runtime diagnostic marker');
+  panelHtml=panelHtml.replace('<!-- @launch-diagnostic -->',mock?'':read('dev-launch-diagnostic.html').trimEnd());
+ }
  if(id==='game'){
   const gameFrame=read('panels/game.frame.html').trimEnd();
   if(!gameFrame.includes('<!-- @game-view -->'))throw Error('Missing shared game view marker');
