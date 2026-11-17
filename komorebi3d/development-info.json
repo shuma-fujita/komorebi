@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "Bの2kmタイルを上野-6_-4から松戸中央0_0に戻した（PCで重いため／実機未確認）",
-  "common": "ゲームパネル共通枠・ヘルプ表示をlayout.cssへ集約。game.mock.cssは疑似表示、game.cssはCanvas/操作描画用に整理（静的PASS・Safari実機未確認）"
+  "common": "パネル移動エディタの初期化を共通関数へ統合。既存DOMから初期配置を読み取り、ゲーム起動前の配置は維持（静的PASS／Safari実機待ち）"
 }
