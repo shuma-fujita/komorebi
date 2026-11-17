@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "Bの2kmタイルを上野-6_-4から松戸中央0_0に戻した（PCで重いため／実機未確認）",
-  "common": "ビルドモード名をproduct→devに変更。デフォルトdev／mockは維持、将来のproductionは未実装（静的PASS・実機未確認）"
+  "common": "4パネル外側HTMLをpage-shell.htmlに一本化、dev診断を専用断片化。展開後テンプレートは変更前と全文一致（静的PASS・実機待ち）"
 }
