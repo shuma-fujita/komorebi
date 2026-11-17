@@ -1,4 +1,6 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Komorebi 3D DEV｜NPC表示限界テスト</title><style>/* Shared page and panel styles from canonical dev.html. */
+/* Mock and product share these game-panel design values. */
+:root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb}
 *{box-sizing:border-box}
 body{margin:0;padding:12px;background:#f2f0e4;color:#4d5540;font:12px system-ui}
 .shell{max-width:760px;margin:auto}
@@ -91,12 +93,12 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 
 /* Match tested mock: flush game viewport and 1px A/B seam. */
 .shell .landscape-game,
-.shell .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
-#play-surface{width:100%;max-width:none;min-width:0;overflow:hidden;border-radius:9px;background:#edf3eb}
-#play-surface>#views{width:100%;gap:1px}
+.shell .panel-slot[data-slot-size-fixed]>.landscape-game{padding:var(--ui-game-panel-padding);border:0}
+#play-surface{width:100%;max-width:none;min-width:0;overflow:hidden;border-radius:var(--ui-ab-outer-radius);background:var(--ui-ab-seam-bg)}
+#play-surface>#views{width:100%;gap:var(--ui-ab-gap)}
 #play-surface .view-panel{min-width:0;overflow:hidden}
-#play-surface .views:not(.single) #panel-a>canvas{border-radius:9px 6px 6px 9px}
-#play-surface .views:not(.single) #panel-b>canvas{border-radius:6px 9px 9px 6px}
+#play-surface .views:not(.single) #panel-a>canvas{border-radius:var(--ui-ab-outer-radius) var(--ui-ab-inner-radius) var(--ui-ab-inner-radius) var(--ui-ab-outer-radius)}
+#play-surface .views:not(.single) #panel-b>canvas{border-radius:var(--ui-ab-inner-radius) var(--ui-ab-outer-radius) var(--ui-ab-outer-radius) var(--ui-ab-inner-radius)}
 
 /* Styles for test panel from canonical dev.html. */
 .mode-buttons button{min-width:0;padding:11px 3px}
@@ -213,9 +215,9 @@ button.slider-step:active{background:#c4dec1}
  .landscape-game .views.single .view-panel > canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
  .landscape-game .views:not(.single) .view-panel > canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
  /* Fill the landscape game viewport without affecting game logic. */
- .shell .landscape-game,.shell .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
+ .shell .landscape-game,.shell .panel-slot[data-slot-size-fixed]>.landscape-game{padding:var(--ui-game-panel-padding);border:0}
  #play-surface{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
- #play-surface>#views{height:100%;gap:1px}
+ #play-surface>#views{height:100%;gap:var(--ui-ab-gap)}
  #play-surface .view-panel:not(.off){display:block;min-width:0;min-height:0}
  #play-surface .view-panel>canvas{width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:auto}
 }
