@@ -117,3 +117,78 @@ button.panel-add-button{color:var(--g-accent)}
 
 /* Map JSON log box (dev only) is created with inline light border styles. */
 .runtime-status div:has(> #map-debug-log){border-color:#3e5446!important;background:#141b16}
+
+/* ================= Modern layout proposal (CSS only) =================
+   Same markup and scripts; flatter surfaces, segmented controls,
+   metric tiles and a clearer type hierarchy. */
+:root{--m-r:14px;--m-r-sm:10px;--m-hair:rgba(255,255,255,.06);--m-well:rgba(0,0,0,.28)}
+
+/* Page heading */
+.mock-root .site-heading{font-size:14px;padding:2px 2px 4px;text-shadow:none}
+.mock-root .site-heading strong{font-weight:800;letter-spacing:.02em}
+
+/* Panel surfaces: rounder, lighter borders, soft depth */
+.build-info,.landscape-game,.test-panel,.runtime-status,
+.mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{border-radius:var(--m-r);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 30px rgba(0,0,0,.35)}
+.landscape-game .play-surface,.mock-root .landscape-game .play-surface.ab-compare{border-radius:calc(var(--m-r) - 1px)}
+
+/* ---- Build info: key/value chips ---- */
+.build-info{padding:12px 14px}
+.build-info .build-line{display:inline-flex;align-items:center;gap:0;margin:0 6px 6px 0;padding:4px 10px;border-radius:999px;background:var(--m-well);border:1px solid var(--m-hair);font-size:11px;line-height:1.5;max-width:100%}
+@container (min-width:1000px){.mock-root .panel-slot-top>.build-info{gap:6px}.mock-root .panel-slot-top>.build-info .build-line{margin:0}}
+
+/* ---- Test panel ---- */
+.test-panel-header{display:flex;align-items:center;gap:10px;padding:10px 52px 10px 14px;border-bottom:1px solid var(--m-hair)}
+.test-panel-heading{flex:none;min-height:0!important;padding-right:0!important;white-space:nowrap}
+.test-panel button.test-reset{flex:1;min-width:0;width:auto!important;min-height:44px!important;padding:6px 10px!important;border-radius:10px!important;white-space:nowrap}
+.test-panel-body{padding:14px}
+.test-section-title{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.06em;color:#b3a28c}
+.test-separator{height:0;background:none;margin:18px 0 0}
+
+/* Segmented controls: world + display mode */
+.test-panel .buttons[role="group"],.test-panel .mode-buttons{display:grid;gap:3px;padding:3px;border-radius:12px;background:var(--m-well);border:1px solid var(--m-hair)}
+.test-panel .buttons[role="group"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+.test-panel .buttons[role="group"] button,.test-panel .mode-buttons button{min-height:40px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:#cdbfa9!important;box-shadow:none!important;transition:background .15s,color .15s}
+.test-panel .buttons[role="group"] button:hover,.test-panel .mode-buttons button:hover{color:#f3e7d6!important}
+.test-panel .buttons[role="group"] button.selected,.test-panel .mode-buttons button.selected{background:#1d3324!important;color:var(--g-accent)!important;box-shadow:inset 0 0 0 1px rgba(62,224,127,.35),0 2px 8px rgba(0,0,0,.4)!important}
+.test-panel #mode-status{margin-top:6px;font-size:10.5px}
+
+/* A/B settings: flat columns with segmented choices */
+.screen-settings{height:auto;gap:10px;margin-top:12px}
+.screen-card{padding:0;border:0;background:none}
+.screen-title{display:inline-block;margin:0 0 8px;padding:3px 10px;border-radius:999px;background:#3c3126;font-size:11px;letter-spacing:.04em}
+.setting-group{margin:0 0 10px;padding:0;border:0;background:none}
+.setting-group legend{margin:0 0 5px;font-size:10.5px;color:#b3a28c}
+.setting-group label{position:relative;display:inline-flex;justify-content:center;width:calc(50% - 2px);min-height:36px;margin:0;padding:0 6px;border-radius:9px;background:var(--m-well);border:1px solid var(--m-hair);color:#cdbfa9;font-weight:600;transition:background .15s,color .15s}
+.setting-group label+label{margin-left:4px}
+.setting-group input{position:absolute;opacity:0;pointer-events:none}
+.setting-group label:has(input:checked){background:#30281f;border-color:#8f7355;color:#f3e7d6}
+.setting-group label:has(input:focus-visible){outline:2px solid var(--g-accent);outline-offset:1px}
+/* Differences: amber legend + amber selection */
+.setting-group.is-different{background:none;border:0}
+.setting-group.is-different legend{color:var(--g-warn)}
+.setting-group.is-different label:has(input:checked){background:rgba(255,181,71,.13);border-color:#b07a2c;color:#ffd38a}
+
+/* Toggle buttons and location chips */
+.test-panel .buttons:not([role]) button,.test-panel .test-locations button{border-color:var(--m-hair)!important;background:var(--m-well)!important;border-radius:10px!important;font-weight:600!important}
+.test-panel .buttons:not([role]) button.selected{background:#1d3324!important;border-color:rgba(62,224,127,.45)!important;color:var(--g-accent)!important}
+.test-panel .test-locations{gap:6px}
+.test-panel .test-locations button{min-height:40px!important;font-size:11px!important}
+
+/* Sliders: slim track, round thumb, value pill */
+.test-panel .debug-controls{gap:4px;margin-top:14px}
+.test-panel .debug-controls label{font-size:11px;font-weight:600;color:#cdbfa9}
+.test-panel .debug-controls output{padding:1px 8px;border-radius:999px;background:var(--m-well);font-size:11px;color:#f3e7d6}
+.test-panel .debug-controls input[type=range]::-webkit-slider-runnable-track{height:6px;border:0;background:#4a3d2f}
+.test-panel .debug-controls input[type=range]::-webkit-slider-thumb{width:24px;height:24px;margin-top:-9px;border:3px solid #251f18;background:#f0e2cc;box-shadow:0 0 0 1px #8f7355,0 2px 6px #000a}
+.test-panel .debug-controls input[type=range]::-moz-range-track{height:6px;border:0;background:#4a3d2f}
+.test-panel .debug-controls input[type=range]::-moz-range-thumb{width:20px;height:20px;border:3px solid #251f18;background:#f0e2cc}
+.test-panel button.slider-step{border-radius:50%!important;background:transparent!important;border-color:var(--m-hair)!important;font-size:20px!important}
+
+/* ---- Runtime status: metric tiles ---- */
+.runtime-status{padding:12px 14px}
+.runtime-status #collision-status{font-size:12px}
+.runtime-status #sync-status,.runtime-status #map-source-status,.runtime-status #label-status{font-size:11px}
+.mock-root .panel-slot .runtime-status>.stats,.runtime-status .stats{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:6px 0}
+.runtime-status .stats span{padding:10px 12px;border-radius:var(--m-r-sm);background:var(--m-well);border:1px solid var(--m-hair);font-size:12px;color:#e4eee5;min-width:0;overflow-wrap:anywhere}
+.runtime-status #status{font-size:11px;color:#86a98f}
