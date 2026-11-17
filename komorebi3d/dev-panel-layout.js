@@ -233,3 +233,13 @@ export function mountPanelLayoutEditor(doc,initialLayout,{preserveSlotSize=false
  }
  return {getLayout:()=>({...layout})};
 }
+
+/* Initialize the editor from the panels already placed in the four slots.
+   Product's synchronous pre-Engine layout and mock's static layout both work. */
+export function mountDefaultPanelLayoutEditor(doc){
+ const initialLayout=Object.fromEntries(SLOT_IDS.map(name=>{
+  const slot=doc.querySelector('[data-panel-slot="'+name+'"]');
+  return [name,slot?.querySelector(':scope > [data-panel-id]')?.dataset.panelId??null];
+ }));
+ return mountPanelLayoutEditor(doc,initialLayout,{preserveSlotSize:true});
+}
