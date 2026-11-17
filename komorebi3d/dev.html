@@ -71,7 +71,7 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .build-help-overlay{padding:14px}
 .build-help-label{padding:14px 20px}
 
-/* Styles for game panel from canonical dev.html. */
+/* Real WebGL/Canvas presentation, touch controls and debug map only. */
 .views{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .views.single{grid-template-columns:minmax(0,1fr)}
 .view-panel{position:relative}
@@ -86,13 +86,7 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .debug-map canvas{width:100%;height:auto;aspect-ratio:1;background:transparent;border-radius:3px}
 .debug-map-title{font-size:10px;font-weight:700;margin-bottom:3px}
 .debug-map-legend{font-size:9px;display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
-.landscape-game{position:relative;--help-button-color:#31563b;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
-.landscape-game button.game-help-button{display:block;z-index:4}
-.landscape-game .game-help-overlay:not([hidden]){display:flex}
 
-/* Match tested mock: flush game viewport and 1px A/B seam. */
-.shell .landscape-game,
-.shell .panel-slot[data-slot-size-fixed]>.landscape-game{padding:var(--ui-game-panel-padding);border:0}
 #play-surface{width:100%;max-width:none;min-width:0;overflow:hidden;border-radius:var(--ui-ab-outer-radius);background:var(--ui-ab-seam-bg)}
 #play-surface>#views{width:100%;gap:var(--ui-ab-gap)}
 #play-surface .view-panel{min-width:0;overflow:hidden}
@@ -232,18 +226,18 @@ body{padding:6px}
 .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:0 var(--ui-ab-inner-radius) var(--ui-ab-inner-radius) 0;overflow:hidden}
 .mock-root .landscape-game .play-surface.ab-compare .screen-view+.screen-view{border-left:0;border-radius:var(--ui-ab-inner-radius) 0 0 var(--ui-ab-inner-radius)}
 
+/* Shared game-panel chrome: identical for the faux view and live WebGL view. */
+.landscape-game{position:relative;min-width:0;min-height:0;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden;--help-button-color:#31563b;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
+.landscape-game button.game-help-button{display:block;z-index:4}
+.landscape-game .game-help-overlay:not([hidden]){display:flex}
+
 @media (orientation:landscape) and (min-width:900px) and (min-height:600px){
- .landscape-game{min-height:0;min-width:0;padding:7px;background:#edf3eb;border:1px solid #c4d7c9;border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}
- .landscape-game button.game-help-button{display:block;z-index:4}
- .landscape-game .game-help-overlay:not([hidden]){display:flex}
  .landscape-game .play-surface{height:100%;width:auto;max-width:100%;min-width:0;min-height:0;aspect-ratio:3/4;flex:0 1 auto}
  .landscape-game .play-surface.ab-compare{width:100%;height:100%;aspect-ratio:auto;flex:1 1 auto}
  .landscape-game .views{width:100%;height:100%;min-height:0}
  .landscape-game .view-panel:not(.off){min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}
  .landscape-game .views.single .view-panel > canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
  .landscape-game .views:not(.single) .view-panel > canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
- /* Fill the landscape game viewport without affecting game logic. */
- .shell .landscape-game,.shell .panel-slot[data-slot-size-fixed]>.landscape-game{padding:var(--ui-game-panel-padding);border:0}
  #play-surface{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
  #play-surface>#views{height:100%;gap:var(--ui-ab-gap)}
  #play-surface .view-panel:not(.off){display:block;min-width:0;min-height:0}
