@@ -21,7 +21,8 @@ const cssPath=name=>name==='common'?'common.css':name==='layout'?'layout.css':'p
 // Both pages use the canonical test panel markup and CSS; only the game viewport differs.
 const commonCSS=read('common.css');
 const pieces=names.map(name=>split(name==='common'?commonCSS:read(cssPath(name))));
-const css=[...pieces.map(x=>x[0]),...pieces.map(x=>x[1])].filter(Boolean).join('\n\n');
+// The color theme goes last so it overrides component and @media colors.
+const css=[...pieces.map(x=>x[0]),...pieces.map(x=>x[1]),read('theme.css').trim()].filter(Boolean).join('\n\n');
 let html=read(mock?'mock.template.html':'dev.template.html');
 if(!html.includes('<!-- @page-shell -->'))throw Error('Missing shared page shell marker');
 let shell=read('page-shell.html').trimEnd();

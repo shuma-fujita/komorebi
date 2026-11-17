@@ -234,10 +234,6 @@ body{padding:6px}
 .touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 
 /* iPhone-sized portrait view: grow only the slot holding the game at initial layout. */
-@media (orientation:portrait) and (max-width:600px){
- .mock-root .landscape-main .panel-slot-main:has(> .landscape-game){height:110svh}
- .mock-root .landscape-main .panel-slot-main:has(> .landscape-game)>.landscape-game{height:100%}
-}
 
 @media (orientation:landscape) and (min-width:900px) and (min-height:600px){
  .landscape-game .play-surface{height:100%;width:auto;max-width:100%;min-width:0;min-height:0;aspect-ratio:3/4;flex:0 1 auto}
@@ -262,7 +258,132 @@ body{padding:6px}
  .runtime-status{margin-top:12px;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49}
  .runtime-status-heading{display:block;font-size:13px;margin:0 0 8px}
  .runtime-status .stats{margin-top:8px}
-}</style></head><body><div class="mock-root"><div class="mock-frame"><div class="shell"><div id="launch-diagnostic" style="padding:10px;margin:8px 0;background:#fff3c8;border-radius:8px;font-size:13px">診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。</div><div class="landscape-hero"><div class="site-heading" style="display:flex;justify-content:space-between"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">56bb2bc</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface"><div class="views single" id="views"><div class="view-panel off" id="panel-a"><canvas id="a"></canvas><div class="debug-map" id="debug-map-a" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas-a" width="256" height="256" role="img" aria-label="画面A：主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div></div><div class="view-panel" id="panel-b"><canvas id="b"></canvas><div class="debug-map" id="debug-map-b" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas-b" width="256" height="256" role="img" aria-label="画面B：主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div></div></div><div class="touch-layer"><div class="touch-zone" id="pad" aria-label="左半分：キャラクター移動"></div><div class="touch-zone" id="camera-pad" aria-label="右半分：カメラ操作"></div></div></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
+}
+
+@media (orientation:portrait) and (max-width:600px){
+ .mock-root .landscape-main .panel-slot-main:has(> .landscape-game){height:110svh}
+ .mock-root .landscape-main .panel-slot-main:has(> .landscape-game)>.landscape-game{height:100%}
+}
+
+/* Gaming black-green theme for dev and mock pages.
+   Appended after all component and @media CSS so it overrides base colors;
+   each panel keeps a darkened version of its original color. */
+:root{
+ --g-bg:#050806;--g-surface:#0b130e;--g-surface-2:#101b14;--g-surface-3:#152419;
+ --g-border:#1d3325;--g-border-2:#2b5238;
+ --g-text:#d3ead7;--g-text-dim:#86a98f;--g-text-mute:#5d7a65;
+ --g-accent:#3ee07f;--g-accent-soft:rgba(62,224,127,.14);--g-glow:0 0 14px rgba(62,224,127,.22);
+ --g-warn:#ffb547;--g-warn-soft:rgba(255,181,71,.10);--g-danger:#ff6b5e;--g-danger-soft:rgba(255,107,94,.10);
+ --ui-ab-seam-bg:var(--g-border);
+ --ui-test-border:var(--g-border);--ui-test-bg:var(--g-surface);--ui-test-text:var(--g-text);--ui-test-divider:var(--g-border);
+ --ui-test-button-bg:var(--g-surface-2);--ui-test-button-border:var(--g-border-2);
+ --ui-test-selected-bg:var(--g-accent-soft);--ui-test-selected-border:var(--g-accent);--ui-test-selected-text:var(--g-accent);
+ color-scheme:dark;
+}
+body,.mock-root .mock-frame{background:var(--g-bg);color:var(--g-text)}
+.mock-root .mock-frame{background:radial-gradient(ellipse at 50% -10%,#0f2416 0,var(--g-bg) 60%)}
+.mock-root .site-heading{color:var(--g-accent);letter-spacing:.04em;text-shadow:var(--g-glow)}
+button{background:var(--g-surface-2);border-color:var(--g-border-2);color:var(--g-text)}
+button:hover{border-color:var(--g-accent)}
+
+/* Panel chrome */
+.build-info,.landscape-game,.test-panel,.runtime-status,
+.mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{
+ background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text);
+ box-shadow:inset 0 1px 0 rgba(62,224,127,.06),0 0 0 1px rgba(0,0,0,.4)}
+/* Build info keeps the original soft sage-green character, shifted dark. */
+.build-info{background:linear-gradient(180deg,#1d3324,#172a1d);border-color:#4f7a57;color:#b4d1b4;}
+.build-info strong{color:#e3f2df}
+.build-info code{color:#31563b;background:#cfe3c9;padding:1px 5px;border-radius:4px}
+.test-panel-heading,.runtime-status-heading{color:var(--g-accent)}
+.test-panel-header{background:var(--g-surface)}
+.landscape-game .play-surface{background:#000}
+/* Game panel frame: as visible as the other panels' borders. */
+.landscape-game,.mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{border-color:#4a7656}
+
+/* Help (ⓘ) overlays */
+.build-info,.landscape-game,.test-panel,.runtime-status{
+ --help-button-color:var(--g-text-dim);--help-overlay-bg:rgba(2,6,3,.72);
+ --help-label-bg:var(--g-surface-3);--help-label-color:var(--g-accent);
+ --help-focus-outline:2px solid var(--g-accent)}
+.panel-help-label{border:1px solid var(--g-border-2);box-shadow:var(--g-glow)}
+
+/* Test panel controls */
+.test-panel button.test-reset{background:var(--g-danger-soft);border-color:#6a2c27;color:var(--g-danger)}
+.test-panel .test-panel-body button:hover{border-color:var(--g-accent)}
+.test-panel .buttons button.selected,.test-panel .mode-buttons button.selected{background:var(--g-accent-soft);border-color:var(--g-accent);color:var(--g-accent);box-shadow:var(--g-glow)}
+.test-section-title{color:var(--g-text)}
+.test-panel #mode-status{color:var(--g-text-mute)}
+.test-separator{background:var(--g-border)}
+.screen-card{background:var(--g-surface-2);border-color:var(--g-border)}
+.screen-title{background:var(--g-surface-3);color:var(--g-accent)}
+.setting-group{background:var(--g-surface);border-color:var(--g-border)}
+.setting-group legend{color:var(--g-text-dim)}
+.setting-group input{accent-color:var(--g-accent)}
+.setting-group.is-different{background:var(--g-warn-soft);border-color:#7a5520}
+.setting-group.is-different legend{color:var(--g-warn)}
+.test-panel .debug-controls input[type=range]::-webkit-slider-runnable-track{background:var(--g-surface-3);border-color:var(--g-border-2)}
+.test-panel .debug-controls input[type=range]::-webkit-slider-thumb{background:var(--g-accent);border-color:var(--g-bg);box-shadow:var(--g-glow)}
+.test-panel .debug-controls input[type=range]::-moz-range-track{background:var(--g-surface-3);border-color:var(--g-border-2)}
+.test-panel .debug-controls input[type=range]::-moz-range-thumb{background:var(--g-accent);border-color:var(--g-bg)}
+.test-panel button.slider-step{background:var(--g-surface-3);border-color:var(--g-border-2);color:var(--g-accent)}
+.test-panel button.slider-step:active{background:var(--g-accent-soft)}
+.debug-controls output{color:var(--g-accent)}
+
+/* Runtime status (overrides inline light styles) */
+.runtime-status{color:var(--g-text-dim)}
+.runtime-status #collision-status{color:var(--g-text)}
+.runtime-status #label-status{color:var(--g-text-mute)!important}
+.runtime-status p[style]{background:var(--g-surface-2)!important;color:var(--g-text-dim)!important;border:1px solid var(--g-border)}
+.runtime-status p[style*="font-size:10px"]{background:none!important;border:0;color:var(--g-text-mute)!important}
+.runtime-status .stats span{color:var(--g-accent);font-variant-numeric:tabular-nums}
+
+/* Layout editor */
+button.panel-add-button{color:var(--g-accent)}
+.panel-add-menu{background:var(--g-surface-3);border-color:var(--g-border-2);color:var(--g-text);box-shadow:0 8px 24px #000a}
+.panel-add-menu-title{color:var(--g-text-mute)}
+.panel-add-menu button{background:var(--g-surface-2);color:var(--g-text)}
+.panel-slot.panel-drop-target{outline-color:var(--g-accent);box-shadow:0 0 0 5px rgba(62,224,127,.18)}
+
+/* Test panel keeps the original warm beige/brown character, shifted dark. */
+.test-panel{
+ --ui-test-border:#6b5a45;--ui-test-bg:#251f18;--ui-test-text:#e3d5c1;--ui-test-divider:#4a3d2f;
+ --ui-test-button-bg:#30281f;--ui-test-button-border:#6f5c46;
+ --help-button-color:#d8c7ae;
+ background:#251f18;border-color:#6b5a45;color:#e3d5c1}
+.test-panel-header{background:#251f18}
+.test-panel-heading,.test-section-title{color:#f3e7d6}
+.test-panel #mode-status{color:#b3a28c}
+.test-separator{background:#4a3d2f}
+.test-panel button.test-reset{background:#3a221b;border-color:#8a5a46;color:#f0a58f}
+.test-panel .test-panel-body button:hover{border-color:#c9a57e}
+.screen-card{background:#2c241c;border-color:#5a4a38}
+.screen-title{background:#3c3126;color:#f0e2cc}
+.setting-group{background:#231d16;border-color:#5a4a38}
+.setting-group legend{color:#d8c7ae}
+.test-panel .debug-controls input[type=range]::-webkit-slider-runnable-track{background:#4a3d2f;border-color:#6f5c46}
+.test-panel .debug-controls input[type=range]::-webkit-slider-thumb{background:#c9a57e;border-color:#251f18;box-shadow:0 2px 7px #0008}
+.test-panel .debug-controls input[type=range]::-moz-range-track{background:#4a3d2f;border-color:#6f5c46}
+.test-panel .debug-controls input[type=range]::-moz-range-thumb{background:#c9a57e;border-color:#251f18}
+.test-panel button.slider-step{background:#3c3126;border-color:#6f5c46;color:#f0e2cc}
+.test-panel button.slider-step:active{background:#4a3d2f}
+.test-panel .debug-controls output{color:#f0e2cc}
+
+/* Runtime status keeps the original cool grey-green character, shifted dark. */
+.runtime-status{background:#18201b;border-color:#56695b;color:#b9c8bc;
+ --help-button-color:#b9c8bc}
+.runtime-status-heading,.runtime-status #collision-status{color:#e4eee5}
+.runtime-status #label-status{color:#8fb4b9!important}
+.runtime-status p[style]{background:#20302a!important;border-color:#3e5446;color:#b9d4bd!important}
+.runtime-status p[style*="font-size:10px"]{background:none!important;border:0;color:#a8987f!important}
+.runtime-status .stats span{color:#cfe0d0}
+
+/* Launch diagnostic banner (dev only): its inline light-yellow background
+   needs dark-theme text to stay readable. */
+#launch-diagnostic{background:#2a2410!important;border:1px solid #7a5520;color:#ffd77a}
+
+/* Map JSON log box (dev only) is created with inline light border styles. */
+.runtime-status div:has(> #map-debug-log){border-color:#3e5446!important;background:#141b16}</style></head><body><div class="mock-root"><div class="mock-frame"><div class="shell"><div id="launch-diagnostic" style="padding:10px;margin:8px 0;background:#fff3c8;border-radius:8px;font-size:13px">診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。</div><div class="landscape-hero"><div class="site-heading" style="display:flex;justify-content:space-between"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">56bb2bc</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface"><div class="views single" id="views"><div class="view-panel off" id="panel-a"><canvas id="a"></canvas><div class="debug-map" id="debug-map-a" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas-a" width="256" height="256" role="img" aria-label="画面A：主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div></div><div class="view-panel" id="panel-b"><canvas id="b"></canvas><div class="debug-map" id="debug-map-b" hidden aria-hidden="true"><div class="debug-map-title">🗺️ 100m × 100m / 全NPC位置</div><canvas id="debug-map-canvas-b" width="256" height="256" role="img" aria-label="画面B：主人公が赤い点、全ハムスターが黄色い点のデバッグマップ"></canvas><div class="debug-map-legend"><span>🔴 主人公</span><span>🟡 ハム全員（3D非表示も）</span></div></div></div></div><div class="touch-layer"><div class="touch-zone" id="pad" aria-label="左半分：キャラクター移動"></div><div class="touch-zone" id="camera-pad" aria-label="右半分：カメラ操作"></div></div></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
 <div class="test-panel-header">
 <strong class="test-panel-heading">🧪 テスト操作（開発用）</strong>
 <button type="button" class="panel-help-button test-help-button" id="test-help-button" aria-label="このエリアの名前：テスト操作パネル" aria-describedby="test-help-overlay"><span>ⓘ</span></button>
