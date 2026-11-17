@@ -1,6 +1,6 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Komorebi 3D DEV｜NPC表示限界テスト</title><style>/* Shared page and panel styles from canonical dev.html. */
 /* Mock and product share these game-panel design values. */
-:root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb}
+:root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb;--ui-panel-gap:8px;--ui-pc-panel-columns:minmax(0,2fr) minmax(0,1fr);--ui-runtime-columns:repeat(3,minmax(0,1fr));--ui-test-border:#d5c8b6;--ui-test-bg:#f5ede0;--ui-test-text:#554a3f;--ui-test-divider:#dccbb5;--ui-test-button-bg:#fffaf3;--ui-test-button-border:#c4b29c;--ui-test-selected-bg:#d9ebd5;--ui-test-selected-border:#64956c;--ui-test-selected-text:#31563b}
 *{box-sizing:border-box}
 body{margin:0;padding:12px;background:#f2f0e4;color:#4d5540;font:12px system-ui}
 .shell{max-width:760px;margin:auto}
@@ -17,7 +17,8 @@ button.panel-help-button:focus-visible{outline:var(--help-focus-outline);outline
 .test-panel-body{padding:10px 11px 11px}
 /* Test controls: keep the reset header visible; scroll only the body. */
 .test-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:visible}
-.test-panel-header{position:sticky;top:0;flex:0 0 auto}
+.test-panel-header{position:sticky;top:0;flex:0 0 auto;padding:10px 11px 9px;border-bottom:1px solid var(--ui-test-divider)}
+.test-panel-heading{display:block;min-height:38px;padding-right:43px;font-size:12px;font-weight:750}
 .test-panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 /* Shared display-mode controls used by product and lightweight mocks. */
 .test-panel .mode-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0}
@@ -116,10 +117,9 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 button.slider-step{flex:0 0 44px;width:44px;min-height:44px;padding:0;border-radius:14px;background:#e5f0df;border-color:#91af8e;color:#315c3f;font-size:25px;line-height:1;touch-action:manipulation}
 button.slider-step:active{background:#c4dec1}
 .debug-controls output{font-variant-numeric:tabular-nums;white-space:nowrap}
-.test-panel{position:relative;margin-top:8px;padding:0;border:1px solid #d5c8b6;border-radius:9px;background:#f5ede0;color:#554a3f;font-size:12px;line-height:1.65;--help-button-color:#554a3f;--help-overlay-bg:rgba(69,50,28,.34);--help-label-bg:#fffdf8;--help-label-color:#554a3f;--help-focus-outline:2px solid #8a6b4a;--help-focus-offset:-4px}
-.test-panel-header{padding:10px 11px 9px;background:#f5ede0;border-bottom:1px solid #dccbb5;z-index:1}
-.test-panel-heading{display:block;min-height:38px;padding-right:43px;font-size:12px;font-weight:750}
-.test-panel button.test-reset,.test-panel .test-panel-body button{min-height:44px;padding:9px 7px;border:1px solid #c4b29c;border-radius:9px;background:#fffaf3;color:#554a3f;font:700 12px system-ui;cursor:pointer;touch-action:manipulation}
+.test-panel{position:relative;margin-top:8px;padding:0;border:1px solid var(--ui-test-border);border-radius:9px;background:var(--ui-test-bg);color:var(--ui-test-text);font-size:12px;line-height:1.65;--help-button-color:#554a3f;--help-overlay-bg:rgba(69,50,28,.34);--help-label-bg:#fffdf8;--help-label-color:#554a3f;--help-focus-outline:2px solid #8a6b4a;--help-focus-offset:-4px}
+.test-panel-header{background:var(--ui-test-bg);z-index:1}
+.test-panel button.test-reset,.test-panel .test-panel-body button{min-height:44px;padding:9px 7px;border:1px solid var(--ui-test-button-border);border-radius:9px;background:var(--ui-test-button-bg);color:var(--ui-test-text);font:700 12px system-ui;cursor:pointer;touch-action:manipulation}
 .test-panel button.test-reset{display:block;width:100%;margin:0;background:#f6e5da;border-color:#d0a793;color:#8a4a38}
 .test-section-title{margin:3px 0 8px;font-weight:750}
 .test-panel #mode-status{margin-top:5px;margin-bottom:0;font-size:11px;color:#81715f}
@@ -127,7 +127,7 @@ button.slider-step:active{background:#c4dec1}
 .test-panel .buttons{margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .test-panel .buttons button{min-width:0}
 /* Match the existing render-mode selection styling for world and on/off controls. */
-.test-panel .buttons button.selected{background:#d9ebd5;border-color:#64956c;color:#31563b}
+.test-panel .buttons button.selected{background:var(--ui-test-selected-bg);border-color:var(--ui-test-selected-border);color:var(--ui-test-selected-text)}
 .test-panel .debug-controls{gap:7px;margin-top:10px}
 .test-panel .debug-controls label{font-size:12px}
 .test-panel .debug-controls input[type=range]::-webkit-slider-runnable-track{background:#dbc8b3;border-color:#c2ab8f}
@@ -163,14 +163,14 @@ button.slider-step:active{background:#c4dec1}
  body{padding:12px}
  .shell{max-width:none;width:100%;margin:0}
  #launch-diagnostic{display:none}
- .landscape-hero{height:calc(100vh - 24px);height:calc(100svh - 24px);display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+ .landscape-hero{height:calc(100vh - 24px);height:calc(100svh - 24px);display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;overflow:hidden}
  .landscape-hero .site-heading{flex:0 0 auto}
  .landscape-hero .panel-slot-top{flex:0 0 auto;min-width:0;min-height:0}
  .landscape-hero .panel-slot-top>.build-info{margin:0}
  .landscape-hero .panel-slot-top:not([data-panel="build"]):not([data-panel="empty"]){height:min(38svh,300px)}
  .landscape-hero .panel-slot-top>[data-panel-id]:not(.build-info){height:100%;margin:0;min-height:0}
  .landscape-hero .panel-slot-top>.runtime-status{overflow-y:auto}
- .landscape-main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+ .landscape-main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--ui-panel-gap)}
  .landscape-main[data-visible-panels="1"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
  .landscape-hero .panel-slot-top[data-panel="empty"]{min-height:70px;z-index:6}
  .landscape-main .panel-slot-main[data-panel="empty"]{overflow:visible;min-height:0}
@@ -188,12 +188,12 @@ button.slider-step:active{background:#c4dec1}
 }
 
 /* PC layout (same as mock): wider game panel, horizontal build info, 3-column runtime status. */
-/* Product-only file, so mock.chat.html stays small. IDs raise priority over panel and fixed-slot CSS. */
+/* Product layout selectors retain precedence over panel and fixed-slot CSS. */
 @media (orientation:landscape) and (min-width:1000px) and (min-height:600px){
- .shell .landscape-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+ .shell .landscape-main{grid-template-columns:var(--ui-pc-panel-columns)}
  .shell .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
  .shell .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
- .shell .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px}
+ .shell .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:var(--ui-runtime-columns);gap:6px 10px}
  .shell .panel-slot-bottom>.runtime-status>:is(.runtime-status-heading,#collision-status,#sync-status,.stats,#status,p:not([id])){grid-column:1/-1}
  .shell .panel-slot-bottom>.runtime-status>p{margin:0;min-width:0}
  .shell .panel-slot-bottom>.runtime-status>:is(#ea,#eb):empty{display:none}
