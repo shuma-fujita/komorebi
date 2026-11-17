@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 4パネル外枠HTML共通化（静的PASS／Safari実機待ち）：** ユーザー承認により `komorebi3d/page-shell.html` を新設し、`mock.template.html` / `dev.template.html` で二重管理していた `.mock-root > .mock-frame > .shell` とタイトル・4パネルスロットの外側HTMLを一本化。各テンプレートは `<!-- @page-shell -->` のみ参照し、`build-dev.mjs` が `--mode=mock` / `--mode=dev` に応じて展開する。dev固有の起動診断は `dev-launch-diagnostic.html` に分離、見出しのdev固有属性もビルド時に保持。**共通外枠展開後の両テンプレートが変更前Git履歴の元テンプレートと全文完全一致（mock 2,972文字・dev 67,773文字）することを確認。** 生成済み `mock.html` / `dev.html` は変更不要・変更なし。4パネル各HTML/CSS・共通CSS・パネル移動・モック疑似表示・実ゲームJS・固定Engineに変更なし。静的PASS、**ビルド実行／Safari実機／Actionsは未確認**。次は必要に応じて生成チェックと実機確認。
+
+
 > **2026-11-17 ビルドモード名 `product` → `dev`（静的PASS／実機未確認）：** ユーザー承認により `komorebi3d/build-dev.mjs` の受け付けモードを `dev` / `mock` に変更し、省略時のデフォルトを `dev` に変更。`--check` の案内も更新。`dev` は従来どおり `dev.template.html` → `dev.html`（4パネル・実ゲーム）、`mock` は `mock.template.html` → `mock.html`（4パネル・疑似ゲーム）を生成。旧 `--mode=product` は無効。将来の商用ゲームパネル専用 `production` は今回未実装。ゲームHTML・JS・CSS・Engine SHA、既存 `dev.html` / `mock.html` は変更なし。**モード設定・分岐・出力先の静的チェックPASS。ビルド実行／Safari実機／Actionsは未確認。**
 
 
