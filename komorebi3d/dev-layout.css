@@ -11,14 +11,14 @@
  body{padding:12px}
  .shell{max-width:none;width:100%;margin:0}
  #launch-diagnostic{display:none}
- .landscape-hero{height:calc(100vh - 24px);height:calc(100svh - 24px);display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+ .landscape-hero{height:calc(100vh - 24px);height:calc(100svh - 24px);display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;overflow:hidden}
  .landscape-hero .site-heading{flex:0 0 auto}
  .landscape-hero .panel-slot-top{flex:0 0 auto;min-width:0;min-height:0}
  .landscape-hero .panel-slot-top>.build-info{margin:0}
  .landscape-hero .panel-slot-top:not([data-panel="build"]):not([data-panel="empty"]){height:min(38svh,300px)}
  .landscape-hero .panel-slot-top>[data-panel-id]:not(.build-info){height:100%;margin:0;min-height:0}
  .landscape-hero .panel-slot-top>.runtime-status{overflow-y:auto}
- .landscape-main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+ .landscape-main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--ui-panel-gap)}
  .landscape-main[data-visible-panels="1"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
  .landscape-hero .panel-slot-top[data-panel="empty"]{min-height:70px;z-index:6}
  .landscape-main .panel-slot-main[data-panel="empty"]{overflow:visible;min-height:0}
@@ -36,12 +36,12 @@
 }
 
 /* PC layout (same as mock): wider game panel, horizontal build info, 3-column runtime status. */
-/* Product-only file, so mock.chat.html stays small. IDs raise priority over panel and fixed-slot CSS. */
+/* Product layout selectors retain precedence over panel and fixed-slot CSS. */
 @media (orientation:landscape) and (min-width:1000px) and (min-height:600px){
- .shell .landscape-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+ .shell .landscape-main{grid-template-columns:var(--ui-pc-panel-columns)}
  .shell .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
  .shell .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
- .shell .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px}
+ .shell .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:var(--ui-runtime-columns);gap:6px 10px}
  .shell .panel-slot-bottom>.runtime-status>:is(.runtime-status-heading,#collision-status,#sync-status,.stats,#status,p:not([id])){grid-column:1/-1}
  .shell .panel-slot-bottom>.runtime-status>p{margin:0;min-width:0}
  .shell .panel-slot-bottom>.runtime-status>:is(#ea,#eb):empty{display:none}
