@@ -69,7 +69,28 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .panel-slot-top>.build-info{margin:0}
 .panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
 
-:root{--test-panel-height:min(640px,75svh)}
+/* Shared responsive geometry. The nearest inline-size container is
+   .mock-root in the mock and .shell in the product. */
+.landscape-main .panel-slot-main{height:var(--test-panel-height);flex:none}
+.landscape-main .panel-slot-main>.landscape-game{height:var(--test-panel-height)}
+@container (min-width:650px){
+ .landscape-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);height:var(--test-panel-height);min-height:0;flex:none}
+ .landscape-main .panel-slot-main{height:100%;overflow:hidden}
+ .landscape-main .panel-slot-main[data-panel="empty"]{height:100%;min-height:0;overflow:visible}
+ .landscape-main .panel-slot-main>.landscape-game{height:100%}
+ .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px}
+ .panel-slot-bottom .runtime-status-heading,.panel-slot-bottom .mock-runtime-notice,.panel-slot-bottom #collision-status,.panel-slot-bottom #sync-status,.panel-slot-bottom .stats,.panel-slot-bottom #status{grid-column:1/-1}
+}
+@container (min-width:1000px){
+ .landscape-main{grid-template-columns:var(--ui-pc-panel-columns)}
+ .panel-slot-bottom>.runtime-status{grid-template-columns:var(--ui-runtime-columns)}
+ .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
+ .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
+}
+
+:root{--test-panel-height:max(640px,calc(100vh - 330px))}
+/* Query the actual product panel container, as the mock queries .mock-root. */
+.shell{width:100%;max-width:none;margin:0;container-type:inline-size}
 .landscape-main .panel-slot-main[data-panel="test"]:not([data-slot-size-fixed]){height:var(--test-panel-height)}
 .landscape-main .panel-slot-main>.test-panel{height:100%;margin:0;overflow:hidden}
 .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;aspect-ratio:auto;flex:1 1 auto}
@@ -184,7 +205,7 @@ button.slider-step:active{background:#c4dec1}
  .landscape-hero .panel-slot-top:not([data-panel="build"]):not([data-panel="empty"]){height:min(38svh,300px)}
  .landscape-hero .panel-slot-top>[data-panel-id]:not(.build-info){height:100%;margin:0;min-height:0}
  .landscape-hero .panel-slot-top>.runtime-status{overflow-y:auto}
- .landscape-main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--ui-panel-gap)}
+ .landscape-main{flex:1;min-height:0;min-width:0;display:grid;gap:var(--ui-panel-gap)}
  .landscape-main[data-visible-panels="1"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
  .landscape-hero .panel-slot-top[data-panel="empty"]{min-height:70px;z-index:6}
  .landscape-main .panel-slot-main[data-panel="empty"]{overflow:visible;min-height:0}
@@ -203,10 +224,6 @@ button.slider-step:active{background:#c4dec1}
 /* PC layout (same as mock): wider game panel, horizontal build info, 3-column runtime status. */
 /* Product layout selectors retain precedence over panel and fixed-slot CSS. */
 @media (orientation:landscape) and (min-width:1000px) and (min-height:600px){
- .shell .landscape-main{grid-template-columns:var(--ui-pc-panel-columns)}
- .shell .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
- .shell .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
- .shell .panel-slot-bottom>.runtime-status{display:grid;grid-template-columns:var(--ui-runtime-columns);gap:6px 10px}
  .shell .panel-slot-bottom>.runtime-status>:is(.runtime-status-heading,#collision-status,#sync-status,.stats,#status,p:not([id])){grid-column:1/-1}
  .shell .panel-slot-bottom>.runtime-status>p{margin:0;min-width:0}
  .shell .panel-slot-bottom>.runtime-status>:is(#ea,#eb):empty{display:none}
@@ -220,7 +237,6 @@ button.slider-step:active{background:#c4dec1}
 /* Portrait: match the approved mock's slot height and visible game viewport.
    Keep the existing desktop/landscape behavior and WebGL renderer code untouched. */
 @media (orientation:portrait){
- :root{--test-panel-height:max(640px,calc(100vh - 330px))}
  body{padding:18px}
  .shell{width:100%;max-width:none}
  /* Mirror the mock's outer panel spacing rather than inheriting panel margins. */
