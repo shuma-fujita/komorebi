@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-18 ビルタグ入力透過・タップ判定（GitHub main反映／実機検証待ち）：** ユーザー承認により `maps/map-labels.js` の表示タグをpointer透過に変更。表示中タグカード矩形へのヒットテストと既存OSM編集モーダルを開くAPIを追加し、`dev.template.html`／生成済み `dev.html` の左右タッチ領域で移動8px以内の主ポインターの短いタップ／マウス左クリックだけを判定する。ドラッグ、右クリック、マルチタッチ、開始と終了で異なるタグは編集対象から除外。編集モーダル表示中は入力をpause、閉じるとresume。固定Engine、OSM編集送信仕様、地図JSON、描画処理、森のモデルは変更なし。`development-info.json` のmatsudo欄を更新。**main再取得による構造・テンプレート↔生成版入力部分の一致確認PASS。Node実行テスト・GitHub Actions・Safari/PC実機・Pages配信確認は未実施。** 実機ではタグ上から左移動／右視点ドラッグ、短いタップで編集、2指ピンチ、PC左クリック／ドラッグ／右クリック、モーダル開閉後の復帰を検証する。
+
 > **2026-11-17 Phase 2を取り消し（ユーザー依頼／Safari再確認待ち）：** Phase 2のEngine三択UI・Cゲーム接続・ゲーム側RendererFactory固定SHA変更と配信HTMLなど一式を取り消し、Phase 1完了コミット `890e501` と同じコード・表示へ復帰。CのEngine側基盤は保持するがゲーム画面には未接続、A/B比較画面は従来の2択。復元は履歴を消さない新規コミットで実施。ユーザー報告「色々おかしい」による緊急切り戻し。Phase 2の修正作業は中断し、再開前に原因を調査する。GitHub復元後のSafari実機・Pages配信の確認は未実施。既存のUI軽微修正のSafari確認待ちは継続。
 
 > **2026-11-17 A/B/C描画構成 Phase 1（Engine側基盤／ゲーム表示不変）：** ユーザーQ7承認。CはThree.jsベースのKomorebi Styleとし、新規 `engine/renderer/MeshRendererC.js` を `MeshRendererB` の派生クラスとして追加。Bのシーン・カメラ・レンダリング・破棄処理は再利用し、C専用 `createMaterial()` / `makeMesh()` を分離。Phase 1の材質はBと同一 `MeshLambertMaterial` 設定で、C独自の見た目はまだ未実装。`RendererFactory.js` は `createRenderer('C',{profile:'mesh'})` に対応し、boxは明示的に非対応。`engine/tests/render-c.test.mjs` を追加。**既存 `MeshRendererA.js` / `MeshRendererB.js`、ゲーム `dev.template.html` / `dev.html`、ゲームからの固定Engine参照、A/B UI、地図・ヘリ・カメラは変更なし。** Cはゲーム画面には未接続。次はPhase 2（C接続、見た目を確認）で、別途許可を取得。Nodeテスト実行・ブラウザ動作・Safari実機は未確認。直前のUI軽微修正は別途Safari実機確認待ち。
