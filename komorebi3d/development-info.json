@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "Bの2kmタイルを上野-6_-4から松戸中央0_0に戻した（PCで重いため／実機未確認）",
-  "common": "A/Bの霧・背景色を共通設定で統一（松戸1000〜2200m、森120〜220m／実機確認待ち）。Renderer 7183cc5、Core等は従来固定版"
+  "common": "Step3-A：WebGL/Three.jsの太陽方向・環境光・直射光を共通設定化。陰影・材質は独立維持（Safari実機確認待ち／Renderer d74c71d）"
 }

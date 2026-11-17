@@ -91,7 +91,7 @@ applyPanelLayout(PANEL_LAYOUT);
 import { InputManager } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/input/InputManager.js";
 import { TouchStick } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/input/TouchStick.js";
 import { FollowCameraRig } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/camera/FollowCameraRig.js";
-import { createRenderer } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@7183cc541d5a83e8e008671a6010c79a97bdd790/engine/renderer/RendererFactory.js";
+import { createRenderer } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@d74c71d37b0da4d44daa788d6a2543f3ea7df65b/engine/renderer/RendererFactory.js";
 import { createMeshGeometry, createMeshRenderSnapshot } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/renderer/MeshRenderSnapshot.js";
 import { GroundBounds } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/GroundBounds.js";
 import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/CollisionWorld2D.js";
@@ -1066,7 +1066,7 @@ function ensureScreen(screen){
   // Snapshot camera fov/near/far remain authoritative.
   const maxFogDistance=activeWorld==='matsudo'?2200:220;
   const fogStart=activeWorld==='matsudo'?1000:120;
-  const sharedSettings={fog:{enabled:true,mode:'linear',color:'#c0d6c5',start:fogStart,end:maxFogDistance},background:{color:'#c0d6c5'}};
+  const sharedSettings={fog:{enabled:true,mode:'linear',color:'#c0d6c5',start:fogStart,end:maxFogDistance},background:{color:'#c0d6c5'},lighting:{direction:[-7,13,5],ambientIntensity:.84,directionalIntensity:1.15}};
   const instance=await createRenderer(engine,{profile:'mesh',settings:sharedSettings});
   try{await instance.initialize({canvas:isA?gameView.canvasA:gameView.canvasB});}
   catch(error){instance.dispose?.();throw error;}
