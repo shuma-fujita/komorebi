@@ -1,6 +1,6 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
-> **2026-11-17 レイアウトCSS共通化 Step 1（静的PASS／Safari実機待ち）：** 承認されたモック正本・レイアウト一本化方針の第一段階として `komorebi3d/layout.css` を新設し、モック・本体の縦積み基本配置、パネル間8px gap、上段のパネル余白リセットを共通ソースへ移動。`build-dev.mjs` は両モードでこの共通CSSを読み込む。`mock-layout.css` と `dev-layout.css` の同等指定を削除し、生成済み `mock.html`／`dev.html` を更新。生成CSSは両方とも生成元と全文一致、モックHTMLは生成元と全文一致（静的PASS）。ゲームJS・固定Engine・モック疑似描画は変更なし。**実機PASS済み動作を守るため、650px／1000pxの幅切替条件は今回変更しない。** 次にモック基準の幅切替を共有化する前に、本段階のSafari確認が必要。Actions未確認。
+> **2026-11-17 レイアウトCSS共通化 Step 1（静的PASS／Safari実機PASS）：** 承認されたモック正本・レイアウト一本化方針の第一段階として `komorebi3d/layout.css` を新設し、モック・本体の縦積み基本配置、パネル間8px gap、上段のパネル余白リセットを共通ソースへ移動。`build-dev.mjs` は両モードでこの共通CSSを読み込む。`mock-layout.css` と `dev-layout.css` の同等指定を削除し、生成済み `mock.html`／`dev.html` を更新。生成CSSは両方とも生成元と全文一致、モックHTMLは生成元と全文一致（静的PASS）。ゲームJS・固定Engine・モック疑似描画は変更なし。**実機PASS済み動作を守るため、650px／1000pxの幅切替条件は今回変更しない。** ユーザーより2026-11-17に本段階のSafari実機PASS報告あり。次はモック基準の幅切替（650px／1000px）の共通化を段階的に検討する。Actions未確認。
 
 
 > **2026-11-17 テスト操作パネルの完全共通化（静的PASS／Safari実機待ち）：** ユーザーから前工程の実行ステータス枠修正についてSafari実機PASS報告あり。モック専用の `panels/test.mock.html` / `panels/test.mock.css` を削除し、モックも本体と同じ `panels/test.html` / `panels/test.css` で生成。`build-dev.mjs` のモック専用テストUI抽出処理を廃止。モックは既存 `dev-panel-components.js` の `mountTestControlsPanel(root,null)` によりGame APIなしのローカル状態で操作可能。ゲーム面は既存の疑似描画を維持し、A/Bモード・設定の選択に追従。本体のゲーム処理・固定Engine・`dev.html` は変更なし。`mock.html` は最新生成元と全文一致、CSSとテストパネルDOMが単一ソースであることを静的確認。**ユーザーより今回の共通テストUIについてSafari実機PASS報告あり。Actionsは未確認。** 注意：共通化によりモックの見本ボタンの見た目・操作状態は本体HTML仕様に変わるため、ゲーム負荷なしの操作・レイアウト・スライダー・スクロール・A/B疑似画面を実機確認する。
