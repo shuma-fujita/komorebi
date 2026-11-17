@@ -28,3 +28,26 @@
 - 画面の 🆕 は **GitHub main最新コミット**のメッセージにある区分だけに付ける。保存済みの説明が「更新履歴なし」の場合は付けない。GitHub APIが取得できなければ 🆕 は付けず、説明は保存済み情報を表示する。
 - 開発情報パネルはページ表示・再読み込み時に取得し、開いたままの定期更新はしない。コミットSHA・日時はGitHub APIから取得し、JSONに複製しない。
 - **強制チェック・コミット阻止・専用スクリプトは設けない。** 更新漏れに気づいたら、その時点で修正する。固定Engineには手を加えない。
+
+
+## 5. 実装完了時の報告形式
+
+Komorebi 3Dの実装完了を報告するときは、毎回以下の3点セットのリンクを表示する。
+
+1. **GitHub Actions**
+   - URL: https://github.com/shuma-fujita/komorebi/actions
+   - アイコン: GitHub公式の猫ロゴ
+2. **ゲーム画面**
+   - URL: https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html
+   - アイコン: ゲームパッド
+3. **モック画面**
+   - URL: https://shuma-fujita.github.io/komorebi/komorebi3d/mock.html
+   - アイコン: 複数パネルを表すアイコン
+
+### 表示ルール
+
+- 実装完了報告の最後に、上記の3点セットを表示する。
+- 各リンクはアイコンと名称を横並びにする。
+- リンクの順序・名称・アイコンを統一する。
+- GitHubへの反映、GitHub Actionsの実行結果、実機PASSの確認状況を区別して報告する。
+- 未確認のテストをPASSと記載しない。
