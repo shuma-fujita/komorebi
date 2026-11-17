@@ -1,6 +1,6 @@
 /* Shared page and panel styles from canonical dev.html. */
 /* Mock and product share these game-panel design values. */
-:root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb}
+:root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb;--ui-panel-gap:8px;--ui-pc-panel-columns:minmax(0,2fr) minmax(0,1fr);--ui-runtime-columns:repeat(3,minmax(0,1fr));--ui-test-border:#d5c8b6;--ui-test-bg:#f5ede0;--ui-test-text:#554a3f;--ui-test-divider:#dccbb5;--ui-test-button-bg:#fffaf3;--ui-test-button-border:#c4b29c;--ui-test-selected-bg:#d9ebd5;--ui-test-selected-border:#64956c;--ui-test-selected-text:#31563b}
 *{box-sizing:border-box}
 body{margin:0;padding:12px;background:#f2f0e4;color:#4d5540;font:12px system-ui}
 .shell{max-width:760px;margin:auto}
@@ -17,7 +17,8 @@ button.panel-help-button:focus-visible{outline:var(--help-focus-outline);outline
 .test-panel-body{padding:10px 11px 11px}
 /* Test controls: keep the reset header visible; scroll only the body. */
 .test-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:visible}
-.test-panel-header{position:sticky;top:0;flex:0 0 auto}
+.test-panel-header{position:sticky;top:0;flex:0 0 auto;padding:10px 11px 9px;border-bottom:1px solid var(--ui-test-divider)}
+.test-panel-heading{display:block;min-height:38px;padding-right:43px;font-size:12px;font-weight:750}
 .test-panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 /* Shared display-mode controls used by product and lightweight mocks. */
 .test-panel .mode-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0}
