@@ -1,0 +1,10 @@
+/* Game viewport flush to panel edges; only A/B seam remains 1px. */
+.mock-root .landscape-game,
+.mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{padding:0;border:0}
+.mock-root .landscape-game .play-surface:not(.ab-compare),
+.mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface:not(.ab-compare){width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
+.mock-root .landscape-game .play-surface.ab-compare,
+.mock-root .panel-slot[data-slot-size-fixed]>.landscape-game .play-surface.ab-compare{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto;gap:1px;justify-content:stretch}
+.mock-root .landscape-game .play-surface.ab-compare{background:#edf3eb}
+.mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:0 6px 6px 0;overflow:hidden}
+.mock-root .landscape-game .play-surface.ab-compare .screen-view+.screen-view{border-left:0;border-radius:6px 0 0 6px}
