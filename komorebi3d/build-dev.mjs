@@ -38,6 +38,11 @@ for(const id of panelIds){
  const marker='<!-- @panel:'+id+' -->';
  if(!html.includes(marker))throw Error('Missing panel '+id);
  let panelHtml=read('panels/'+variant(id)+'.html').trimEnd();
+ if(id==='game'){
+  const touchMarker='<!-- @game-touch -->';
+  if(!panelHtml.includes(touchMarker))throw Error('Missing shared touch layer marker');
+  panelHtml=panelHtml.replace(touchMarker,read('panels/game.touch.html').trimEnd());
+ }
  if(mock&&id==='build'){
   const real='id="dev-engine">56bb2bc</code>';
   if(!panelHtml.includes(real))throw Error('Missing mock Engine label');
@@ -45,6 +50,7 @@ for(const id of panelIds){
  }
  html=html.replace(marker,panelHtml);
 }
+if(html.includes('<!-- @game-touch -->'))throw Error('Unresolved touch layer');
 if(html.includes('<!-- @panel:')||html.includes('/* @component-styles */'))throw Error('Unresolved placeholder');
 const outputName=mock?'mock.html':'dev.html';
 const output=join(dir,outputName);
