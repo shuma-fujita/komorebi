@@ -1,5 +1,9 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-18 ゲーム領域タッチ時のページスクロール抑制（main反映／実機未確認）：** ChatGPTアプリ内ブラウザでゲーム移動・カメラスワイプ時に外側ページがスクロールするとの報告。既存 `.touch-layer` / `.touch-zone` の `touch-action:none` に加え、共通 `layout.css` のゲーム表示領域 `.landscape-game .play-surface` に `touch-action:none;overscroll-behavior:contain` を追加。`dev.template.html` と生成済み `dev.html` に、左右ゲーム操作領域で開始したタッチIDのみを追跡し `document` 捕捉段階の非passive `touchmove` でスクロール既定動作を抑える処理を追加。touchend/cancel・blur・pagehideで追跡を解除。OSM編集モーダル内部・他の3パネルから始まるタッチは抑制対象外。固定Engine・ラベル操作判定・地図JSON・モックの入力JS・表示サイズは変更なし。開発情報 `common` 更新。**GitHub main再取得によるコード一致／静的確認PASS。実際のビルド実行、Actions、Safari／アプリ内ブラウザ実機PASS、Pages配信は未確認。** ChatGPTアプリ固有の親WebViewジェスチャーはページ側から完全抑制できない可能性がある。
+
+> **2026-11-18 ビルタグ操作改善のユーザー実機PASS：** ビルタグ上からの移動・カメラ操作と、タップ・クリックによるOSM編集モーダル起動についてユーザーより実機PASS報告。確認した端末別・操作別の網羅範囲は未記録のため、PC/Safari各条件を一律PASS扱いしない。
+
 > **2026-11-18 ビルタグ入力透過・タップ判定（GitHub main反映／実機検証待ち）：** ユーザー承認により `maps/map-labels.js` の表示タグをpointer透過に変更。表示中タグカード矩形へのヒットテストと既存OSM編集モーダルを開くAPIを追加し、`dev.template.html`／生成済み `dev.html` の左右タッチ領域で移動8px以内の主ポインターの短いタップ／マウス左クリックだけを判定する。ドラッグ、右クリック、マルチタッチ、開始と終了で異なるタグは編集対象から除外。編集モーダル表示中は入力をpause、閉じるとresume。固定Engine、OSM編集送信仕様、地図JSON、描画処理、森のモデルは変更なし。`development-info.json` のmatsudo欄を更新。**main再取得による構造・テンプレート↔生成版入力部分の一致確認PASS。Node実行テスト・GitHub Actions・Safari/PC実機・Pages配信確認は未実施。** 実機ではタグ上から左移動／右視点ドラッグ、短いタップで編集、2指ピンチ、PC左クリック／ドラッグ／右クリック、モーダル開閉後の復帰を検証する。
 
 > **2026-11-17 Phase 2を取り消し（ユーザー依頼／Safari再確認待ち）：** Phase 2のEngine三択UI・Cゲーム接続・ゲーム側RendererFactory固定SHA変更と配信HTMLなど一式を取り消し、Phase 1完了コミット `890e501` と同じコード・表示へ復帰。CのEngine側基盤は保持するがゲーム画面には未接続、A/B比較画面は従来の2択。復元は履歴を消さない新規コミットで実施。ユーザー報告「色々おかしい」による緊急切り戻し。Phase 2の修正作業は中断し、再開前に原因を調査する。GitHub復元後のSafari実機・Pages配信の確認は未実施。既存のUI軽微修正のSafari確認待ちは継続。
