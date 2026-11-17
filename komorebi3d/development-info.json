@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "Bの2kmタイルを上野-6_-4から松戸中央0_0に戻した（PCで重いため／実機未確認）",
-  "common": "A/B表示を変えず、Three.js継承のC専用Renderer基盤・マテリアル生成口とFactory／テストを追加（Phase1／実機未対象）。"
+  "common": "Phase2：両画面のEngineをWebGL/Three.js/Komorebiの3択ボタン化しCをゲーム接続。旧A/B描画は維持（実機確認待ち）"
 }

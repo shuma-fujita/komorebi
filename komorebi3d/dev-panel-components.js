@@ -14,7 +14,13 @@ export function renderScreenSettingsUI(root,state){
    const group=card.querySelector('[data-setting="'+kind+'"]');
    const different=comparing&&screens.A[kind]!==screens.B[kind];
    group?.classList.toggle('is-different',different);
-   for(const input of group?.querySelectorAll('input')||[])input.checked=screens[screen][kind]===input.value;
+   if(kind==='engine'){
+    for(const button of group?.querySelectorAll('[data-engine]')||[]){
+     const selected=screens[screen].engine===button.dataset.engine;
+     button.classList.toggle('selected',selected);
+     button.setAttribute('aria-pressed',String(selected));
+    }
+   }else for(const input of group?.querySelectorAll('input')||[])input.checked=screens[screen][kind]===input.value;
   }
  }
  for(const button of root.querySelectorAll('[data-mode]')){
@@ -165,7 +171,7 @@ export function mountTestControlsPanel(root,api){
   else if(method==='setScreenConfig'){
    const {screen,setting,value:next}=value||{};
    if(['A','B'].includes(screen)&&['map','engine'].includes(setting)&&
-      (setting==='map'?['old','new']:['A','B']).includes(next))
+      (setting==='map'?['old','new']:['A','B','C']).includes(next))
     localState={...localState,screens:{...localState.screens,[screen]:{...localState.screens[screen],[setting]:next}}};
   }
   else if(method==='setWorld')localState.worldId=value;
@@ -215,6 +221,10 @@ export function mountTestControlsPanel(root,api){
   const screen=input.closest('[data-screen]')?.dataset.screen;
   const setting=input.closest('[data-setting]')?.dataset.setting;
   if(screen&&setting)act('setScreenConfig',{screen,setting,value:input.value});
+ });
+ for(const button of root.querySelectorAll('.screen-settings [data-engine]'))bind(button,'click',()=>{
+  const screen=button.closest('[data-screen]')?.dataset.screen;
+  if(screen)act('setScreenConfig',{screen,setting:'engine',value:button.dataset.engine});
  });
  bind(find('npc-render-limit'),'input',e=>act('setNpcRenderLimit',e.currentTarget.value));
  bind(find('npc-render-distance'),'input',e=>act('setNpcRenderDistance',e.currentTarget.value));

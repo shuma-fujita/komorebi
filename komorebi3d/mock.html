@@ -144,6 +144,12 @@ button.slider-step:active{background:#c4dec1}
 .setting-group input{margin:0;flex:0 0 auto;accent-color:#64956c}
 .setting-group.is-different{background:#fff0d5;border-color:#e5b86f}
 .setting-group.is-different legend{color:#995a1e}
+/* Three-choice Engine segmented control matches the existing display-mode buttons. */
+.test-panel .engine-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;min-width:0;border:1px solid var(--m-hair);border-radius:10px;overflow:hidden;background:var(--m-well)}
+.test-panel .engine-buttons button{min-width:0;min-height:40px;padding:4px 1px;border:0;border-radius:0;background:transparent;color:#cdbfa9;font:700 10px system-ui;overflow-wrap:anywhere;line-height:1.2;touch-action:manipulation}
+.test-panel .engine-buttons button+button{border-left:1px solid var(--m-hair)}
+.test-panel .engine-buttons button.selected{background:#1d3324;color:var(--g-accent);box-shadow:inset 0 0 0 1px rgba(62,224,127,.35)}
+.test-panel .engine-buttons button:focus-visible{outline:2px solid var(--g-accent);outline-offset:-2px}
 /* @screen-settings:end */
 
 /* Styles for runtime panel from canonical dev.html. */
@@ -471,12 +477,12 @@ button.panel-add-button{color:var(--g-accent)}
 <div class="screen-card" data-screen="A">
 <div class="screen-title">画面A</div>
 <fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old">旧500m</label><label><input type="radio" name="screen-map-A" value="new" checked>新2km</label></fieldset>
-<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><div class="engine-buttons" role="group" aria-label="画面AのEngine"><button type="button" data-engine="A" aria-pressed="true" class="selected">WebGL</button><button type="button" data-engine="B" aria-pressed="false">Three.js</button><button type="button" data-engine="C" aria-pressed="false">Komorebi</button></div></fieldset>
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
 <fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧500m</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km</label></fieldset>
-<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
+<fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><div class="engine-buttons" role="group" aria-label="画面BのEngine"><button type="button" data-engine="A" aria-pressed="true" class="selected">WebGL</button><button type="button" data-engine="B" aria-pressed="false">Three.js</button><button type="button" data-engine="C" aria-pressed="false">Komorebi</button></div></fieldset>
 </div>
 </div>
 <!-- @screen-settings:end -->
@@ -499,7 +505,7 @@ function renderFauxGame(state){
  const surface=document.getElementById('play-surface');
  if(!surface)return;
  const mode=state.renderMode;
- const names={map:{old:'旧500m',new:'新2km'},engine:{A:'WebGL',B:'Three.js'}};
+ const names={map:{old:'旧500m',new:'新2km'},engine:{A:'WebGL',B:'Three.js',C:'Komorebi'}};
  const shown=mode==='compare'?['A','B']:[mode];
  surface.classList.toggle('ab-compare',mode==='compare');
  surface.replaceChildren();
@@ -524,7 +530,7 @@ function renderFauxGame(state){
   for(const screen of ['A','B']){
    screens[screen]={};
    for(const kind of ['map','engine']){
-    screens[screen][kind]=panel.querySelector('[data-screen="'+screen+'"] [data-setting="'+kind+'"] input:checked')?.value||(kind==='map'?'new':'B');
+    screens[screen][kind]=(kind==='engine'?panel.querySelector('[data-screen="'+screen+'"] [data-setting="engine"] [data-engine][aria-pressed="true"]')?.dataset.engine:panel.querySelector('[data-screen="'+screen+'"] [data-setting="map"] input:checked')?.value)||(kind==='map'?'new':'B');
    }
   }
   return {renderMode,screens};
@@ -532,6 +538,7 @@ function renderFauxGame(state){
  const update=()=>renderFauxGame(readState());
  panel.addEventListener('click',event=>{if(event.target.closest('[data-mode]'))update();});
  panel.addEventListener('change',event=>{if(event.target.closest('.screen-settings input'))update();});
+ panel.addEventListener('click',event=>{if(event.target.closest('.screen-settings [data-engine]'))queueMicrotask(update);});
  update();
 })();
 import {mountDefaultPanelLayoutEditor} from './dev-panel-layout.js?v=shared-initializer-20261117';
