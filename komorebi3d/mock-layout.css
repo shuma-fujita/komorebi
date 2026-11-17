@@ -1,9 +1,9 @@
 .mock-root{--test-panel-height:max(640px,calc(100vh - 330px));width:100%;max-width:100%;container-type:inline-size}
 .mock-root .mock-frame{width:100%;max-width:none;margin:0 auto;padding:12px;background:#f2f0e4;border:0;border-radius:0;color:#4d5540;font:12px system-ui}
 .mock-root .shell{width:100%;max-width:none;margin:0;min-width:0}
-.mock-root .landscape-hero{display:flex;flex-direction:column;gap:8px;min-height:0;height:auto;overflow:visible}
+.mock-root .landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
 .mock-root .site-heading{flex:0 0 auto;display:flex;justify-content:space-between;font-size:12px;color:#385c42}
-.mock-root .landscape-main{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0;flex:none}
+.mock-root .landscape-main{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-width:0;min-height:0;flex:none}
 .mock-root .panel-slot{min-width:0;min-height:0;position:relative}
 .mock-root .panel-slot-top{flex:0 0 auto;overflow:hidden}
 .mock-root .panel-slot-top[data-panel="empty"]{overflow:visible}
@@ -51,8 +51,8 @@ body{padding:6px}
 /* PC layout: wider frame, 3-column runtime status, roomier panels. */
 @container (min-width:1000px){
  .mock-root .mock-frame{padding:18px}
- .mock-root .landscape-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
- .mock-root .panel-slot-bottom>.runtime-status{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .mock-root .landscape-main{grid-template-columns:var(--ui-pc-panel-columns)}
+ .mock-root .panel-slot-bottom>.runtime-status{grid-template-columns:var(--ui-runtime-columns)}
  .mock-root .panel-slot-top>.build-info{display:flex;flex-wrap:wrap;gap:4px 22px;align-items:center}
  .mock-root .panel-slot-top>.build-info>strong{display:block;min-height:0;width:100%}
 }
