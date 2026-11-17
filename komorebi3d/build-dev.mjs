@@ -47,6 +47,9 @@ for(const id of panelIds){
  if(!html.includes(marker))throw Error('Missing panel '+id);
  let panelHtml=read('panels/'+variant(id)+'.html').trimEnd();
  if(id==='game'){
+  const gameFrame=read('panels/game.frame.html').trimEnd();
+  if(!gameFrame.includes('<!-- @game-view -->'))throw Error('Missing shared game view marker');
+  panelHtml=gameFrame.replace('<!-- @game-view -->',panelHtml);
   const touchMarker='<!-- @game-touch -->';
   if(!panelHtml.includes(touchMarker))throw Error('Missing shared touch layer marker');
   panelHtml=panelHtml.replace(touchMarker,read('panels/game.touch.html').trimEnd());
@@ -59,6 +62,7 @@ for(const id of panelIds){
  html=html.replace(marker,panelHtml);
 }
 if(html.includes('<!-- @page-shell -->'))throw Error('Unresolved shared page shell');
+if(html.includes('<!-- @game-view -->'))throw Error('Unresolved game view');
 if(html.includes('<!-- @game-touch -->'))throw Error('Unresolved touch layer');
 if(html.includes('<!-- @panel:')||html.includes('/* @component-styles */'))throw Error('Unresolved placeholder');
 const outputName=mock?'mock.html':'dev.html';
