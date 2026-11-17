@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-17 モック正本レイアウト一括共通化（静的PASS／Safari実機待ち）：** ユーザーの明示的な方針「一度モック踏襲で共通化し、表示の崩れはその後修正」を採用。`dev.template.html`／生成 `dev.html` の外枠をモック同様の `.mock-root > .mock-frame > .shell` に揃え、モック承認済みレイアウト／空スロット／実行ステータス余白／画面枠CSSを `layout.css` に一本化。`mock-layout.css`、`dev-layout.css`、`mock-approved.css` を削除し、`build-dev.mjs` は双方とも同じ `layout.css` を参照。モックの黒い疑似ゲーム画面用CSSは `panels/game.mock.css` に移し、本体のCanvasサイズ適合CSSは `panels/game.css` に追加。ゲーム処理・固定Engine・パネル移動JSは未変更。両生成HTMLのCSSと最新の生成元CSSが全文一致することを静的確認。**外枠と高さ制御をモックに寄せたため、以前実機PASSした本体PC横の画面内フィット等が変わる可能性あり。Safari実機／Actions／全ブレークポイントのブラウザ実測は未確認。** 次は表示崩れをユーザー実機確認で洗い出し、モックを正として修正する。
+
+
 > **2026-11-17 レイアウトCSS共通化 Step 2（静的PASS／Safari実機PASS）：** ユーザー承認に基づき、モックの650px（2列1:1）／1000px（2列2:1）レスポンシブ判定と主スロット高さ・実行ステータス列数・下段8px間隔を `layout.css` の共有 `@container` に集約。モックは従来通り `.mock-root` をコンテナとし、製品は `.shell{container-type:inline-size}` を設定して同じ閾値を使う。`mock-layout.css` の重複した2列／PCルールを削減、`dev-layout.css` の900px列指定や1000px列・ステータス重複指定を削減。固定Engine・ゲームJS・パネル移動JSは変更なし。**ただし横画面幅900px以上／高さ600px以上にある画面内フィットの高さ制御は維持しているため、高さまですべて一致したわけではない。** 生成 `dev.html` と `mock.html` のCSSが最新ソースと全文一致、モックHTML全体も生成元と一致（静的PASS）。**ユーザーより2026-11-17に実機PASS報告あり。Actionsは未確認。** 次工程では横画面の高さ制御とモックの差分を調べ、レイアウトの二重管理をさらに減らす。
 
 
