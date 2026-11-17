@@ -29,6 +29,10 @@ button.game-help-button{display:none}
 .game-help-overlay{display:none}
 .panel-slot{min-width:0;min-height:0}
 .panel-slot{position:relative}
+/* Slot geometry is shared: panel contents retain their dimensions when moved. */
+.landscape-main .panel-slot-main{min-width:0;min-height:0;overflow:hidden}
+.landscape-main .panel-slot-main>[data-panel-id]{min-width:0;min-height:0;height:100%;margin:0}
+.landscape-main .panel-slot-main>.test-panel{overflow:hidden}
 .panel-slot[data-panel="empty"]{display:block;min-height:110px}
 .panel-slot-top[data-panel="empty"]{min-height:70px}
 .panel-slot-main[data-panel="empty"]{min-height:220px}
@@ -115,9 +119,6 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .mock-root .panel-slot-top[data-panel="empty"]{overflow:visible}
 .mock-root .panel-slot-top>.build-info{margin:0}
 .mock-root .panel-slot-top>[data-panel-id]:not(.build-info){height:100%;margin:0}
-.mock-root .landscape-main .panel-slot-main{min-width:0;min-height:0;overflow:hidden}
-.mock-root .landscape-main .panel-slot-main>[data-panel-id]{min-width:0;min-height:0;height:100%;margin:0}
-.mock-root .landscape-main .panel-slot-main>.test-panel{overflow:hidden}
 .mock-root .landscape-main .panel-slot-main>.landscape-game{height:var(--test-panel-height)}
 .mock-root .landscape-main .panel-slot-main[data-slot-size-fixed]>.landscape-game{height:100%}
 .mock-root .landscape-main .panel-slot-main>.build-info{overflow-y:auto}
