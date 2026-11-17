@@ -45,3 +45,9 @@ test("invalid types, ranges, unsupported names and malformed colors are rejected
   ])assert.throws(()=>createRenderSettings(input),TypeError);
   await assert.rejects(createRenderer("A",{profile:"mesh",settings:{fog:{density:-1}}}),TypeError);
 });
+
+test("zero light direction is invalid but non-unit direction is accepted",()=>{
+  assert.throws(()=>createRenderSettings({lighting:{direction:[0,0,0]}}),/lighting.direction/);
+  const settings=createRenderSettings({lighting:{ambientIntensity:.84,directionalIntensity:1.15,direction:[-7,13,5]}});
+  assert.deepEqual(settings.lighting.direction,[-7,13,5]);
+});

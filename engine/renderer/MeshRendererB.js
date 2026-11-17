@@ -32,9 +32,11 @@ export class MeshRendererB {
       : fog.enabled===false ? null
       : fog.mode==='exp2' ? new THREE.FogExp2(fog.color??'#c0d6c5',fog.density??.008)
       : new THREE.Fog(fog.color??'#c0d6c5',fog.start??1000,fog.end??2200);
-    this.scene.add(new THREE.AmbientLight(0xfff2dc, .84));
-    const sun = new THREE.DirectionalLight(0xffe4a7, 1.15);
-    sun.position.set(-7,13,5);
+    const lighting=this.renderSettings?.lighting;
+    // Three.js keeps its native Lambert lighting model and material behavior.
+    this.scene.add(new THREE.AmbientLight(0xfff2dc, lighting?.ambientIntensity??.84));
+    const sun = new THREE.DirectionalLight(0xffe4a7, lighting?.directionalIntensity??1.15);
+    sun.position.set(...(lighting?.direction??[-7,13,5]));
     this.scene.add(sun);
     this.camera = new THREE.PerspectiveCamera(45,1,.1,150);
     this.resize();

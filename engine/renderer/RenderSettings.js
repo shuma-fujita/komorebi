@@ -1,8 +1,9 @@
 /**
  * Shared mesh-renderer settings contract (Step 1).
  *
- * Settings are validated and retained but NOT applied to rendering yet.
- * Omitting settings preserves the exact legacy A/B render behavior.
+ * Settings are validated and retained. Fog/background and optional lighting
+ * are applied by mesh renderers; other groups remain reserved.
+ * Omitting a group preserves that group's legacy A/B behavior.
  * Camera near/far/fov in a MeshRenderSnapshot remain authoritative.
  */
 const GROUPS = Object.freeze({
@@ -43,7 +44,7 @@ export function createRenderSettings(input) {
       else if(key==="color")check(color(v),path);
       else if(key==="outputColorSpace")check(spaces.has(v),path);
       else if(key==="toneMapping")check(mappings.has(v),path);
-      else if(key==="direction")check(Array.isArray(v)&&v.length===3&&v.every(finite),path);
+      else if(key==="direction")check(Array.isArray(v)&&v.length===3&&v.every(finite)&&Math.hypot(...v)>0,path);
       value[key]=Array.isArray(v)?Object.freeze([...v]):v;
     }
     if(group==="camera"&&value.near!==undefined&&value.far!==undefined)

@@ -27,6 +27,9 @@ export class MeshRendererA {
       uniform mat4 uView;
       uniform vec3 uOffset;
       uniform float uYaw;
+      uniform vec3 uLightDirection;
+      uniform float uAmbientIntensity;
+      uniform float uDirectionalIntensity;
       varying vec3 vColor;
       varying float vHaze;
       varying float vFogDepth;
@@ -37,8 +40,11 @@ export class MeshRendererA {
         vec3 norm=normalize(vec3(co*aNormal.x+si*aNormal.z,aNormal.y,
                                -si*aNormal.x+co*aNormal.z));
         gl_Position=uViewProjection*vec4(world,1.);
-        float light=max(dot(norm,normalize(vec3(-.45,1.,.65))),0.);
-        vColor=aColor*(.77+.23*light)*vec3(1.04,1.015,.94);
+        float light=max(dot(norm,normalize(uLightDirection)),0.);
+        // Backend-specific response preserves A's legacy brightness at shared baseline.
+        float ambient=uAmbientIntensity*(.77/.84);
+        float direct=uDirectionalIntensity*(.23/1.15);
+        vColor=aColor*(ambient+direct*light)*vec3(1.04,1.015,.94);
         vHaze=clamp((length(world.xz)-8.)/38.,0.,.24);
         vFogDepth=-(uView*vec4(world,1.)).z;
       }`;
@@ -79,6 +85,9 @@ export class MeshRendererA {
       fogColor:gl.getUniformLocation(p,"uFogColor"),
       offset:gl.getUniformLocation(p,"uOffset"),
       yaw:gl.getUniformLocation(p,"uYaw"),
+      lightDirection:gl.getUniformLocation(p,"uLightDirection"),
+      ambientIntensity:gl.getUniformLocation(p,"uAmbientIntensity"),
+      directionalIntensity:gl.getUniformLocation(p,"uDirectionalIntensity"),
       opacity:gl.getUniformLocation(p,"uOpacity")
     };
     gl.enable(gl.BLEND);
@@ -151,6 +160,10 @@ export class MeshRendererA {
     gl.useProgram(this.program);
     gl.uniformMatrix4fv(this.location.matrix,false,matrix);
     gl.uniformMatrix4fv(this.location.view,false,view);
+    const lighting=this.renderSettings?.lighting;
+    gl.uniform3fv(this.location.lightDirection,lighting?.direction??[-.45,1,.65]);
+    gl.uniform1f(this.location.ambientIntensity,lighting?.ambientIntensity??.84);
+    gl.uniform1f(this.location.directionalIntensity,lighting?.directionalIntensity??1.15);
     const fog=this.renderSettings?.fog;
     const mode=!fog?0:fog.enabled===false?3:fog.mode==='exp2'?2:1;
     gl.uniform1f(this.location.sharedFogMode,mode);
