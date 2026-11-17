@@ -29,6 +29,10 @@ button.game-help-button{display:none}
 .game-help-overlay{display:none}
 .panel-slot{min-width:0;min-height:0}
 .panel-slot{position:relative}
+/* Slot geometry is shared: panel contents retain their dimensions when moved. */
+.landscape-main .panel-slot-main{min-width:0;min-height:0;overflow:hidden}
+.landscape-main .panel-slot-main>[data-panel-id]{min-width:0;min-height:0;height:100%;margin:0}
+.landscape-main .panel-slot-main>.test-panel{overflow:hidden}
 .panel-slot[data-panel="empty"]{display:block;min-height:110px}
 .panel-slot-top[data-panel="empty"]{min-height:70px}
 .panel-slot-main[data-panel="empty"]{min-height:220px}
