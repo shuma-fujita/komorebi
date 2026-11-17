@@ -44,6 +44,14 @@ Komorebi 3Dの実装完了を報告するときは、毎回以下の3点セッ�
    - URL: https://shuma-fujita.github.io/komorebi/komorebi3d/mock.html
    - アイコン: 複数パネルを表すアイコン
 
+### アイコンの固定指定
+
+- GitHub Actions：`favicon`、URL `https://github.com`、サイズ `24px`（GitHub公式の猫ロゴ）。
+- ゲーム画面：`icon`、名前 `gamepad-2`、サイズ `lg`。
+- モック画面：`icon`、名前 `panels-top-left`、サイズ `lg`。
+- 各アイコンと対応するリンクを横並びにする。**絵文字や別のアイコンへ任意に置き換えない。**
+- 指定したアイコンを利用できない環境では、別の図柄に置き換えず、リンク名を優先して表示する。
+
 ### 表示ルール
 
 - 実装完了報告の最後に、上記の3点セットを表示する。
