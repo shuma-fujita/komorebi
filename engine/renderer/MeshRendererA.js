@@ -3,9 +3,12 @@
  * Input, Camera, Core and game-specific entities are NOT imported here.
  * Uses the shared MeshRenderSnapshot contract also consumed by Renderer B.
  */
+import { createRenderSettings } from "./RenderSettings.js";
+
 export class MeshRendererA {
-  constructor({ maxPixelRatio = 2 } = {}) {
+  constructor({ maxPixelRatio = 2, settings = null } = {}) {
     this.maxPixelRatio = maxPixelRatio;
+    this.renderSettings = settings === null ? null : createRenderSettings(settings);
     this.canvas = null;
     this.gl = null;
     this.program = null;

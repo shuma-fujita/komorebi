@@ -20,5 +20,6 @@ export async function createRenderer(backend, options = {}) {
   }else{
     throw new Error("Unknown Renderer backend: "+backend);
   }
+  // Mesh backends validate and retain optional shared settings without applying them yet.
   return assertRenderer(new Renderer(options));
 }

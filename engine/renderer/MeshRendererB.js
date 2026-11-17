@@ -3,9 +3,12 @@
  * Consumes the SAME MeshRenderSnapshot object as MeshRendererA.
  * Loads Three.js only when this backend is initialized.
  */
+import { createRenderSettings } from "./RenderSettings.js";
+
 export class MeshRendererB {
-  constructor({ maxPixelRatio = 2 } = {}) {
+  constructor({ maxPixelRatio = 2, settings = null } = {}) {
     this.maxPixelRatio = maxPixelRatio;
+    this.renderSettings = settings === null ? null : createRenderSettings(settings);
     this.canvas = null;
     this.renderer = null;
     this.scene = null;
