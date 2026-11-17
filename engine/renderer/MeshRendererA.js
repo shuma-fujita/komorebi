@@ -24,10 +24,12 @@ export class MeshRendererA {
     const vs=`
       attribute vec3 aPosition, aNormal, aColor;
       uniform mat4 uViewProjection;
+      uniform mat4 uView;
       uniform vec3 uOffset;
       uniform float uYaw;
       varying vec3 vColor;
       varying float vHaze;
+      varying float vFogDepth;
       void main() {
         float co=cos(uYaw), si=sin(uYaw);
         vec3 world=vec3(co*aPosition.x+si*aPosition.z,aPosition.y,
@@ -38,14 +40,29 @@ export class MeshRendererA {
         float light=max(dot(norm,normalize(vec3(-.45,1.,.65))),0.);
         vColor=aColor*(.77+.23*light)*vec3(1.04,1.015,.94);
         vHaze=clamp((length(world.xz)-8.)/38.,0.,.24);
+        vFogDepth=-(uView*vec4(world,1.)).z;
       }`;
     const fs=`
       precision mediump float;
       varying vec3 vColor;
       varying float vHaze;
+      varying float vFogDepth;
       uniform float uOpacity;
+      uniform float uSharedFogMode;
+      uniform float uFogStart;
+      uniform float uFogEnd;
+      uniform float uFogDensity;
+      uniform vec3 uFogColor;
       void main() {
-        gl_FragColor=vec4(mix(vColor,vec3(.76,.84,.73),vHaze),uOpacity);
+        vec3 color;
+        if(uSharedFogMode<0.5) color=mix(vColor,vec3(.76,.84,.73),vHaze);
+        else {
+          float factor=0.;
+          if(uSharedFogMode<1.5) factor=clamp((vFogDepth-uFogStart)/max(.0001,uFogEnd-uFogStart),0.,1.);
+          else if(uSharedFogMode<2.5) factor=1.-exp(-pow(uFogDensity*vFogDepth,2.));
+          color=mix(vColor,uFogColor,clamp(factor,0.,1.));
+        }
+        gl_FragColor=vec4(color,uOpacity);
       }`;
     this.program=makeProgram(gl,vs,fs);
     const p=this.program;
@@ -54,6 +71,12 @@ export class MeshRendererA {
       normal:gl.getAttribLocation(p,"aNormal"),
       color:gl.getAttribLocation(p,"aColor"),
       matrix:gl.getUniformLocation(p,"uViewProjection"),
+      view:gl.getUniformLocation(p,"uView"),
+      sharedFogMode:gl.getUniformLocation(p,"uSharedFogMode"),
+      fogStart:gl.getUniformLocation(p,"uFogStart"),
+      fogEnd:gl.getUniformLocation(p,"uFogEnd"),
+      fogDensity:gl.getUniformLocation(p,"uFogDensity"),
+      fogColor:gl.getUniformLocation(p,"uFogColor"),
       offset:gl.getUniformLocation(p,"uOffset"),
       yaw:gl.getUniformLocation(p,"uYaw"),
       opacity:gl.getUniformLocation(p,"uOpacity")
@@ -62,6 +85,10 @@ export class MeshRendererA {
     gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(.75,.84,.77,1);
+    if(this.renderSettings?.background?.color){
+      const rgb=hexRgb(this.renderSettings.background.color);
+      gl.clearColor(...rgb,1);
+    }
     this.resize();
     return this;
   }
@@ -116,13 +143,21 @@ export class MeshRendererA {
       throw new TypeError("Renderer A expects a MeshRenderSnapshot");
     }
     const gl=this.gl,aspect=this.resize(),cam=snapshot.camera;
+    const view=look(cam.eye,cam.target);
     const matrix=multiply(
-      perspective(cam.fovDegrees*Math.PI/180,aspect,cam.near,cam.far),
-      look(cam.eye,cam.target)
+      perspective(cam.fovDegrees*Math.PI/180,aspect,cam.near,cam.far),view
     );
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.useProgram(this.program);
     gl.uniformMatrix4fv(this.location.matrix,false,matrix);
+    gl.uniformMatrix4fv(this.location.view,false,view);
+    const fog=this.renderSettings?.fog;
+    const mode=!fog?0:!fog.enabled?3:fog.mode==='exp2'?2:1;
+    gl.uniform1f(this.location.sharedFogMode,mode);
+    gl.uniform1f(this.location.fogStart,fog?.start??1000);
+    gl.uniform1f(this.location.fogEnd,fog?.end??2200);
+    gl.uniform1f(this.location.fogDensity,fog?.density??.008);
+    gl.uniform3fv(this.location.fogColor,hexRgb(fog?.color??'#c0d6c5'));
     // Transparent surfaces are blended after opaque objects and do not write depth.
     gl.depthMask(true);
     for(const obj of snapshot.objects) {
@@ -185,4 +220,9 @@ function multiply(a,b){
   const o=new Float32Array(16);
   for(let j=0;j<4;j++)for(let i=0;i<4;i++)for(let k=0;k<4;k++)o[j*4+i]+=a[k*4+i]*b[j*4+k];
   return o;
+}
+
+function hexRgb(hex){
+  const n=parseInt(hex.slice(1),16);
+  return [(n>>16&255)/255,(n>>8&255)/255,(n&255)/255];
 }

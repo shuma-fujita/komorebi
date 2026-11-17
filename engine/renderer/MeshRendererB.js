@@ -25,9 +25,13 @@ export class MeshRendererB {
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     this.canvas = canvas; this.THREE = THREE; this.renderer = renderer;
     renderer.setPixelRatio(Math.max(1,Math.min(this.maxPixelRatio,window.devicePixelRatio||1)));
-    renderer.setClearColor(0xc0d6c5);
+    renderer.setClearColor(this.renderSettings?.background?.color??0xc0d6c5);
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0xc0d6c5, .008);
+    const fog=this.renderSettings?.fog;
+    this.scene.fog = !fog ? new THREE.FogExp2(0xc0d6c5, .008)
+      : fog.enabled===false ? null
+      : fog.mode==='exp2' ? new THREE.FogExp2(fog.color??'#c0d6c5',fog.density??.008)
+      : new THREE.Fog(fog.color??'#c0d6c5',fog.start??1000,fog.end??2200);
     this.scene.add(new THREE.AmbientLight(0xfff2dc, .84));
     const sun = new THREE.DirectionalLight(0xffe4a7, 1.15);
     sun.position.set(-7,13,5);
