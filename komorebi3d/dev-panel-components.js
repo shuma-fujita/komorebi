@@ -155,7 +155,8 @@ export function mountTestControlsPanel(root,api){
   renderMode:find('mode-a')?.getAttribute('aria-pressed')==='true'?'A':
    find('mode-compare')?.getAttribute('aria-pressed')==='true'?'compare':'B',
   screens:{A:{map:'old',engine:'B'},B:{map:'new',engine:'B'}},
-  mapVisible:find('map-toggle')?.getAttribute('aria-pressed')==='true'
+  mapVisible:find('map-toggle')?.getAttribute('aria-pressed')==='true',
+  labelDebugVisible:false
  });
  let localState={...initial};
  const readState=()=>api?api.getState():localState;
@@ -174,6 +175,7 @@ export function mountTestControlsPanel(root,api){
   else if(method==='setNpcRenderLimit')localState.npcRenderLimit=Number(value);
   else if(method==='setNpcRenderDistance')localState.npcRenderDistance=Number(value);
   else if(method==='setMapVisible')localState.mapVisible=Boolean(value);
+  else if(method==='setLabelDebugVisible')localState.labelDebugVisible=Boolean(value);
   // A location button has no game world to teleport in standalone mode.
   render();
  };
@@ -196,6 +198,12 @@ export function mountTestControlsPanel(root,api){
    mapButton.setAttribute('aria-pressed',String(s.mapVisible));
    mapButton.classList.toggle('selected',Boolean(s.mapVisible));
   }
+  const debugButton=find('label-debug-toggle');
+  if(debugButton){
+   debugButton.textContent=s.labelDebugVisible?'📍 接続点を隠す':'📍 接続点を表示';
+   debugButton.setAttribute('aria-pressed',String(Boolean(s.labelDebugVisible)));
+   debugButton.classList.toggle('selected',Boolean(s.labelDebugVisible));
+  }
   renderScreenSettingsUI(root,s);
   for(const button of root.querySelectorAll('[data-world]')){
    const selected=(s.worldId||'forest')===button.dataset.world;
@@ -203,6 +211,13 @@ export function mountTestControlsPanel(root,api){
    button.classList.toggle('selected',selected);
   }
  };
+ const mapDebugToggle=find('map-toggle');
+ if(mapDebugToggle){
+  const button=document.createElement('button');button.type='button';button.id='label-debug-toggle';
+  button.setAttribute('aria-pressed','false');
+  mapDebugToggle.parentElement.appendChild(button);
+  cleanups.push(()=>button.remove());
+ }
  bind(find('reset'),'click',()=>act('reset',));
  for(const button of root.querySelectorAll('[data-world]'))bind(button,'click',()=>{
   try{const promise=act('setWorld',button.dataset.world);Promise.resolve(promise).catch(error=>{write('mode-status','ワープ失敗：'+String(error.message||error));});}
@@ -232,6 +247,7 @@ export function mountTestControlsPanel(root,api){
   catch(error){console.error('NPC負荷テストエラー',error);}
  });
  bind(find('map-toggle'),'click',()=>act('setMapVisible',!readState().mapVisible));
+ bind(find('label-debug-toggle'),'click',()=>act('setLabelDebugVisible',!readState().labelDebugVisible));
  for(const button of root.querySelectorAll('[data-spot]'))
   bind(button,'click',()=>act('teleport',button.dataset.spot));
  const unsubscribe=api?api.subscribe(e=>{if(e.type==='state')render();}):()=>{};
