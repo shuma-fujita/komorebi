@@ -24,12 +24,11 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  let debugAnchors=false;
  const debugSvg=document.createElementNS('http://www.w3.org/2000/svg','svg');
  debugSvg.setAttribute('aria-hidden','true');
- debugSvg.style.cssText='position:absolute;inset:0;width:100%;height:100%;overflow:hidden;pointer-events:none;display:none';
+ debugSvg.style.cssText='position:absolute;inset:0;width:100%;height:100%;overflow:hidden;pointer-events:none;display:block';
  layer.appendChild(debugSvg);
  function setDebugAnchors(value){
   debugAnchors=Boolean(value);
-  debugSvg.style.display=debugAnchors?'block':'none';
-  if(!debugAnchors)debugSvg.replaceChildren();
+  // Keep the connector visible; show extra OSM IDs only in debug mode.
  }
  function drawDebugAnchor(item,rect,hostRect,x,y,labelX,labelY){
   const ns='http://www.w3.org/2000/svg',ox=rect.left-hostRect.left,oy=rect.top-hostRect.top;
@@ -38,9 +37,10 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    for(const [key,value] of Object.entries(attrs))node.setAttribute(key,String(value));
    return node;
   };
-  const ax=ox+x,ay=oy+y,sx=ox+labelX,sy=oy+labelY-28;
-  debugSvg.appendChild(element('line',{x1:sx,y1:sy,x2:ax,y2:ay,stroke:'#ffcc42','stroke-width':2,'stroke-dasharray':'5 4'}));
-  debugSvg.appendChild(element('circle',{cx:ax,cy:ay,r:5,fill:'#19eba9',stroke:'#152a28','stroke-width':2}));
+  const ax=ox+x,ay=oy+y,sx=ox+labelX,sy=oy+labelY-29;
+  debugSvg.appendChild(element('line',{x1:sx,y1:sy,x2:ax,y2:ay,stroke:'#7bead8','stroke-width':1.5}));
+  debugSvg.appendChild(element('circle',{cx:ax,cy:ay,r:3.5,fill:'#7bead8',stroke:'rgba(23,40,56,.45)','stroke-width':2}));
+  if(!debugAnchors)return;
   const right=ax+85>ox+rect.width;
   const text=element('text',{x:right?ax-8:ax+8,y:Math.max(oy+12,ay-8),'text-anchor':right?'end':'start',fill:'#fff5a8','font-size':10,'font-weight':700,stroke:'#14251d','stroke-width':3,'paint-order':'stroke'});
   text.textContent=(item.kind==='building'?'building':'poi')+' '+item.osmType+'/'+item.osmId;
@@ -385,7 +385,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  // Instantiate HTML only when a feature enters the screen, not for every OSM POI.
  function createItem(item,widthLimit,heightLimit){
     const el=document.createElement('div');
-    el.style.cssText='position:absolute;display:none;pointer-events:none;cursor:pointer;transform:translate(-50%,-100%);flex-direction:column;align-items:center;white-space:normal;';
+    el.style.cssText='position:absolute;display:none;pointer-events:none;cursor:pointer;transform:translate(-50%,-100%);flex-direction:column;align-items:center;white-space:normal;padding-bottom:29px;';
     const card=document.createElement('div');
     card.style.cssText='box-sizing:border-box;min-width:0;overflow-wrap:anywhere;overflow-y:auto;padding:7px 11px 8px;border:1px solid rgba(123,234,216,.72);border-radius:10px;background:rgba(23,40,56,.75);box-shadow:0 3px 14px rgba(6,15,29,.22);color:white;font-family:system-ui,-apple-system,sans-serif;text-align:left;';
     const header=document.createElement('div');
@@ -401,14 +401,10 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     title.style.cssText='max-width:186px;overflow:hidden;text-overflow:ellipsis;color:#fff;font:600 13px/1.4 system-ui,-apple-system,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.28);';
     title.textContent=item.name;
     card.append(header,title);
-    const stem=document.createElement('div');
-    stem.style.cssText='width:1px;height:22px;background:#7bead8;box-shadow:0 0 4px rgba(123,234,216,.35);';
-    const dot=document.createElement('div');
-    dot.style.cssText='width:7px;height:7px;border-radius:50%;background:#7bead8;box-shadow:0 0 0 2px rgba(23,40,56,.45);';
     card.style.width=widthLimit+'px';
     card.style.maxWidth=widthLimit+'px';
     card.style.maxHeight=heightLimit+'px';
-    el.append(card,stem,dot);layer.appendChild(el);
+    el.append(card);layer.appendChild(el);
     el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label',item.name+'を編集');
     el.addEventListener('click',event=>{event.stopPropagation();openEditor(item);});
     el.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openEditor(item);}});
@@ -482,7 +478,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     .sort((a,b)=>a.playerDistance-b.playerDistance);
   let inView=0,shown=0;
   const hostRect=host.getBoundingClientRect();
-  if(debugAnchors)debugSvg.replaceChildren();
+  debugSvg.replaceChildren();
   for(const viewport of viewports){
    for(const item of viewport.items)if(item)item.el.style.display='none';
    const rect=viewport.canvas.getBoundingClientRect();
@@ -515,7 +511,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     el.style.display='flex';
     el.style.left=(rect.left-hostRect.left+labelX)+'px';
     el.style.top=(rect.top-hostRect.top+labelY)+'px';
-    if(debugAnchors)drawDebugAnchor(item,rect,hostRect,x,y,labelX,labelY);
+    drawDebugAnchor(item,rect,hostRect,x,y,labelX,labelY);
     viewShown++;shown++;
    }
   }
