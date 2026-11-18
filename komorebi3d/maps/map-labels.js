@@ -350,7 +350,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   for(const viewport of viewports)for(let i=0;i<labels.length;i++)viewport.items.push(null);
  }
  function setLabels(labels){
-  layer.replaceChildren();
+  layer.replaceChildren(debugSvg);
   entries=[];
   for(const viewport of viewports)viewport.items=[];
   appendLabels(labels);
