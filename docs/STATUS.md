@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-18 ビルタグ接続点の調査用デバッグ表示（main反映／実機未確認）：** テスト操作パネルに「📍 接続点を表示／隠す」を追加（初期OFF）。松戸の表示ラベルに限り、現在のOSMラベル3D座標を画面に投影した位置へ緑点、タグとの関係を黄色点線、`building / poi` とOSM type/IDを表示する。デバッグSVGはpointer透過で、タグの元座標・既存の縦線・OSM編集モーダル／操作判定・地図生成・固定Engineは変更していない。表示対象は従来表示されるラベルに限定。`map-labels.js` と `dev-panel-components.js`、`dev.template.html`／生成済み`dev.html`、`development-info.json` のmatsudo欄を更新。**GitHub main再取得による静的差分確認PASS。Nodeビルド／Actions／実機確認・Pages反映は未確認。** 緑点はあくまで現行ラベル座標であり、対象建物が正しいことを保証するものではない。
+
 > **2026-11-18 ゲーム領域スクロール抑制・ユーザー実機PASS：** ユーザーからゲーム操作中のアプリ内ブラウザのページスクロール抑制について「実機PASS」と報告。`development-info.json` の `common` を実機PASSに更新。端末別・PC/通常Safari・他パネルやOSM編集モーダルの個別網羅テストまで確認済みとは扱わない。既存の固定Engine・ゲーム入力・タグ・地図データを変更せず、今回の更新は開発情報とSTATUSの記録のみ。
 
 > **2026-11-18 ゲーム領域タッチ時のページスクロール抑制（main反映／実機未確認）：** ChatGPTアプリ内ブラウザでゲーム移動・カメラスワイプ時に外側ページがスクロールするとの報告。既存 `.touch-layer` / `.touch-zone` の `touch-action:none` に加え、共通 `layout.css` のゲーム表示領域 `.landscape-game .play-surface` に `touch-action:none;overscroll-behavior:contain` を追加。`dev.template.html` と生成済み `dev.html` に、左右ゲーム操作領域で開始したタッチIDのみを追跡し `document` 捕捉段階の非passive `touchmove` でスクロール既定動作を抑える処理を追加。touchend/cancel・blur・pagehideで追跡を解除。OSM編集モーダル内部・他の3パネルから始まるタッチは抑制対象外。固定Engine・ラベル操作判定・地図JSON・モックの入力JS・表示サイズは変更なし。開発情報 `common` 更新。**GitHub main再取得によるコード一致／静的確認PASS。実際のビルド実行、Actions、Safari／アプリ内ブラウザ実機PASS、Pages配信は未確認。** ChatGPTアプリ固有の親WebViewジェスチャーはページ側から完全抑制できない可能性がある。
