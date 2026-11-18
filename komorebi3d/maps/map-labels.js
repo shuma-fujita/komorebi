@@ -21,6 +21,31 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  host.appendChild(layer);
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
+ let debugAnchors=false;
+ const debugSvg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ debugSvg.setAttribute('aria-hidden','true');
+ debugSvg.style.cssText='position:absolute;inset:0;width:100%;height:100%;overflow:hidden;pointer-events:none;display:none';
+ layer.appendChild(debugSvg);
+ function setDebugAnchors(value){
+  debugAnchors=Boolean(value);
+  debugSvg.style.display=debugAnchors?'block':'none';
+  if(!debugAnchors)debugSvg.replaceChildren();
+ }
+ function drawDebugAnchor(item,rect,hostRect,x,y,labelX,labelY){
+  const ns='http://www.w3.org/2000/svg',ox=rect.left-hostRect.left,oy=rect.top-hostRect.top;
+  const element=(tag,attrs)=>{
+   const node=document.createElementNS(ns,tag);
+   for(const [key,value] of Object.entries(attrs))node.setAttribute(key,String(value));
+   return node;
+  };
+  const ax=ox+x,ay=oy+y,sx=ox+labelX,sy=oy+labelY-28;
+  debugSvg.appendChild(element('line',{x1:sx,y1:sy,x2:ax,y2:ay,stroke:'#ffcc42','stroke-width':2,'stroke-dasharray':'5 4'}));
+  debugSvg.appendChild(element('circle',{cx:ax,cy:ay,r:5,fill:'#19eba9',stroke:'#152a28','stroke-width':2}));
+  const right=ax+85>ox+rect.width;
+  const text=element('text',{x:right?ax-8:ax+8,y:Math.max(oy+12,ay-8),'text-anchor':right?'end':'start',fill:'#fff5a8','font-size':10,'font-weight':700,stroke:'#14251d','stroke-width':3,'paint-order':'stroke'});
+  text.textContent=(item.kind==='building'?'building':'poi')+' '+item.osmType+'/'+item.osmId;
+  debugSvg.appendChild(text);
+ }
 
  // JSON edit/confirm, with strictly isolated OSM development-server level test.
  let editor=null;
@@ -457,6 +482,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     .sort((a,b)=>a.playerDistance-b.playerDistance);
   let inView=0,shown=0;
   const hostRect=host.getBoundingClientRect();
+  if(debugAnchors)debugSvg.replaceChildren();
   for(const viewport of viewports){
    for(const item of viewport.items)if(item)item.el.style.display='none';
    const rect=viewport.canvas.getBoundingClientRect();
@@ -489,10 +515,11 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     el.style.display='flex';
     el.style.left=(rect.left-hostRect.left+labelX)+'px';
     el.style.top=(rect.top-hostRect.top+labelY)+'px';
+    if(debugAnchors)drawDebugAnchor(item,rect,hostRect,x,y,labelX,labelY);
     viewShown++;shown++;
    }
   }
   return {total:entries.length,inRange:ranked.length,inView,shown};
  }
- return {setLabels,appendLabels,reconcileLabels,replaceCanvas,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,reconcileLabels,replaceCanvas,setDebugAnchors,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
