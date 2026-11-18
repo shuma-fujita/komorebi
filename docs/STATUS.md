@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-18 ビルタグ接続線の正式表示変更（main反映／実機確認待ち）：** 直前のデバッグ用「現在の3Dタグ座標の投影点」を通常表示の水色点（`#7bead8`）として採用し、従来の固定22px縦棒と旧点を削除。タグカードから投影点へ水色の実線（SVG、pointer-events:none）を描画するよう `maps/map-labels.js` を変更。元のタグ座標・建物/POI紐づけ・表示判定・編集モーダル・タッチ操作は変更せず、表示カード位置を従来に近づけるため29pxの空白を保持。開発用の接続点表示ON時のみ `building / poi` とOSM type/IDの文字を表示し、デバッグOFFでも新しい線と点は表示する。`dev.template.html` と生成済み `dev.html` のラベルJS参照クエリ更新。`development-info.json` のmatsudo欄更新。**GitHub main再取得による静的コード確認PASS。Nodeビルド、GitHub Actions、Pages配信、Safari／アプリ内ブラウザ実機は未確認。** 接続点は現状のラベル座標であって必ずしも建物上ではない。
+
 > **2026-11-18 ビルタグ接続点の調査用デバッグ表示（main反映／実機未確認）：** テスト操作パネルに「📍 接続点を表示／隠す」を追加（初期OFF）。松戸の表示ラベルに限り、現在のOSMラベル3D座標を画面に投影した位置へ緑点、タグとの関係を黄色点線、`building / poi` とOSM type/IDを表示する。デバッグSVGはpointer透過で、タグの元座標・既存の縦線・OSM編集モーダル／操作判定・地図生成・固定Engineは変更していない。表示対象は従来表示されるラベルに限定。`map-labels.js` と `dev-panel-components.js`、`dev.template.html`／生成済み`dev.html`、`development-info.json` のmatsudo欄を更新。**GitHub main再取得による静的差分確認PASS。Nodeビルド／Actions／実機確認・Pages反映は未確認。** 緑点はあくまで現行ラベル座標であり、対象建物が正しいことを保証するものではない。
 
 > **2026-11-18 ゲーム領域スクロール抑制・ユーザー実機PASS：** ユーザーからゲーム操作中のアプリ内ブラウザのページスクロール抑制について「実機PASS」と報告。`development-info.json` の `common` を実機PASSに更新。端末別・PC/通常Safari・他パネルやOSM編集モーダルの個別網羅テストまで確認済みとは扱わない。既存の固定Engine・ゲーム入力・タグ・地図データを変更せず、今回の更新は開発情報とSTATUSの記録のみ。
