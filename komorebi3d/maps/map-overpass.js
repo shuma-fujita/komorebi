@@ -3,7 +3,7 @@ export const OVERPASS_ENDPOINTS=[
  'https://overpass.private.coffee/api/interpreter',
  'https://overpass-api.de/api/interpreter'
 ];
-export const OVERPASS_TIMEOUT_MS=15000;
+export const OVERPASS_TIMEOUT_MS=30000;
 // Match the existing matsudo.json 500m bounding box and map-builder origin.
 export const MATSUDo_BBOX=[35.782194,139.897842,35.786686,139.903378];
 const FACILITY_KEYS=['shop','amenity','tourism','office','leisure','healthcare'];
@@ -12,7 +12,7 @@ const hasTag=(tags,keys)=>keys.some(key=>Object.prototype.hasOwnProperty.call(ta
 export function buildMatsudoOverpassQuery(){
  const bbox=MATSUDo_BBOX.join(',');
  // Regex on tag keys keeps the request compact. "out geom" includes way vertices.
- return '[out:json][timeout:20];('+
+ return '[out:json][timeout:35];('+
   'node[~"^(shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
   'way[~"^(building|highway|railway|shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
   'relation[~"^(shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
@@ -39,7 +39,7 @@ export function normalizeMatsudoOverpass(data){
  return {source:'OpenStreetMap contributors',license:'ODbL-1.0',center:[35.78444,139.90061],
   bbox:MATSUDo_BBOX.join(','),elements,osmTimestamp:data.osm3s?.timestamp_osm_base||null};
 }
-// Two endpoints share one 15s overall budget, so failover never doubles the wait.
+// Two endpoints share a 30s overall budget: 15s primary, remaining time secondary.
 export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPASS_TIMEOUT_MS,fetchImpl=fetch}={}){
  if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
  const started=performance.now();
@@ -51,7 +51,7 @@ export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPAS
   if(remaining<=0){onLog('OSM最新500m: 全体時間上限 '+Math.round(timeoutMs/1000)+'秒に到達');break;}
   const endpoint=OVERPASS_ENDPOINTS[i];
   const host=new URL(endpoint).hostname;
-  const attemptBudget=Math.max(1,Math.floor(i===0?Math.min(8000,remaining):remaining));
+  const attemptBudget=Math.max(1,Math.floor(i===0?Math.min(15000,remaining):remaining));
   const controller=new AbortController();
   const abort=()=>controller.abort();
   signal?.addEventListener('abort',abort,{once:true});
