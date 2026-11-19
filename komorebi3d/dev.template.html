@@ -96,12 +96,12 @@ import { createMeshGeometry, createMeshRenderSnapshot } from "https://cdn.jsdeli
 import { GroundBounds } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/GroundBounds.js";
 import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/CollisionWorld2D.js";
 import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/core/CharacterMotionCore2D.js";
-import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=ab-dual-minimap-20261115";
+import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=shop-view-ab-20261119";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-initializer-20261117";
 import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=matsudo-0_0-20261116";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=step5a-poi-name-index-20261115";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=focus-building-v2-20261119";
+import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=shop-view-ab-20261119";
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
 const $=id=>document.getElementById(id);
@@ -703,6 +703,13 @@ let renderFrameId=0;
 const SAVED_WORLD_KEY='komorebi3d-last-world-dev';
 let activeWorld='forest',matsudoLabels={A:null,B:null},warpInProgress=false,worldGeneration=0;
 let labelDebugVisible=false;
+const shopModes={A:'A',B:'B'};
+function setShopMode({screen,mode}={}){
+ if(!['A','B'].includes(screen)||!['A','B'].includes(mode))return;
+ shopModes[screen]=mode;
+ matsudoLabels[screen]?.setShopMode(mode);
+ publishGameState();
+}
 function setLabelDebugVisible(visible){
  labelDebugVisible=Boolean(visible);
  for(const screen of ['A','B'])matsudoLabels[screen]?.setDebugAnchors(labelDebugVisible);
@@ -1072,6 +1079,7 @@ function applyMatsudoScreenLabels(screen,ignoreRules){
   matsudoLabels[screen].setLabels(data.labels);
   matsudoLabels[screen].setBuildingFeatures(data.mapFeatures);
   matsudoLabels[screen].setDebugAnchors(labelDebugVisible);
+  matsudoLabels[screen].setShopMode(shopModes[screen]);
  }
 }
 // Only world-specific geometry changes; the common Engine input/camera are reused.
@@ -1219,7 +1227,7 @@ const gameApi=Object.freeze({
    ...core.getState(),houseLevel,renderMode,screens:screenConfigs,worldId:activeWorld,flightAltitude:activeWorld==='matsudo'?flightAltitude:0,
    npcCount:activeWorld==='forest'?npcManager.agents.length:(matsudoNpcStressSelected?1000:0),npcVisible:activeWorld==='forest'?npcManager.visibleCount:0,
    npcDrawn:activeWorld==='forest'?npcManager.drawCount:0,npcRenderLimit:npcManager.maxDrawn,
-   npcRenderDistance:npcManager.maxDrawDistance,mapVisible:miniMapVisible,labelDebugVisible,
+   npcRenderDistance:npcManager.maxDrawDistance,mapVisible:miniMapVisible,labelDebugVisible,shopModes:{...shopModes},
    status:Object.fromEntries(runtimeStatusValues)
   };
  },
@@ -1229,7 +1237,7 @@ const gameApi=Object.freeze({
   return ()=>gameStateListeners.delete(listener);
  },
  reset:resetGameForTest,setRenderMode,setScreenConfig,setNpcCount,setNpcRenderLimit,setNpcRenderDistance,
- setMapVisible:setMiniMapVisible,setLabelDebugVisible,teleport:teleportToTestSpot,setWorld
+ setMapVisible:setMiniMapVisible,setLabelDebugVisible,setShopMode,teleport:teleportToTestSpot,setWorld
 });
 // Panel views subscribe to Game API without controlling each other.
 const unmountRuntimeStatusPanel=mountRuntimeStatusPanel(document.querySelector('.runtime-status'),gameApi);
