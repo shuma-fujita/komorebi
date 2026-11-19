@@ -446,7 +446,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
      count.textContent=(item.shopLayout==='B'?'個別タグ ':'入居施設 ')+item.shopList.length+'件（OSM登録分）';
      card.appendChild(count);
      const pane=document.createElement('div');
-     pane.style.cssText='max-height:150px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin';
+     pane.style.cssText='overflow:auto;overscroll-behavior:contain;scrollbar-width:thin';
+     pane.style.maxHeight=Math.max(30,heightLimit-95)+'px';
      pane.dataset.shopPane='true';
      for(const shop of item.shopList){
       const row=document.createElement('div');
@@ -498,7 +499,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
        const r=node.getBoundingClientRect();
        if(clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom){
         if(node.dataset.osmKey){
-         const pane=measured.el.querySelector('div[style*="max-height: 150px"]');
+         const pane=measured.el.querySelector('[data-shop-pane]');
          const bounds=pane?.getBoundingClientRect();
          if(bounds&&(r.bottom<=bounds.top||r.top>=bounds.bottom))continue;
         }
@@ -532,6 +533,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   card.style.width=widthLimit+'px';
   card.style.maxWidth=widthLimit+'px';
   card.style.maxHeight=heightLimit+'px';
+  const pane=card.querySelector('[data-shop-pane]');
+  if(pane)pane.style.maxHeight=Math.max(30,heightLimit-95)+'px';
   measured.el.style.display='flex';
   measured.el.style.visibility='hidden';
   measured.width=measured.el.offsetWidth||widthLimit;
