@@ -139,11 +139,13 @@ export function mountRuntimeStatusPanel(root,api){
  const checkBuildings=document.createElement('button');
  checkBuildings.type='button';checkBuildings.textContent='建物のみ取得';
  for(const button of [checkConnection,checkBuildings])button.style.cssText='font-size:12px;margin:0 6px 6px 0;padding:5px 8px;';
+ const diagnosticCopy=document.createElement('button');diagnosticCopy.type='button';diagnosticCopy.textContent='診断ログをコピー';
+ diagnosticCopy.style.cssText='font-size:12px;margin:0 6px 6px 0;padding:5px 8px;';
  const diagnosticOutput=document.createElement('pre');
  diagnosticOutput.id='overpass-diagnostic';
  diagnosticOutput.textContent='ボタンを押したときだけ軽い問い合わせを行います';
  diagnosticOutput.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.5;margin:0;';
- diagnostic.append(title,copy,toggle,summaryLabel,summary,recentLabel,pre,diagnosticHeading,checkConnection,checkBuildings,diagnosticOutput);
+ diagnostic.append(title,copy,toggle,summaryLabel,summary,recentLabel,pre,diagnosticHeading,checkConnection,checkBuildings,diagnosticCopy,diagnosticOutput);
  (root.querySelector('#map-source-status')||root.querySelector('#label-status')||root).after(diagnostic);
  let fullLog='',recentLog=pre.textContent,showFull=false;
  const refreshLog=()=>{pre.textContent=showFull?fullLog:recentLog;};
@@ -168,6 +170,8 @@ export function mountRuntimeStatusPanel(root,api){
  };
  const onPing=()=>void runDiagnostic('ping');
  const onBuildings=()=>void runDiagnostic('buildings');
+ const onDiagnosticCopy=async()=>{try{await navigator.clipboard.writeText(diagnosticOutput.textContent||'');diagnosticCopy.textContent='コピーしました';}catch(_){diagnosticCopy.textContent='ログを長押ししてコピー';}};
+ diagnosticCopy.addEventListener('click',onDiagnosticCopy);
  checkConnection.addEventListener('click',onPing);
  checkBuildings.addEventListener('click',onBuildings);
  const fields=new Map(Array.from(root.querySelectorAll('[id]'),node=>[node.id,node]));
@@ -182,7 +186,7 @@ export function mountRuntimeStatusPanel(root,api){
  };
  for(const [id,value] of Object.entries(api.getState().status ?? {}))render({type:'status',id,value});
  const unsubscribe=api.subscribe(render);
- return ()=>{unsubscribe();copy.removeEventListener('click',onCopy);toggle.removeEventListener('click',onToggle);checkConnection.removeEventListener('click',onPing);checkBuildings.removeEventListener('click',onBuildings);diagnostic.remove();};
+ return ()=>{unsubscribe();copy.removeEventListener('click',onCopy);toggle.removeEventListener('click',onToggle);checkConnection.removeEventListener('click',onPing);checkBuildings.removeEventListener('click',onBuildings);diagnosticCopy.removeEventListener('click',onDiagnosticCopy);diagnostic.remove();};
 }
 
 export function mountTestControlsPanel(root,api){
