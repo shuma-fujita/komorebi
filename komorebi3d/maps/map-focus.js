@@ -54,7 +54,7 @@ function intersectBuilding(building,eye,dir,maxDistance){
 // Screen tap ray uses the same camera basis and perspective as map-labels.js.
 // Pixel x/y are relative to the target canvas; depth and nearest-surface
 // resolution are shared with the camera-center picker.
-export function pickBuildingAtScreen(buildings,camera,x,y,width,height,{maxDistance=1000}={}){
+export function pickBuildingAtScreen(buildings,camera,x,y,width,height,{maxDistance=Infinity}={}){
  if(!camera?.eye||!camera?.target||!(width>0&&height>0)||!Number.isFinite(x)||!Number.isFinite(y))return null;
  if(x<0||y<0||x>width||y>height)return null;
  const [ex,ey,ez]=camera.eye,[tx,ty,tz]=camera.target;
