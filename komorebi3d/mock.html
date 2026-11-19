@@ -470,12 +470,12 @@ button.panel-add-button{color:var(--g-accent)}
 <div class="screen-settings" data-visible="compare">
 <div class="screen-card" data-screen="A">
 <div class="screen-title">画面A</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>OSM 500m</label><label><input type="radio" name="screen-map-A" value="new">新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>OSM 250m</label><label><input type="radio" name="screen-map-A" value="new">新2km</label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old" checked>OSM 500m</label><label><input type="radio" name="screen-map-B" value="new">新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old" checked>OSM 250m</label><label><input type="radio" name="screen-map-B" value="new">新2km</label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
 </div>
 </div>
@@ -499,7 +499,7 @@ function renderFauxGame(state){
  const surface=document.getElementById('play-surface');
  if(!surface)return;
  const mode=state.renderMode;
- const names={map:{old:'OSM 500m',new:'新2km'},engine:{A:'WebGL',B:'Three.js'}};
+ const names={map:{old:'OSM 250m',new:'新2km'},engine:{A:'WebGL',B:'Three.js'}};
  const shown=mode==='compare'?['A','B']:[mode];
  surface.classList.toggle('ab-compare',mode==='compare');
  surface.replaceChildren();
