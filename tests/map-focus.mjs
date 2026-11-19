@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import {pickFocusedBuilding} from '../komorebi3d/maps/map-focus.js';
+import {pickFocusedBuilding,pickBuildingAtScreen} from '../komorebi3d/maps/map-focus.js';
 
 const building=(id,x,z,height=12)=>({
  type:'building',osmType:'way',osmId:id,height,
@@ -17,4 +17,13 @@ assert.equal(focus([building(7,-4,10)],[0,25,0],[0,25,30]),null,'above low roof'
 assert.equal(focus([building(8,-4,210)],[0,5,0],[0,5,30]),null,'beyond 200m');
 const nameless=building(9,-4,10); // Geometry selection is independent of naming.
 assert.equal(focus([nameless],[0,5,0],[0,5,20]),9,'unnamed buildings still occlude');
-console.log('Camera focus geometry: 8 tests PASS');
+const tapCamera={eye:[0,5,0],target:[0,5,20],fovDegrees:45};
+const nearSide=building(10,-11,10),farCenter=building(11,-4,25);
+const screenTap=(buildings,x,y)=>pickBuildingAtScreen(buildings,tapCamera,x,y,400,400)?.osmId??null;
+assert.equal(screenTap([nearSide,farCenter],200,200),11,'screen-center tap agrees with camera focus');
+assert.equal(screenTap([nearSide,farCenter],340,200),10,'off-center tap selects another building');
+assert.equal(screenTap([farCenter,nearSide],340,200),10,'nearest tap building independent of input order');
+assert.equal(screenTap([nearSide,farCenter],400,5),null,'sky/background tap selects nothing');
+assert.equal(screenTap([nearSide,farCenter],-3,200),null,'outside viewport ignored');
+assert.equal(screenTap([nearSide,farCenter],340,200),10,'screen tap is deterministic');
+console.log('Camera focus geometry: 8 tests PASS; screen tap geometry: 6 tests PASS');
