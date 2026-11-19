@@ -546,7 +546,8 @@ if(gameView){
    const state={x:event.clientX,y:event.clientY,maxDistance:0,
     blocked:Boolean(findLabelHit(event.clientX,event.clientY)||tenantPaneAt(event.clientX,event.clientY))};
    buildingTapPointers.set(event.pointerId,state);
-   if(zone===gameView.cameraPad&&activeGamePointers.size>1){
+   // Count only camera-area touches: a finger on the move pad is not a pinch.
+   if(zone===gameView.cameraPad&&engineInputAdapter?.cameraPointers.size>1){
     clearTappedBuildings();
     for(const pointer of buildingTapPointers.values())pointer.blocked=true;
    }
