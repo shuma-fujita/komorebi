@@ -23,7 +23,7 @@ const screenTap=(buildings,x,y)=>pickBuildingAtScreen(buildings,tapCamera,x,y,40
 assert.equal(screenTap([nearSide,farCenter],200,200),11,'screen-center tap agrees with camera focus');
 assert.equal(screenTap([nearSide,farCenter],340,200),10,'off-center tap selects another building');
 assert.equal(screenTap([farCenter,nearSide],340,200),10,'nearest tap building independent of input order');
-assert.equal(screenTap([nearSide,farCenter],400,5),null,'sky/background tap selects nothing');
+assert.equal(screenTap([nearSide,farCenter],200,0),null,'sky/background tap selects nothing');
 assert.equal(screenTap([nearSide,farCenter],-3,200),null,'outside viewport ignored');
 assert.equal(screenTap([nearSide,farCenter],340,200),10,'screen tap is deterministic');
 console.log('Camera focus geometry: 8 tests PASS; screen tap geometry: 6 tests PASS');
