@@ -27,10 +27,10 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  let buildings=[];
  let cachedShops=[],lastShopKey=null,shopIndexDirty=true,shopMode='A';
  function setShopMode(mode){if(mode!=='A'&&mode!=='B')return;shopMode=mode;}
- function shopsForFocus(){
-  if(shopIndexDirty||lastShopKey!==focusedKey){
-   cachedShops=shopsInFocusedBuilding(buildings,entries,focusedKey);
-   shopIndexDirty=false;lastShopKey=focusedKey;
+ function shopsForFocus(key){
+  if(shopIndexDirty||lastShopKey!==key){
+   cachedShops=shopsInFocusedBuilding(buildings,entries,key);
+   shopIndexDirty=false;lastShopKey=key;
   }
   return cachedShops;
  }
@@ -647,7 +647,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const selectedHit=tappedBuilding?.hitPoint??focusedHit;
   const index=selectedKey===null?-1:entries.findIndex(item=>item.kind==='building'&&item.osmType+':'+item.osmId===selectedKey);
   const focusedBuilding=selectedKey===null?null:buildings.find(b=>b.osmType+':'+b.osmId===selectedKey);
-  const shops=focusedBuilding?shopsForFocus():[];
+  const shops=focusedBuilding?shopsForFocus(selectedKey):[];
   const buildingEntry=index<0&&focusedBuilding?{
    kind:'building',name:'建物（'+selectedKey+'）',osmType:focusedBuilding.osmType,osmId:focusedBuilding.osmId,
    x:(focusedBuilding.bounds[0]+focusedBuilding.bounds[1])/2,
