@@ -1,4 +1,5 @@
-// Matsudo map data is a checked-in static JSON snapshot, not a live OSM API request.
+import {fetchLiveMatsudoMap} from './map-overpass.js?v=live-matsudo-20261119';
+// The legacy 500m source tries live Overpass, then safely falls back to the checked-in JSON.
 const MAP_URL='./maps/data/matsudo.json';
 const TILE_INDEX_URL='./maps/data/tiles-2km/index.json';
 const TILE_ROOT='./maps/data/tiles-2km/';
@@ -16,6 +17,16 @@ function verify(map){
 export async function loadMap({onLog=()=>{},signal,source='old'}={}){
  if(source!=='old'&&source!=='new')throw Error('不明な地図ソース: '+source);
  const start=performance.now();
+ if(source==='old'){
+  try{
+   const live=verify(await fetchLiveMatsudoMap({onLog,signal}));
+   onLog('OSM最新500m: 検証PASS / 要素 '+live.elements.length+'件 / '+Math.round(performance.now()-start)+'ms');
+   return live;
+  }catch(error){
+   if(signal?.aborted)throw error;
+   onLog('OSM最新500m: 取得失敗 ('+String(error.message||error)+') / 保存済みmatsudo.jsonへ切替');
+  }
+ }
  let url=MAP_URL,label='matsudo.json';
  if(source==='new'){
   onLog('JSON: 2km索引 index.json 読み込み開始');
