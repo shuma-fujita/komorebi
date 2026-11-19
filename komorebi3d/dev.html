@@ -507,7 +507,7 @@ button.panel-add-button{color:var(--g-accent)}
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
-<div class="mode-buttons" role="group" aria-label="画面Bの店舗表示方式"><button type="button" data-shop-screen="B" data-shop-mode="A" aria-pressed="false">A 一覧</button><button type="button" data-shop-screen="B" data-shop-mode="B" aria-pressed="true">B 個別</button></div>
+<div class="mode-buttons" role="group" aria-label="画面Bの店舗表示方式"><button type="button" data-shop-screen="B" data-shop-mode="A" aria-pressed="true">A 一覧</button><button type="button" data-shop-screen="B" data-shop-mode="B" aria-pressed="false">B 個別</button></div>
 </div>
 </div>
 <div class="test-separator"></div>
@@ -620,12 +620,12 @@ import { createMeshGeometry, createMeshRenderSnapshot } from "https://cdn.jsdeli
 import { GroundBounds } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/GroundBounds.js";
 import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/CollisionWorld2D.js";
 import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/core/CharacterMotionCore2D.js";
-import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=shop-view-ab-20261119";
+import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=shop-list-desc-20261119";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-initializer-20261117";
 import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=matsudo-0_0-20261116";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=step5a-poi-name-index-20261115";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=shop-view-ab-20261119";
+import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=shop-list-desc-20261119";
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
 const $=id=>document.getElementById(id);
@@ -1069,7 +1069,7 @@ function resetGameForTest(){
  setMiniMapVisible(false);
  setRenderMode('B');
  setShopMode({screen:'A',mode:'A'});
- setShopMode({screen:'B',mode:'B'});
+ setShopMode({screen:'B',mode:'A'});
  publishRuntimeStatus('collision-status','衝突判定：待機中');publishGameState();
 }
 // The game owns house/stair logic; Engine owns orbit yaw, pitch, distance and pose.
@@ -1502,7 +1502,7 @@ let renderFrameId=0;
 const SAVED_WORLD_KEY='komorebi3d-last-world-dev';
 let activeWorld='forest',matsudoLabels={A:null,B:null},warpInProgress=false,worldGeneration=0;
 let labelDebugVisible=false;
-const shopModes={A:'A',B:'B'};
+const shopModes={A:'A',B:'A'};
 function setShopMode({screen,mode}={}){
  if(!['A','B'].includes(screen)||!['A','B'].includes(mode))return;
  shopModes[screen]=mode;
