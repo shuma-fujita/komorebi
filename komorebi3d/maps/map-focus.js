@@ -63,5 +63,5 @@ export function pickFocusedBuilding(buildings,camera,{maxDistance=200}={}){
   const distance=intersectBuilding(building,eye,dir,bestDistance);
   if(distance<bestDistance){best=building;bestDistance=distance;}
  }
- return best;
+ return best?{...best,hitPoint:eye.map((v,i)=>v+bestDistance*dir[i])}:null;
 }
