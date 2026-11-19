@@ -1,4 +1,4 @@
-import {fetchLiveMatsudoMap} from './map-overpass.js?v=live-matsudo-20261119';
+import {fetchLiveMatsudoMap} from './map-overpass.js?v=overpass-timeout30-20261119';
 // The legacy 500m source tries live Overpass, then safely falls back to the checked-in JSON.
 const MAP_URL='./maps/data/matsudo.json';
 const TILE_INDEX_URL='./maps/data/tiles-2km/index.json';
