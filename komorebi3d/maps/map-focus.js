@@ -51,12 +51,32 @@ function intersectBuilding(building,eye,dir,maxDistance){
  }
  return nearest;
 }
-export function pickFocusedBuilding(buildings,camera,{maxDistance=200}={}){
- if(!camera?.eye||!camera?.target||!Array.isArray(buildings))return null;
- const eye=camera.eye,delta=camera.target.map((v,i)=>v-eye[i]);
- const length=Math.hypot(...delta);
- if(!(length>EPS))return null;
- const dir=delta.map(v=>v/length);
+// Screen tap ray uses the same camera basis and perspective as map-labels.js.
+// Pixel x/y are relative to the target canvas; depth and nearest-surface
+// resolution are shared with the camera-center picker.
+export function pickBuildingAtScreen(buildings,camera,x,y,width,height,{maxDistance=200}={}){
+ if(!camera?.eye||!camera?.target||!(width>0&&height>0)||!Number.isFinite(x)||!Number.isFinite(y))return null;
+ if(x<0||y<0||x>width||y>height)return null;
+ const [ex,ey,ez]=camera.eye,[tx,ty,tz]=camera.target;
+ let fx=tx-ex,fy=ty-ey,fz=tz-ez,fl=Math.hypot(fx,fy,fz);
+ if(!(fl>EPS))return null;
+ fx/=fl;fy/=fl;fz/=fl;
+ let rx=-fz,rz=fx,rl=Math.hypot(rx,rz);
+ if(rl<EPS){rx=1;rz=0;rl=1;}
+ rx/=rl;rz/=rl;
+ const ux=-fy*rz,uy=fx*rz-fz*rx,uz=fy*rx;
+ const tangent=Math.tan((camera.fovDegrees??45)*Math.PI/360);
+ if(!(tangent>0))return null;
+ const horizontal=(x-width/2)*2*tangent/height;
+ const vertical=(height/2-y)*2*tangent/height;
+ const dx=fx+horizontal*rx+vertical*ux;
+ const dy=fy+vertical*uy;
+ const dz=fz+horizontal*rz+vertical*uz;
+ const dl=Math.hypot(dx,dy,dz);
+ if(!(dl>EPS))return null;
+ return pickBuildingAlongRay(buildings,camera.eye,[dx/dl,dy/dl,dz/dl],maxDistance);
+}
+function pickBuildingAlongRay(buildings,eye,dir,maxDistance){
  let best=null,bestDistance=maxDistance;
  for(const building of buildings){
   if(building.type!=='building'||building.osmId==null)continue;
@@ -64,4 +84,12 @@ export function pickFocusedBuilding(buildings,camera,{maxDistance=200}={}){
   if(distance<bestDistance){best=building;bestDistance=distance;}
  }
  return best?{...best,hitPoint:eye.map((v,i)=>v+bestDistance*dir[i])}:null;
+}
+export function pickFocusedBuilding(buildings,camera,{maxDistance=200}={}){
+ if(!camera?.eye||!camera?.target||!Array.isArray(buildings))return null;
+ const eye=camera.eye,delta=camera.target.map((v,i)=>v-eye[i]);
+ const length=Math.hypot(...delta);
+ if(!(length>EPS))return null;
+ const dir=delta.map(v=>v/length);
+ return pickBuildingAlongRay(buildings,eye,dir,maxDistance);
 }
