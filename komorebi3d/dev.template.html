@@ -96,10 +96,10 @@ import { createMeshGeometry, createMeshRenderSnapshot } from "https://cdn.jsdeli
 import { GroundBounds } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/GroundBounds.js";
 import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/CollisionWorld2D.js";
 import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/core/CharacterMotionCore2D.js";
-import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=overpass-diagnostic-copy-20261119";
+import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=manual-overpass-20261119";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-initializer-20261117";
-import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=single-overpass120-250m-20261119";
-import {runOverpassDiagnostic} from "./maps/map-overpass-diagnostic.js?v=diagnostic-20261119";
+import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=manual-overpass-20261119";
+import {runOverpassDiagnostic} from "./maps/map-overpass-diagnostic.js?v=manual-overpass-20261119";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=shared-outside-1m-20261119";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
 import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=tenant-list-only-20261119";
@@ -885,11 +885,11 @@ function cancelMatsudoMapRequest(){
 function isCurrentMatsudoMapRequest(token,controller){
  return token===mapLoadToken&&mapLoadController===controller&&!controller.signal.aborted;
 }
-async function loadMatsudoMapInBackground(){
+async function loadMatsudoMapInBackground({live=false,server='coffee'}={}){
  cancelMatsudoMapRequest();
  const controller=new AbortController();mapLoadController=controller;
  const token=++mapLoadToken;
- mapDebugLog.length=0;mapDebugSummary.length=0;addMapDebug('開始 / 250m: OSM最新→500m保存JSON予備 / 2kmタイル '+TEST_TILE_ID);
+ mapDebugLog.length=0;mapDebugSummary.length=0;addMapDebug('開始 / '+(live?'手動API 250m → 保存JSON予備':'保存済み500m JSON（自動API通信なし）')+' / 2kmタイル '+TEST_TILE_ID);
  const onLog=line=>{if(isCurrentMatsudoMapRequest(token,controller))addMapDebug(line);};
  publishRuntimeStatus('map-source-status','🗺️ A/B地図 読み込み中');
  try{
@@ -897,10 +897,10 @@ async function loadMatsudoMapInBackground(){
   if(!isCurrentMatsudoMapRequest(token,controller))return;
   for(const source of ['old',...(screenConfigs.A.map==='new'||screenConfigs.B.map==='new'?['new']:[])]){
    if(!isCurrentMatsudoMapRequest(token,controller))return;
-   const name=source==='old'?'OSM最新250m（失敗時は保存500m JSON）':'2kmタイル '+TEST_TILE_ID;
+   const name=source==='old'?(live?'手動OSM最新250m（失敗時は保存500m JSON）':'保存済み500m JSON'):'2kmタイル '+TEST_TILE_ID;
    try{
     onLog('取得開始 / '+name);
-    const map=await loadMap({source,onLog,signal:controller.signal});
+    const map=await loadMap({source,onLog,signal:controller.signal,live:live&&source==='old',server});
     if(!isCurrentMatsudoMapRequest(token,controller))return;
     onLog('地図生成: 開始 / '+name+' / 生成予算 '+MAP_BUILD_BUDGET_MS+'ms');
     const profile=createMapBuildProfiler();
@@ -1316,7 +1316,7 @@ let initialMode='B';
 try{initialMode=localStorage.getItem('komorebi3d-render-mode-dev')||'B'}catch(e){}
 setRenderMode(initialMode);
  let diagnosticController=null;
- async function runMapDiagnostic(kind){
+ async function runMapDiagnostic(kind,server='coffee'){ 
   if(!['ping','buildings'].includes(kind))throw Error('不明な診断');
   diagnosticController?.abort();
   const controller=new AbortController();
@@ -1327,11 +1327,15 @@ setRenderMode(initialMode);
    lines.push(new Date().toLocaleTimeString('ja-JP',{hour12:false})+' '+line);
    publishRuntimeStatus('overpass-diagnostic',lines.join('\n'));
   };
-  try{return await runOverpassDiagnostic(kind,{signal:controller.signal,onLog:log});}
+  try{return await runOverpassDiagnostic(kind,{signal:controller.signal,onLog:log,server});}
   catch(error){if(!controller.signal.aborted)log('診断終了：'+String(error.message||error));throw error;}
   finally{if(diagnosticController===controller)diagnosticController=null;}
  }
-// Early Game API boundary: future controllers depend on this object, not panel DOM.
+async function fetchManualOsmMap(server='coffee'){
+  if(activeWorld!=='matsudo')throw Error('最新地図取得は松戸ワールドで実行してください');
+  return loadMatsudoMapInBackground({live:true,server});
+ }
+ // Early Game API boundary: future controllers depend on this object, not panel DOM.
 const gameApi=Object.freeze({
  getState(){
   return {
@@ -1348,7 +1352,7 @@ const gameApi=Object.freeze({
   return ()=>gameStateListeners.delete(listener);
  },
  reset:resetGameForTest,setRenderMode,setScreenConfig,setNpcCount,setNpcRenderLimit,setNpcRenderDistance,
- setMapVisible:setMiniMapVisible,setLabelDebugVisible,teleport:teleportToTestSpot,setWorld,runMapDiagnostic
+ setMapVisible:setMiniMapVisible,setLabelDebugVisible,teleport:teleportToTestSpot,setWorld,runMapDiagnostic,fetchManualOsmMap
 });
 // Panel views subscribe to Game API without controlling each other.
 const unmountRuntimeStatusPanel=mountRuntimeStatusPanel(document.querySelector('.runtime-status'),gameApi);
