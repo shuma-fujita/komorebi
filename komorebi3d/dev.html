@@ -625,7 +625,7 @@ import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-init
 import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=matsudo-0_0-20261116";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=step5a-poi-name-index-20261115";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=shop-list-touch-scroll-20261119";
+import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=tenant-swipe-20261119";
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
 const $=id=>document.getElementById(id);
@@ -976,6 +976,49 @@ const inputManager=new InputManager(engineInputAdapter);
 // Only suppress native scrolling for touches that BEGIN on a game control zone.
 // A document capture listener keeps guarding a gesture even if it leaves the zone;
 // OSM editor form scrolling and the other panels remain untouched.
+// Route overflowing tenant-list swipes inside the game rather than letting
+// an embedded iOS WebView scroll the surrounding page/test panel.
+const tenantTouches=new Map();
+function tenantPaneAt(x,y){
+ if(activeWorld!=='matsudo')return null;
+ for(const screen of ['A','B']){
+  if(!isVisibleScreen(screen))continue;
+  const pane=matsudoLabels[screen]?.scrollPaneAt(x,y);
+  if(pane)return pane;
+ }
+ return null;
+}
+const tenantTouchStart=event=>{
+ for(const touch of event.changedTouches){
+  const pane=tenantPaneAt(touch.clientX,touch.clientY);
+  if(pane)tenantTouches.set(touch.identifier,{pane,lastY:touch.clientY});
+ }
+};
+const tenantTouchMove=event=>{
+ for(const touch of event.changedTouches){
+  const state=tenantTouches.get(touch.identifier);
+  if(!state)continue;
+  if(event.cancelable)event.preventDefault();
+  // Manual scrolling also handles WebViews that ignore nested overflow.
+  state.pane.scrollTop+=state.lastY-touch.clientY;
+  state.lastY=touch.clientY;
+  return;
+ }
+};
+const tenantTouchEnd=event=>{
+ for(const touch of event.changedTouches)tenantTouches.delete(touch.identifier);
+};
+const tenantPointerDown=event=>{
+ if(event.pointerType==='touch'&&tenantPaneAt(event.clientX,event.clientY))
+  event.stopPropagation(); // Do not start helicopter/camera controls.
+};
+document.addEventListener('pointerdown',tenantPointerDown,true);
+document.addEventListener('touchstart',tenantTouchStart,{capture:true,passive:true});
+document.addEventListener('touchmove',tenantTouchMove,{capture:true,passive:false});
+document.addEventListener('touchend',tenantTouchEnd,{capture:true,passive:true});
+document.addEventListener('touchcancel',tenantTouchEnd,{capture:true,passive:true});
+window.addEventListener('blur',()=>tenantTouches.clear());
+window.addEventListener('pagehide',()=>tenantTouches.clear());
 const gameTouchIds=new Set();
 if(gameView){
  const touchStart=event=>{
