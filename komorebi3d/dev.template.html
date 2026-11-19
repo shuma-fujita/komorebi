@@ -555,9 +555,13 @@ if(gameView){
    const pointer=buildingTapPointers.get(event.pointerId);
    if(!pointer)return;
    pointer.maxDistance=Math.max(pointer.maxDistance,Math.hypot(event.clientX-pointer.x,event.clientY-pointer.y));
-   if(pointer.maxDistance>LABEL_TAP_TOLERANCE_PX&&!pointer.blocked){
+   if(pointer.maxDistance>LABEL_TAP_TOLERANCE_PX){
     pointer.blocked=true;
-    if(zone===gameView.cameraPad)clearTappedBuildings();
+    // Even a swipe beginning over a pointer-transparent tag is camera input.
+    if(zone===gameView.cameraPad&&!pointer.cameraCleared){
+     pointer.cameraCleared=true;
+     clearTappedBuildings();
+    }
    }
   });
   zone.addEventListener('pointerup',event=>{
