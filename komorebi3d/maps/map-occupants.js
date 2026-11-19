@@ -37,7 +37,7 @@ export function shopsInFocusedBuilding(buildings,labels,focusedKey){
  }
  result.sort((a,b)=>{
   const la=Number.parseFloat(a.tags?.level),lb=Number.parseFloat(b.tags?.level);
-  if(Number.isFinite(la)&&Number.isFinite(lb)&&la!==lb)return la-lb;
+  if(Number.isFinite(la)&&Number.isFinite(lb)&&la!==lb)return lb-la;
   if(Number.isFinite(la)!==Number.isFinite(lb))return Number.isFinite(la)?-1:1;
   return a.name.localeCompare(b.name,'ja');
  });
