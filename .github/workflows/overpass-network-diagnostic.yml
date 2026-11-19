@@ -1,0 +1,70 @@
+name: Diagnose Overpass network (manual only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: overpass-network-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    name: IPv4 / IPv6 / DNS / HTTP checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect runner network and Overpass reachability (read only)
+        shell: bash
+        run: |
+          set -u
+          echo "=== Komorebi Overpass network diagnostic ==="
+          echo "Time (UTC): $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "Runner OS: ${RUNNER_OS:-unknown}"
+          echo "Runner architecture: ${RUNNER_ARCH:-unknown}"
+          echo "Runner name: ${RUNNER_NAME:-unknown}"
+          echo "Proxy configured: HTTPS_PROXY=$([ -n "${HTTPS_PROXY:-}" ] && echo yes || echo no), HTTP_PROXY=$([ -n "${HTTP_PROXY:-}" ] && echo yes || echo no)"
+          echo
+          echo "=== Outbound public IPv4 (AWS check-ip service; diagnostic only) ==="
+          curl --silent --show-error --ipv4 --connect-timeout 4 --max-time 10 https://checkip.amazonaws.com/ || true
+          echo
+          echo "=== DNS A and AAAA records ==="
+          python3 - <<'PY'
+          import socket
+          for host in ("overpass.private.coffee", "overpass-api.de"):
+              print(f"{host}:", flush=True)
+              try:
+                  records=socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+                  for family, name in ((socket.AF_INET, "IPv4"), (socket.AF_INET6, "IPv6")):
+                      values=sorted({record[4][0] for record in records if record[0] == family})
+                      print(f"  {name}: {', '.join(values) or '(none)'}", flush=True)
+              except OSError as exc:
+                  print(f"  DNS error: {exc}", flush=True)
+          PY
+          echo
+          # A tiny Overpass query ensures the API itself can answer a POST.
+          # This is deliberately NOT the 500m Matsudo geometry download.
+          query='[out:json][timeout:8];node(35.78440,139.90060,35.78441,139.90061);out count;'
+          for host in overpass.private.coffee overpass-api.de; do
+            echo "=== $host ==="
+            for family in 4 6; do
+              echo "  IPv$family GET /api/status"
+              curl --silent --show-error --ipv"$family" --connect-timeout 5 --max-time 15 \
+                --output /dev/null \
+                --write-out '    HTTP %{http_code}; remote=%{remote_ip}; connect=%{time_connect}s; total=%{time_total}s\n' \
+                "https://$host/api/status"
+              echo "    curl exit code: $?"
+              echo "  IPv$family POST tiny Overpass query"
+              curl --silent --show-error --ipv"$family" --connect-timeout 5 --max-time 20 \
+                --output /dev/null \
+                --write-out '    HTTP %{http_code}; remote=%{remote_ip}; connect=%{time_connect}s; total=%{time_total}s\n' \
+                --header 'User-Agent: Komorebi3D-Overpass-Network-Diagnostic/1.0 (GitHub Actions; manual)' \
+                --data-urlencode "data=$query" \
+                "https://$host/api/interpreter"
+              echo "    curl exit code: $?"
+            done
+          done
+          echo
+          echo "Diagnostic complete. Workflow success means checks finished, NOT that Overpass succeeded."
