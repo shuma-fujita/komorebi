@@ -210,6 +210,13 @@ export function mountTestControlsPanel(root,api){
    debugButton.classList.toggle('selected',Boolean(s.labelDebugVisible));
   }
   renderScreenSettingsUI(root,s);
+  const shopSettings=root.querySelector('.shop-mode-settings');
+  if(shopSettings){
+   const mode=['A','B'].includes(s.renderMode)?s.renderMode:'compare';
+   shopSettings.dataset.visible=mode;
+   for(const card of shopSettings.querySelectorAll('[data-screen]'))
+    card.hidden=mode!=='compare'&&card.dataset.screen!==mode;
+  }
   for(const button of root.querySelectorAll('[data-shop-mode]')){
    const selected=(s.shopModes?.[button.dataset.shopScreen]??'A')===button.dataset.shopMode;
    button.setAttribute('aria-pressed',String(selected));button.classList.toggle('selected',selected);
