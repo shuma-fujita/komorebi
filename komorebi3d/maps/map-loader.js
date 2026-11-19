@@ -1,5 +1,5 @@
-import {fetchLiveMatsudoMap} from './map-overpass.js?v=single-overpass120-250m-20261119';
-// The old map mode fetches live 250m OSM, falling back to the checked-in 500m JSON.
+import {fetchLiveMatsudoMap} from './map-overpass.js?v=manual-overpass-20261119';
+// Default is local 500m JSON only. Live 250m is fetched exclusively on explicit user action.
 const MAP_URL='./maps/data/matsudo.json';
 const TILE_INDEX_URL='./maps/data/tiles-2km/index.json';
 const TILE_ROOT='./maps/data/tiles-2km/';
@@ -14,12 +14,12 @@ function verify(map){
  if(buildings<10||roads<10||facilities<1)throw Error('地図JSONデータ不足');
  return map;
 }
-export async function loadMap({onLog=()=>{},signal,source='old'}={}){
+export async function loadMap({onLog=()=>{},signal,source='old',live=false,server='coffee'}={}){
  if(source!=='old'&&source!=='new')throw Error('不明な地図ソース: '+source);
  const start=performance.now();
- if(source==='old'){
+ if(source==='old'&&live){
   try{
-   const live=verify(await fetchLiveMatsudoMap({onLog,signal}));
+   const live=verify(await fetchLiveMatsudoMap({onLog,signal,server}));
    onLog('OSM最新250m: 検証PASS / 要素 '+live.elements.length+'件 / '+Math.round(performance.now()-start)+'ms');
    return live;
   }catch(error){
