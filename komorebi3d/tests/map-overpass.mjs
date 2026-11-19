@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 // Import as an ES module even when the repo has no package.json type=module.
 const source=await readFile(new URL('../maps/map-overpass.js',import.meta.url),'utf8');
-const {buildMatsudoOverpassQuery,normalizeMatsudoOverpass,fetchLiveMatsudoMap}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {buildMatsudoOverpassQuery,normalizeMatsudoOverpass,fetchLiveMatsudoMap,OVERPASS_ENDPOINTS}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 
 test('queries the exact Matsudo 500m bbox with geometry',()=>{
  const query=buildMatsudoOverpassQuery();
@@ -31,15 +31,51 @@ test('rejects Overpass remarks instead of treating them as empty maps',()=>{
 });
 test('records fetch timing and uses normalized format',async()=>{
  const log=[];
+ const many={
+  ...sample,
+  elements:[
+   ...sample.elements,
+   ...Array.from({length:12},(_,i)=>({...sample.elements[2],id:300+i})),
+   ...Array.from({length:12},(_,i)=>({...sample.elements[3],id:400+i}))
+  ]
+ };
  const result=await fetchLiveMatsudoMap({
   onLog:line=>log.push(line),fetchImpl:async(url,options)=>{
    assert.match(url,/overpass-api\.de/);
    assert.ok(options.signal);
-   return {ok:true,status:200,json:async()=>sample};
+   return {ok:true,status:200,json:async()=>many};
   }
  });
- assert.equal(result.elements.length,4);
+ assert.equal(result.elements.length,28);
  assert.ok(log.some(line=>line.includes('取得・変換')));
+});
+test('tries private.coffee before overpass-api.de and recovers from HTTP 502',async()=>{
+ assert.match(OVERPASS_ENDPOINTS[0],/private\.coffee/);
+ assert.match(OVERPASS_ENDPOINTS[1],/overpass-api\.de/);
+ const attempts=[],log=[];
+ const ready={
+  ...sample,
+  elements:[
+   ...sample.elements,
+   ...Array.from({length:12},(_,i)=>({...sample.elements[2],id:300+i})),
+   ...Array.from({length:12},(_,i)=>({...sample.elements[3],id:400+i}))
+  ]
+ };
+ const result=await fetchLiveMatsudoMap({onLog:v=>log.push(v),fetchImpl:async(url)=>{
+  attempts.push(url);
+  return attempts.length===1?{ok:false,status:502}:{ok:true,status:200,json:async()=>ready};
+ }});
+ assert.equal(attempts.length,2);
+ assert.match(attempts[0],/private\.coffee/);
+ assert.match(attempts[1],/overpass-api\.de/);
+ assert.equal(result.elements.length,28);
+ assert.ok(log.some(x=>x.includes('HTTP 502')));
+ assert.ok(log.some(x=>x.includes('取得・変換')));
+});
+test('fails after both endpoints fail without unbounded retry',async()=>{
+ let calls=0;
+ await assert.rejects(fetchLiveMatsudoMap({fetchImpl:async()=>{calls++;return {ok:false,status:503};}}),/Overpass全接続先失敗/);
+ assert.equal(calls,2);
 });
 test('honors canceled worlds before sending requests',async()=>{
  const controller=new AbortController();controller.abort();
