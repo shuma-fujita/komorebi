@@ -98,7 +98,7 @@ import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komor
 import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/core/CharacterMotionCore2D.js";
 import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=map-log-summary-20261119";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-initializer-20261117";
-import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=single-overpass60-20261119";
+import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=single-overpass120-250m-20261119";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=shared-outside-1m-20261119";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
 import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=tenant-list-only-20261119";
@@ -691,7 +691,7 @@ function paintDebugMap(){
   gameView.paintMap({screen,worldId:activeWorld,playerX:game.x,playerZ:game.z,
    agents:activeWorld==='forest'?npcManager.agents:[],cafeX:CAFE_X,cafeZ:CAFE_Z,
    features:activeWorld==='matsudo'?(matsudoMaps[source]?.mapFeatures??null):null,
-   mapSpan:activeWorld==='matsudo'&&source==='new'?2000:500});
+   mapSpan:activeWorld==='matsudo'?(matsudoMaps[source]?.mapSpan??(source==='new'?2000:500)):500});
  }
 }
 function setMiniMapVisible(value){
@@ -834,7 +834,7 @@ function productRenderSnapshot(screen,frameId){
   objects
  });
 }
-// Matsudo 500m attempts live Overpass with local JSON fallback; requests remain cancellable on world switches.
+// Matsudo 250m attempts live Overpass; failure preserves the old 500m JSON as fallback.
 const MAP_BUILD_BUDGET_MS=6; // Tune after real-device performance measurements.
 // Step 5: aggregate only, keeping the 32-line map log limit unchanged.
 function createMapBuildProfiler(){
@@ -866,7 +866,7 @@ function addMapDebug(line){
  mapDebugLog.push(entry);
  if(mapDebugLog.length>MAP_DEBUG_HISTORY_LIMIT)mapDebugLog.shift();
  // Preserve acquisition status even after many geometry diagnostics arrive.
- if(/^(開始 \/|OSM最新500m: (.*?(取得開始|HTTP |失敗 \(|取得・変換 |検証PASS|取得失敗)|.*全体時間上限)|JSON: .*?(HTTP |検証PASS)|地図生成: 完了|失敗:)/.test(line)){
+ if(/^(開始 \/|OSM最新250m: (.*?(取得開始|HTTP |失敗 \(|取得・変換 |検証PASS|取得失敗)|.*全体時間上限)|JSON: .*?(HTTP |検証PASS)|地図生成: 完了|失敗:)/.test(line)){
   mapDebugSummary.push(entry);
   if(mapDebugSummary.length>24)mapDebugSummary.shift();
  }
@@ -888,7 +888,7 @@ async function loadMatsudoMapInBackground(){
  cancelMatsudoMapRequest();
  const controller=new AbortController();mapLoadController=controller;
  const token=++mapLoadToken;
- mapDebugLog.length=0;mapDebugSummary.length=0;addMapDebug('開始 / 500m: OSM最新→保存JSON予備 / 2kmタイル '+TEST_TILE_ID);
+ mapDebugLog.length=0;mapDebugSummary.length=0;addMapDebug('開始 / 250m: OSM最新→500m保存JSON予備 / 2kmタイル '+TEST_TILE_ID);
  const onLog=line=>{if(isCurrentMatsudoMapRequest(token,controller))addMapDebug(line);};
  publishRuntimeStatus('map-source-status','🗺️ A/B地図 読み込み中');
  try{
@@ -896,7 +896,7 @@ async function loadMatsudoMapInBackground(){
   if(!isCurrentMatsudoMapRequest(token,controller))return;
   for(const source of ['old',...(screenConfigs.A.map==='new'||screenConfigs.B.map==='new'?['new']:[])]){
    if(!isCurrentMatsudoMapRequest(token,controller))return;
-   const name=source==='old'?'OSM最新500m（失敗時は保存JSON）':'2kmタイル '+TEST_TILE_ID;
+   const name=source==='old'?'OSM最新250m（失敗時は保存500m JSON）':'2kmタイル '+TEST_TILE_ID;
    try{
     onLog('取得開始 / '+name);
     const map=await loadMap({source,onLog,signal:controller.signal});
@@ -904,9 +904,9 @@ async function loadMatsudoMapInBackground(){
     onLog('地図生成: 開始 / '+name+' / 生成予算 '+MAP_BUILD_BUDGET_MS+'ms');
     const profile=createMapBuildProfiler();
     const builder=createMapBuildSteps(map,{
-     halfSize:source==='old'?250:1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
+     halfSize:source==='old'?(map.areaSizeM===250?125:250):1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
     });
-    const displayed={meshes:[],mapFeatures:[],labels:[]};
+    const displayed={meshes:[],mapFeatures:[],labels:[],mapSpan:source==='new'?2000:(map.areaSizeM===250?250:500)};
     matsudoMaps[source]=displayed;
     const workStart=performance.now();
     let result=builder.next(),batchIndex=0,processedInSlice=0;
