@@ -61,7 +61,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    for(const [key,value] of Object.entries(attrs))node.setAttribute(key,String(value));
    return node;
   };
-  const ax=ox+x,ay=oy+y,sx=ox+labelX,sy=oy+labelY-29;
+  const ax=ox+x,ay=oy+y,sx=ox+labelX,sy=oy+labelY;
   if(item.shopLayout==='B'&&item.shopList){
    const pane=item._pane;
    const bounds=pane?.getBoundingClientRect();
@@ -422,7 +422,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  // Instantiate HTML only when a feature enters the screen, not for every OSM POI.
  function createItem(item,widthLimit,heightLimit){
     const el=document.createElement('div');
-    el.style.cssText='position:absolute;display:none;pointer-events:none;cursor:pointer;transform:translate(-50%,-100%);flex-direction:column;align-items:center;white-space:normal;padding-bottom:29px;';
+    el.style.cssText='position:absolute;display:none;pointer-events:none;cursor:pointer;transform:translateX(-50%);flex-direction:column;align-items:center;white-space:normal;';
     const card=document.createElement('div');
     card.style.cssText='box-sizing:border-box;min-width:0;overflow-wrap:anywhere;overflow-y:auto;padding:7px 11px 8px;border:1px solid rgba(123,234,216,.72);border-radius:10px;background:rgba(23,40,56,.75);box-shadow:0 3px 14px rgba(6,15,29,.22);color:white;font-family:system-ui,-apple-system,sans-serif;text-align:left;';
     const header=document.createElement('div');
@@ -599,13 +599,14 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   card.style.maxWidth=widthLimit+'px';
   card.style.maxHeight=heightLimit+'px';
   const pane=card.querySelector('[data-shop-pane]');
+  const wasVisible=measured.el.style.display==='flex';
   measured.el.style.display='flex';
   measured.el.style.visibility='hidden';
   limitShopPaneHeight(measured.el,heightLimit);
   measured.width=measured.el.offsetWidth||widthLimit;
   measured.height=measured.el.offsetHeight||72;
   syncShopPane(measured.el);
-  measured.el.style.display='none';
+  measured.el.style.display=wasVisible?'flex':'none';
   measured.el.style.visibility='';
   measured.widthLimit=widthLimit;measured.heightLimit=heightLimit;
  }
@@ -654,68 +655,64 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const hostRect=host.getBoundingClientRect();
   debugSvg.replaceChildren();
   for(const viewport of viewports){
-   // Save visibility before the per-frame layout pass hides all cards.
-   const wasSummaryVisible=viewport.summary?.el.style.display==='flex';
-   for(const item of viewport.items)if(item)item.el.style.display='none';
-   if(viewport.summary)viewport.summary.el.style.display='none';
+   const hide=()=>{if(viewport.summary?.el.style.display==='flex')viewport.summary.el.style.display='none';};
    const rect=viewport.canvas.getBoundingClientRect();
-   if(rect.width<1||rect.height<1)continue;
-   const scale=rect.height/(2*tanHalf),occupied=[];
-   // Keep labels inside narrow A/B viewports without rebuilding OSM data.
+   if(rect.width<1||rect.height<1||!ranked.length){hide();continue;}
+   // The directory stays near the top center of this game screen.
+   // Only the cyan 3D anchor and connecting line move with the camera.
    const widthLimit=Math.max(1,Math.min(210,Math.floor(rect.width-12)));
    const heightLimit=Math.max(1,Math.floor(rect.height-42));
-   let viewShown=0;
-   for(const {i,item} of ranked){
-    // All facility tags of the focused building are candidates in B mode.
-    let vx=item.x-ex,vy=item.y-ey,vz=item.z-ez;
-    let depth=vx*fx+vy*fy+vz*fz;
-    let x=depth>.2?rect.width/2+(vx*rx+vz*rz)*scale/depth:NaN;
-    let y=depth>.2?rect.height/2-(vx*ux+vy*uy+vz*uz)*scale/depth:NaN;
-    // Very tall buildings can fill the center of the view while their roof
-    // anchor is outside it. In that case use the actual visible wall/roof hit.
-    if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height)&&focusedHit){
-     vx=focusedHit[0]-ex;vy=focusedHit[1]-ey;vz=focusedHit[2]-ez;
-     depth=vx*fx+vy*fy+vz*fz;
-     if(depth>.2){
-      x=rect.width/2+(vx*rx+vz*rz)*scale/depth;
-      y=rect.height/2-(vx*ux+vy*uy+vz*uz)*scale/depth;
-     }
-    }
-    if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height))continue;
-    let measured;
-    if(i===-1){
-     const signature=shopMode+'|'+focusedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')).join('|');
-     if(viewport.summary?.signature!==signature){
-      viewport.summary?.el.remove();
-      viewport.summary=createItem(item,widthLimit,heightLimit);
-      viewport.summary.signature=signature;
-     }
-     measured=viewport.summary;
-    }else measured=viewport.items[i]||(viewport.items[i]=createItem(item,widthLimit,heightLimit));
-    sizeItem(measured,widthLimit,heightLimit);
-    const wd=measured.width;
-    // Clamp only the HTML card; the 3D position and label data are unchanged.
-    const labelX=Math.max(wd/2+4,Math.min(rect.width-wd/2-4,x));
-    const labelY=Math.max(measured.height+4,Math.min(rect.height-4,y));
-    const top=labelY-measured.height;
-    inView++;
-    if(measured.height+8>rect.height||wd+8>rect.width||
-      occupied.some(p=>labelX-wd/2<p.right+8&&labelX+wd/2>p.left-8&&top<p.bottom+8&&labelY>p.top-8))continue;
-    occupied.push({left:labelX-wd/2,right:labelX+wd/2,top,bottom:labelY});
-    const el=measured.el;
-    // Recalculate the cyan rail only after the card is displayed: while
-    // display:none, WebViews can report clientHeight=0 and hide the rail.
-    if(i===-1&&!wasSummaryVisible){
-     const pane=el.querySelector('[data-shop-pane]');
-     if(pane)pane.scrollTop=0;
-    }
-    el.style.display='flex';
-    el.style.left=(rect.left-hostRect.left+labelX)+'px';
-    el.style.top=(rect.top-hostRect.top+labelY)+'px';
-    if(i===-1&&!wasSummaryVisible)syncShopPane(el);
-    drawDebugAnchor(measured,rect,hostRect,x,y,labelX,labelY);
-    viewShown++;shown++;
+   const topInset=Math.min(28,Math.max(8,Math.floor(rect.height*.06)));
+   const {item}=ranked[0];
+   const signature=shopMode+'|'+focusedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')).join('|');
+   if(viewport.summary?.signature!==signature){
+    viewport.summary?.el.remove();
+    viewport.summary=createItem(item,widthLimit,heightLimit);
+    viewport.summary.signature=signature;
    }
+   const measured=viewport.summary;
+   sizeItem(measured,widthLimit,heightLimit);
+   // Preserve the existing 3D anchor selection, including the visible wall/roof
+   // fallback for tall buildings whose roof projects above the screen.
+   const scale=rect.height/(2*tanHalf);
+   let vx=item.x-ex,vy=item.y-ey,vz=item.z-ez;
+   let depth=vx*fx+vy*fy+vz*fz;
+   let x=depth>.2?rect.width/2+(vx*rx+vz*rz)*scale/depth:NaN;
+   let y=depth>.2?rect.height/2-(vx*ux+vy*uy+vz*uz)*scale/depth:NaN;
+   if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height)&&focusedHit){
+    vx=focusedHit[0]-ex;vy=focusedHit[1]-ey;vz=focusedHit[2]-ez;
+    depth=vx*fx+vy*fy+vz*fz;
+    if(depth>.2){
+     x=rect.width/2+(vx*rx+vz*rz)*scale/depth;
+     y=rect.height/2-(vx*ux+vy*uy+vz*uz)*scale/depth;
+    }
+   }
+   if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height)){
+    hide();continue;
+   }
+   inView++;
+   if(measured.height+topInset>rect.height||measured.width+8>rect.width){
+    hide();continue;
+   }
+   const el=measured.el;
+   const newlyVisible=el.style.display!=='flex';
+   const left=rect.left-hostRect.left+rect.width/2;
+   const top=rect.top-hostRect.top+topInset;
+   // Avoid writing an unchanged DOM position on every animation frame.
+   if(measured.fixedLeft!==left||measured.fixedTop!==top){
+    el.style.left=left+'px';
+    el.style.top=top+'px';
+    measured.fixedLeft=left;measured.fixedTop=top;
+   }
+   if(newlyVisible){
+    el.style.display='flex';
+    const pane=el.querySelector('[data-shop-pane]');
+    if(pane)pane.scrollTop=0;
+    // Measure after display:flex; hidden panels report zero clientHeight.
+    syncShopPane(el);
+   }
+   drawDebugAnchor(measured,rect,hostRect,x,y,rect.width/2,topInset+measured.height);
+   shown++;
   }
   return {total:entries.length,inRange:ranked.length,inView,shown};
  }
