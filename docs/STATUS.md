@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 Overpass切り分け用の手動診断（main反映／Safari実機未確認）：** 通常の松戸250m・単独overpass.private.coffee・取得120秒・保存済み500m JSONフォールバックは変更なし。軽量診断モジュール `maps/map-overpass-diagnostic.js` を追加し、「接続確認」（松戸駅中心のごく小さなnode bboxに`out count`）と「建物のみ取得」（250m bboxのbuilding wayに`out count`）を手動実行可能にした。いずれも独立の20秒上限、取得した要素の件数のみ応答、HTTPステータス・経過時間・失敗理由を別ログ `overpass-diagnostic` に表示する。自動診断や3D差し替えは行わず、同じ既存Overpassホストへの読取専用通信で、診断ログは地図ログと分離。実行ステータスパネルに2つのボタンを追加（ゲームAPIの`runMapDiagnostic`経由）。`dev.template.html`と`dev.html`の共通UIスクリプト参照キャッシュも更新。`tests/map-overpass-diagnostic.mjs`追加。**模擬HTTP 200/502、構文、ゲームAPI配線は確認PASS。実公開API通信・GitHub Actions・Pages・Safari実機は未確認。** 次の実機確認は、実行ステータスの2ボタンをそれぞれ押し、独立した結果ログをコピーすること。
+
+
 > **2026-11-19 松戸ライブOSMを250m四方・API上限120秒へ変更（main反映／実機未確認）：** ユーザー指示に従い、松戸駅中心(35.78444,139.90061)のライブOSM範囲を従来500m四方から250m四方に縮小。bbox=[35.783317,139.899226,35.785563,139.901994]、`map-overpass.js` の単独 `overpass.private.coffee` 待機上限60→120秒、Overpassクエリ上限65→125秒。第2サーバー接続なし。ライブ応答に `areaSizeM:250` を付与し、3D生成のhalfSize=125とミニマップmapSpan=250を採用。取得失敗時には従来の保存済み500m JSONを変更せず使い、halfSize=250／mapSpan=500のままとする。2km選択時は従来どおり1000／2000。A/B地図のラベル・モック・テンプレートと生成版を更新。テスト期待値も250m/120秒へ変更。**設定と配線の静的確認PASS。実通信／GitHub Actions／Pages／Safari実機は未確認。**
 
 
