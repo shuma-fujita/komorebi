@@ -303,8 +303,8 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
   const name=normalized(poi.name);
   const existing=(labelsByName.get(name)||[]).find(label=>isNearby(label,poi));
   if(existing?.kind==='building'){
-   // A named building keeps its own OSM ID and roof anchor for focus and editing.
-   continue;
+   // Preserve distinct OSM POI identity even when its name matches the building.
+   labels.push(poi);indexLabel(poi);continue;
   }
   if(existing){
    existing.name=poi.name;
