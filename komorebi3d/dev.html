@@ -625,7 +625,7 @@ import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-init
 import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=matsudo-0_0-20261116";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=step5a-poi-name-index-20261115";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=fixed-building-card-20261119";
+import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=building-tap-priority-20261119";
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
 const $=id=>document.getElementById(id);
@@ -1092,6 +1092,48 @@ if(gameView){
     activeGamePointers.delete(event.pointerId);
    });
   }
+ }
+}
+// Building taps coexist with tag editing and game controls. Camera swipes
+// or pinches clear tap priority, but helicopter movement does not.
+const buildingTapPointers=new Map();
+function clearTappedBuildings(){
+ for(const screen of ['A','B'])matsudoLabels[screen]?.clearTappedBuilding();
+}
+if(gameView){
+ for(const zone of [gameView.movePad,gameView.cameraPad]){
+  zone.addEventListener('pointerdown',event=>{
+   if(activeWorld!=='matsudo'||activeOsmEditors||(!event.isPrimary&&event.pointerType!=='touch'))return;
+   const state={x:event.clientX,y:event.clientY,maxDistance:0,
+    blocked:Boolean(findLabelHit(event.clientX,event.clientY)||tenantPaneAt(event.clientX,event.clientY))};
+   buildingTapPointers.set(event.pointerId,state);
+   if(zone===gameView.cameraPad&&activeGamePointers.size>1){
+    clearTappedBuildings();
+    for(const pointer of buildingTapPointers.values())pointer.blocked=true;
+   }
+  });
+  zone.addEventListener('pointermove',event=>{
+   const pointer=buildingTapPointers.get(event.pointerId);
+   if(!pointer)return;
+   pointer.maxDistance=Math.max(pointer.maxDistance,Math.hypot(event.clientX-pointer.x,event.clientY-pointer.y));
+   if(pointer.maxDistance>LABEL_TAP_TOLERANCE_PX&&!pointer.blocked){
+    pointer.blocked=true;
+    if(zone===gameView.cameraPad)clearTappedBuildings();
+   }
+  });
+  zone.addEventListener('pointerup',event=>{
+   const pointer=buildingTapPointers.get(event.pointerId);
+   buildingTapPointers.delete(event.pointerId);
+   if(!pointer||pointer.blocked||activeWorld!=='matsudo'||activeOsmEditors)return;
+   if(Math.max(pointer.maxDistance,Math.hypot(event.clientX-pointer.x,event.clientY-pointer.y))>LABEL_TAP_TOLERANCE_PX)return;
+   if(findLabelHit(event.clientX,event.clientY)||tenantPaneAt(event.clientX,event.clientY))return;
+   for(const screen of ['A','B']){
+    if(!isVisibleScreen(screen))continue;
+    if(matsudoLabels[screen]?.selectTappedBuildingAt(event.clientX,event.clientY))break;
+   }
+  });
+  for(const type of ['pointercancel','lostpointercapture'])
+   zone.addEventListener(type,event=>buildingTapPointers.delete(event.pointerId));
  }
 }
 publishRuntimeStatus('input-status','🎮 タッチ操作準備OK：左側で移動・右側スワイプで視点変更');
