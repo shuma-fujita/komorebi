@@ -16,7 +16,7 @@ export function visibleOsmTags(tags={},rules=[]){
  return Object.entries(tags).filter(([key])=>!rules.some(rule=>rule.exact===key||(rule.prefix!==undefined&&key.startsWith(rule.prefix))));
 }
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-range-1000m-20261119';
-import {shopsInFocusedBuilding} from './map-occupants.js?v=tenant-outside-warning-20261119';
+import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
 export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null}={}){
  const layer=document.createElement('div');
