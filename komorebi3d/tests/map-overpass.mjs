@@ -5,9 +5,9 @@ import {readFile} from 'node:fs/promises';
 const source=await readFile(new URL('../maps/map-overpass.js',import.meta.url),'utf8');
 const {buildMatsudoOverpassQuery,normalizeMatsudoOverpass,fetchLiveMatsudoMap,OVERPASS_ENDPOINT,OVERPASS_TIMEOUT_MS}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 
-test('30s single-server budget and 35s Overpass query timeout',()=>{
- assert.equal(OVERPASS_TIMEOUT_MS,30000);
- assert.match(buildMatsudoOverpassQuery(),/\[timeout:35\]/);
+test('60s single-server budget and 65s Overpass query timeout',()=>{
+ assert.equal(OVERPASS_TIMEOUT_MS,60000);
+ assert.match(buildMatsudoOverpassQuery(),/\[timeout:65\]/);
 });
 test('queries the exact Matsudo 500m bbox with geometry',()=>{
  const query=buildMatsudoOverpassQuery();
