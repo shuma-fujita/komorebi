@@ -5,13 +5,13 @@ import {readFile} from 'node:fs/promises';
 const source=await readFile(new URL('../maps/map-overpass.js',import.meta.url),'utf8');
 const {buildMatsudoOverpassQuery,normalizeMatsudoOverpass,fetchLiveMatsudoMap,OVERPASS_ENDPOINT,OVERPASS_TIMEOUT_MS}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 
-test('60s single-server budget and 65s Overpass query timeout',()=>{
- assert.equal(OVERPASS_TIMEOUT_MS,60000);
- assert.match(buildMatsudoOverpassQuery(),/\[timeout:65\]/);
+test('120s single-server budget and 125s Overpass query timeout',()=>{
+ assert.equal(OVERPASS_TIMEOUT_MS,120000);
+ assert.match(buildMatsudoOverpassQuery(),/\[timeout:125\]/);
 });
-test('queries the exact Matsudo 500m bbox with geometry',()=>{
+test('queries the exact Matsudo 250m bbox with geometry',()=>{
  const query=buildMatsudoOverpassQuery();
- assert.match(query,/35\.782194,139\.897842,35\.786686,139\.903378/);
+ assert.match(query,/35\.783317,139\.899226,35\.785563,139\.901994/);
  assert.match(query,/out body geom/);
  for(const key of ['shop','amenity','building','highway','railway'])assert.ok(query.includes(key));
 });
