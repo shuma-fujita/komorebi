@@ -62,7 +62,17 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    return node;
   };
   const ax=ox+x,ay=oy+y,sx=ox+labelX,sy=oy+labelY-29;
-  debugSvg.appendChild(element('line',{x1:sx,y1:sy,x2:ax,y2:ay,stroke:'#7bead8','stroke-width':1.5}));
+  if(item.shopLayout==='B'&&item.shopList){
+   const pane=item._pane;
+   const bounds=pane?.getBoundingClientRect();
+   for(const row of pane?.querySelectorAll('[data-osm-key]')||[]){
+    const r=row.getBoundingClientRect();
+    if(bounds&&r.bottom>bounds.top&&r.top<bounds.bottom){
+     const startX=r.left-hostRect.left+r.width/2,startY=r.top-hostRect.top+r.height/2;
+     debugSvg.appendChild(element('line',{x1:startX,y1:startY,x2:ax,y2:ay,stroke:'#7bead8','stroke-width':1.4}));
+    }
+   }
+  }else debugSvg.appendChild(element('line',{x1:sx,y1:sy,x2:ax,y2:ay,stroke:'#7bead8','stroke-width':1.5}));
   debugSvg.appendChild(element('circle',{cx:ax,cy:ay,r:3.5,fill:'#7bead8',stroke:'rgba(23,40,56,.45)','stroke-width':2}));
   if(!debugAnchors)return;
   const right=ax+85>ox+rect.width;
@@ -433,13 +443,29 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     }
     if(item.shopList){
      const count=document.createElement('div');count.style.cssText='font-size:11px;color:#a3f0df;margin:5px 0 4px';
-     count.textContent='入居施設 '+item.shopList.length+'件（OSM登録分）';card.appendChild(count);
+     count.textContent=(item.shopLayout==='B'?'個別タグ ':'入居施設 ')+item.shopList.length+'件（OSM登録分）';
+     card.appendChild(count);
+     const pane=document.createElement('div');
+     pane.style.cssText='max-height:150px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin';
+     pane.dataset.shopPane='true';
      for(const shop of item.shopList){
-      const row=document.createElement('div');row.style.cssText='padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
+      const row=document.createElement('div');
+      row.style.cssText=item.shopLayout==='B'
+       ?'margin:5px 2px;padding:7px 6px;border:1px solid #7bead8;border-radius:6px;background:#295350;font:12px/1.4 system-ui'
+       :'padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
       const prefix=shop.tags?.level!==undefined?'['+shop.tags.level+'階] ':'';
       row.textContent=prefix+shop.name;row.dataset.osmKey=shop.osmType+':'+shop.osmId;
-      row._osmItem=shop;card.appendChild(row);
+      row._osmItem=shop;pane.appendChild(row);
      }
+     const controls=document.createElement('div');
+     controls.style.cssText='display:flex;justify-content:space-between;gap:6px;margin-top:5px;font:11px system-ui';
+     for(const [label,delta] of [['▲ 前へ',-120],['▼ 次へ',120]]){
+      const button=document.createElement('div');button.textContent=label;button.dataset.scrollDelta=String(delta);
+      button.style.cssText='flex:1;padding:5px 3px;text-align:center;border-radius:4px;border:1px solid #7bead8;color:#7bead8';
+      controls.appendChild(button);
+     }
+     card.append(pane,controls);
+     item._pane=pane;
     }
     card.style.width=widthLimit+'px';
     card.style.maxWidth=widthLimit+'px';
@@ -468,10 +494,18 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     const rect=card.getBoundingClientRect();
     if(clientX>=rect.left&&clientX<=rect.right&&clientY>=rect.top&&clientY<=rect.bottom){
      if(measured.shopList){
-      for(const node of card.querySelectorAll('[data-osm-key]')){
+      for(const node of card.querySelectorAll('[data-osm-key],[data-scroll-delta]')){
        const r=node.getBoundingClientRect();
-       if(clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom)
-        return {owner:measured,editItem:node._osmItem};
+       if(clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom){
+        if(node.dataset.osmKey){
+         const pane=measured.el.querySelector('div[style*="max-height: 150px"]');
+         const bounds=pane?.getBoundingClientRect();
+         if(bounds&&(r.bottom<=bounds.top||r.top>=bounds.bottom))continue;
+        }
+        return node._osmHit||(node._osmHit=node.dataset.osmKey
+         ?{owner:measured,editItem:node._osmItem}
+         :{owner:measured,scrollDelta:Number(node.dataset.scrollDelta)});
+       }
       }
      }
      return measured;
@@ -484,6 +518,11 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const owner=measured?.owner||measured;
   if(!owner||editor||!layer.isConnected||owner.el.style.display!=='flex')return false;
   if(!viewports.some(viewport=>viewport.items.includes(owner)||viewport.summary===owner))return false;
+  if(measured.scrollDelta){
+   const pane=owner.el.querySelector('[data-shop-pane]');
+   if(pane)pane.scrollTop+=measured.scrollDelta;
+   return true;
+  }
   openEditor(measured.editItem||owner);
   return Boolean(editor);
  }
@@ -539,10 +578,9 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    z:(focusedBuilding.bounds[2]+focusedBuilding.bounds[3])/2,
    y:focusedBuilding.height+.9,tags:{},visibleTags:[],source:focusedBuilding
   }:index>=0?entries[index]:null;
-  const ranked=buildingEntry?(shopMode==='A'
-   ?[{i:-1,item:{...buildingEntry,shopList:shops}}]
-   :[...(index>=0?[{i:index,item:buildingEntry}]:[]),
-      ...shops.map(shop=>({i:entries.indexOf(shop),item:shop})).filter(v=>v.i>=0)]):[];
+  // Both layouts retain every matched OSM POI in a scrollable viewport.
+  // A is a single building directory; B renders individual cards and leader lines.
+  const ranked=buildingEntry?[{i:-1,item:{...buildingEntry,shopList:shops,shopLayout:shopMode}}]:[];
   let inView=0,shown=0;
   const hostRect=host.getBoundingClientRect();
   debugSvg.replaceChildren();
@@ -575,7 +613,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height))continue;
     let measured;
     if(i===-1){
-     const signature=focusedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')).join('|');
+     const signature=shopMode+'|'+focusedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')).join('|');
      if(viewport.summary?.signature!==signature){
       viewport.summary?.el.remove();
       viewport.summary=createItem(item,widthLimit,heightLimit);
@@ -597,7 +635,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     el.style.display='flex';
     el.style.left=(rect.left-hostRect.left+labelX)+'px';
     el.style.top=(rect.top-hostRect.top+labelY)+'px';
-    drawDebugAnchor(item,rect,hostRect,x,y,labelX,labelY);
+    drawDebugAnchor(measured,rect,hostRect,x,y,labelX,labelY);
     viewShown++;shown++;
    }
   }
