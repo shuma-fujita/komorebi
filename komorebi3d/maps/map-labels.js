@@ -24,7 +24,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
  let buildings=[];
- let focusedKey=null,pendingKey=null,pendingSince=0,lastFocusAt=-Infinity;
+ let focusedKey=null,focusedHit=null,pendingKey=null,pendingSince=0,lastFocusAt=-Infinity;
  function appendBuildingFeatures(features){
   if(!features?.length)return;
   for(const feature of features)if(feature.type==='building'&&feature.osmId!=null)buildings.push(feature);
@@ -32,7 +32,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  }
  function setBuildingFeatures(features){
   buildings=[];
-  focusedKey=null;pendingKey=null;pendingSince=0;
+  focusedKey=null;focusedHit=null;pendingKey=null;pendingSince=0;
   appendBuildingFeatures(features);
  }
  let debugAnchors=false;
@@ -491,7 +491,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    const selected=pickFocusedBuilding(buildings,camera);
    const key=selected?selected.osmType+':'+selected.osmId:null;
    if(key!==pendingKey){pendingKey=key;pendingSince=now;}
-   if(focusedKey!==pendingKey&&now-pendingSince>=120)focusedKey=pendingKey;
+   if(focusedKey!==pendingKey&&now-pendingSince>=120){focusedKey=pendingKey;focusedHit=null;}
+   if(focusedKey===key)focusedHit=selected?.hitPoint??null;
    lastFocusAt=now;
   }
   const index=focusedKey===null?-1:entries.findIndex(item=>item.kind==='building'&&item.osmType+':'+item.osmId===focusedKey);
@@ -510,12 +511,21 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    let viewShown=0;
    for(const {i,item} of ranked){
     if(viewShown>=1)break;
-    const vx=item.x-ex,vy=item.y-ey,vz=item.z-ez;
-    const depth=vx*fx+vy*fy+vz*fz;
-    if(depth<=.2)continue;
-    const x=rect.width/2+(vx*rx+vz*rz)*scale/depth;
-    const y=rect.height/2-(vx*ux+vy*uy+vz*uz)*scale/depth;
-    if(x<0||x>rect.width||y<0||y>rect.height)continue;
+    let vx=item.x-ex,vy=item.y-ey,vz=item.z-ez;
+    let depth=vx*fx+vy*fy+vz*fz;
+    let x=depth>.2?rect.width/2+(vx*rx+vz*rz)*scale/depth:NaN;
+    let y=depth>.2?rect.height/2-(vx*ux+vy*uy+vz*uz)*scale/depth:NaN;
+    // Very tall buildings can fill the center of the view while their roof
+    // anchor is outside it. In that case use the actual visible wall/roof hit.
+    if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height)&&focusedHit){
+     vx=focusedHit[0]-ex;vy=focusedHit[1]-ey;vz=focusedHit[2]-ez;
+     depth=vx*fx+vy*fy+vz*fz;
+     if(depth>.2){
+      x=rect.width/2+(vx*rx+vz*rz)*scale/depth;
+      y=rect.height/2-(vx*ux+vy*uy+vz*uz)*scale/depth;
+     }
+    }
+    if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height))continue;
     const measured=viewport.items[i]||(viewport.items[i]=createItem(item,widthLimit,heightLimit));
     sizeItem(measured,widthLimit,heightLimit);
     const wd=measured.width;
