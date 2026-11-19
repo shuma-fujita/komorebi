@@ -10,7 +10,7 @@ const glyphs={
 export const yoshinoya={
  id:'yoshinoya',
  names:['吉野家','yoshinoya'],
- sign:{background:orange,bands:[{from:.12,to:.93,color:orange},{from:.04,to:.12,color:red}],
+ sign:{background:orange,upper:orange,lower:red,bands:[{from:.12,to:.93,color:orange},{from:.04,to:.12,color:red}],
   textColor:white,label:'YOSHINOYA',glyphs},
  stripes:[{height:.79,color:orange},{height:.08,color:red},{height:.13,color:white}]
 };
