@@ -1,15 +1,15 @@
-// Live Matsudo 500m OSM snapshot. Public Overpass is best-effort; callers keep a local JSON fallback.
+// Live Matsudo 250m OSM snapshot. Public Overpass is best-effort; callers keep a local JSON fallback.
 export const OVERPASS_ENDPOINT='https://overpass.private.coffee/api/interpreter';
-export const OVERPASS_TIMEOUT_MS=60000;
-// Match the existing matsudo.json 500m bounding box and map-builder origin.
-export const MATSUDo_BBOX=[35.782194,139.897842,35.786686,139.903378];
+export const OVERPASS_TIMEOUT_MS=120000;
+// Centered on the existing Matsudo 500m map origin; half-size is 125m.
+export const MATSUDo_BBOX=[35.783317,139.899226,35.785563,139.901994];
 const FACILITY_KEYS=['shop','amenity','tourism','office','leisure','healthcare'];
 const WAY_KEYS=[...FACILITY_KEYS,'building','highway','railway'];
 const hasTag=(tags,keys)=>keys.some(key=>Object.prototype.hasOwnProperty.call(tags||{},key));
 export function buildMatsudoOverpassQuery(){
  const bbox=MATSUDo_BBOX.join(',');
  // Regex on tag keys keeps the request compact. "out geom" includes way vertices.
- return '[out:json][timeout:65];('+
+ return '[out:json][timeout:125];('+
   'node[~"^(shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
   'way[~"^(building|highway|railway|shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
   'relation[~"^(shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
@@ -34,9 +34,9 @@ export function normalizeMatsudoOverpass(data){
   }
  }
  return {source:'OpenStreetMap contributors',license:'ODbL-1.0',center:[35.78444,139.90061],
-  bbox:MATSUDo_BBOX.join(','),elements,osmTimestamp:data.osm3s?.timestamp_osm_base||null};
+  bbox:MATSUDo_BBOX.join(','),areaSizeM:250,elements,osmTimestamp:data.osm3s?.timestamp_osm_base||null};
 }
-// One live request only, with up to 60 seconds for the primary server.
+// One live request only, with up to 120 seconds for the primary server.
 export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPASS_TIMEOUT_MS,fetchImpl=fetch}={}){
  if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
  const started=performance.now();
@@ -46,9 +46,9 @@ export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPAS
  const timer=setTimeout(()=>controller.abort(),timeoutMs);
  const host=new URL(OVERPASS_ENDPOINT).hostname;
  try{
-  onLog('OSM最新500m: '+host+' 取得開始（上限'+Math.round(timeoutMs/1000)+'秒）');
+  onLog('OSM最新250m: '+host+' 取得開始（上限'+Math.round(timeoutMs/1000)+'秒）');
   const response=await fetchImpl(OVERPASS_ENDPOINT+'?data='+encodeURIComponent(buildMatsudoOverpassQuery()),{signal:controller.signal,cache:'no-store'});
-  onLog('OSM最新500m: '+host+' HTTP '+response.status+' / '+Math.round(performance.now()-started)+'ms');
+  onLog('OSM最新250m: '+host+' HTTP '+response.status+' / '+Math.round(performance.now()-started)+'ms');
   if(!response.ok)throw Error('HTTP '+response.status);
   const result=normalizeMatsudoOverpass(await response.json());
   const buildings=result.elements.filter(e=>e.type==='way'&&e.tags?.building&&e.geometry?.length>=4).length;
@@ -57,12 +57,12 @@ export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPAS
   if(buildings<10||roads<10||facilities<1)throw Error('地図データ不足（建物'+buildings+'・道路'+roads+'・施設'+facilities+'）');
   if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
   if(controller.signal.aborted)throw Error('応答タイムアウト');
-  onLog('OSM最新500m: 取得・変換 '+Math.round(performance.now()-started)+'ms / '+result.elements.length+'件 / OSM反映時刻 '+(result.osmTimestamp||'不明')+' / 接続先 '+host);
+  onLog('OSM最新250m: 取得・変換 '+Math.round(performance.now()-started)+'ms / '+result.elements.length+'件 / OSM反映時刻 '+(result.osmTimestamp||'不明')+' / 接続先 '+host);
   return result;
  }catch(error){
   if(signal?.aborted)throw error;
   const reason=controller.signal.aborted?'タイムアウト':String(error.message||error);
-  onLog('OSM最新500m: '+host+' 失敗 ('+reason+') / '+Math.round(performance.now()-started)+'ms');
+  onLog('OSM最新250m: '+host+' 失敗 ('+reason+') / '+Math.round(performance.now()-started)+'ms');
   throw Error('Overpass取得失敗：'+host+': '+reason);
  }finally{
   clearTimeout(timer);
