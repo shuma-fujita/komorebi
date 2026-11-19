@@ -1,5 +1,5 @@
 // Explicit, read-only Overpass diagnostics. Never affects map rendering or snapshots.
-import {OVERPASS_ENDPOINT, MATSUDo_BBOX} from './map-overpass.js?v=single-overpass120-250m-20261119';
+import {resolveOverpassEndpoint, MATSUDo_BBOX} from './map-overpass.js?v=manual-overpass-20261119';
 export const DIAGNOSTIC_TIMEOUT_MS=20000;
 export function buildOverpassDiagnosticQuery(kind){
  if(kind==='ping'){
@@ -11,7 +11,7 @@ export function buildOverpassDiagnosticQuery(kind){
  }
  throw Error('診断種別が不正');
 }
-export async function runOverpassDiagnostic(kind,{signal,onLog=()=>{},fetchImpl=fetch,timeoutMs=DIAGNOSTIC_TIMEOUT_MS}={}){
+export async function runOverpassDiagnostic(kind,{signal,onLog=()=>{},fetchImpl=fetch,timeoutMs=DIAGNOSTIC_TIMEOUT_MS,server='coffee'}={}){
  if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
  const controller=new AbortController();
  const abort=()=>controller.abort();
@@ -21,8 +21,9 @@ export async function runOverpassDiagnostic(kind,{signal,onLog=()=>{},fetchImpl=
  const name=kind==='ping'?'接続確認':kind==='buildings'?'建物のみ':'不明';
  try{
   const query=buildOverpassDiagnosticQuery(kind);
-  onLog(name+' 開始 / '+new URL(OVERPASS_ENDPOINT).hostname+' / 上限'+Math.round(timeoutMs/1000)+'秒');
-  const response=await fetchImpl(OVERPASS_ENDPOINT+'?data='+encodeURIComponent(query),{signal:controller.signal,cache:'no-store'});
+  const endpoint=resolveOverpassEndpoint(server);
+  onLog(name+' 開始 / '+new URL(endpoint).hostname+' / 上限'+Math.round(timeoutMs/1000)+'秒');
+  const response=await fetchImpl(endpoint+'?data='+encodeURIComponent(query),{signal:controller.signal,cache:'no-store'});
   const elapsed=Math.round(performance.now()-started);
   onLog(name+' HTTP '+response.status+' / '+elapsed+'ms');
   if(!response.ok)throw Error('HTTP '+response.status);
