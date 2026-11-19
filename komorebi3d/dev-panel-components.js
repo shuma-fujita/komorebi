@@ -156,8 +156,7 @@ export function mountTestControlsPanel(root,api){
    find('mode-compare')?.getAttribute('aria-pressed')==='true'?'compare':'B',
   screens:{A:{map:'old',engine:'B'},B:{map:'new',engine:'B'}},
   mapVisible:find('map-toggle')?.getAttribute('aria-pressed')==='true',
-  labelDebugVisible:false,
-  shopModes:{A:'A',B:'A'}
+  labelDebugVisible:false
  });
  let localState={...initial};
  const readState=()=>api?api.getState():localState;
@@ -177,10 +176,6 @@ export function mountTestControlsPanel(root,api){
   else if(method==='setNpcRenderDistance')localState.npcRenderDistance=Number(value);
   else if(method==='setMapVisible')localState.mapVisible=Boolean(value);
   else if(method==='setLabelDebugVisible')localState.labelDebugVisible=Boolean(value);
-  else if(method==='setShopMode'){
-   const {screen,mode}=value||{};
-   if(['A','B'].includes(screen)&&['A','B'].includes(mode))localState.shopModes={...localState.shopModes,[screen]:mode};
-  }
   // A location button has no game world to teleport in standalone mode.
   render();
  };
@@ -210,17 +205,6 @@ export function mountTestControlsPanel(root,api){
    debugButton.classList.toggle('selected',Boolean(s.labelDebugVisible));
   }
   renderScreenSettingsUI(root,s);
-  const shopSettings=root.querySelector('.shop-mode-settings');
-  if(shopSettings){
-   const mode=['A','B'].includes(s.renderMode)?s.renderMode:'compare';
-   shopSettings.dataset.visible=mode;
-   for(const card of shopSettings.querySelectorAll('[data-screen]'))
-    card.hidden=mode!=='compare'&&card.dataset.screen!==mode;
-  }
-  for(const button of root.querySelectorAll('[data-shop-mode]')){
-   const selected=(s.shopModes?.[button.dataset.shopScreen]??'A')===button.dataset.shopMode;
-   button.setAttribute('aria-pressed',String(selected));button.classList.toggle('selected',selected);
-  }
   for(const button of root.querySelectorAll('[data-world]')){
    const selected=(s.worldId||'forest')===button.dataset.world;
    button.setAttribute('aria-pressed',String(selected));
@@ -241,7 +225,6 @@ export function mountTestControlsPanel(root,api){
  });
  for(const [id,mode] of [['mode-a','A'],['mode-b','B'],['mode-compare','compare']])
   bind(find(id),'click',()=>act('setRenderMode',mode));
- for(const button of root.querySelectorAll('[data-shop-mode]'))bind(button,'click',()=>act('setShopMode',{screen:button.dataset.shopScreen,mode:button.dataset.shopMode}));
  for(const input of root.querySelectorAll('.screen-settings input[type="radio"]'))bind(input,'change',()=>{
   if(!input.checked)return;
   const screen=input.closest('[data-screen]')?.dataset.screen;
