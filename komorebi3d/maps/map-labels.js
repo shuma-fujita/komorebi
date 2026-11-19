@@ -16,7 +16,7 @@ export function visibleOsmTags(tags={},rules=[]){
  return Object.entries(tags).filter(([key])=>!rules.some(rule=>rule.exact===key||(rule.prefix!==undefined&&key.startsWith(rule.prefix))));
 }
 import {pickFocusedBuilding} from './map-focus.js?v=focus-ray-v2-20261119';
-import {shopsInFocusedBuilding} from './map-occupants.js?v=occupants-v2-20261119';
+import {shopsInFocusedBuilding} from './map-occupants.js?v=occupants-v3-desc-20261119';
 
 export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null}={}){
  const layer=document.createElement('div');
