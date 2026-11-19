@@ -302,16 +302,10 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  for(const poi of poiLabels){
   const name=normalized(poi.name);
   const existing=(labelsByName.get(name)||[]).find(label=>isNearby(label,poi));
-  if(existing?.kind==='building'){
-   // Preserve distinct OSM POI identity even when its name matches the building.
-   labels.push(poi);indexLabel(poi);continue;
-  }
-  if(existing){
-   existing.name=poi.name;
-   existing.x=poi.x;existing.z=poi.z;existing.y=poi.y;
-   existing.kind='poi';existing.osmType=poi.osmType;existing.osmId=poi.osmId;existing.osmVersion=poi.osmVersion;
-   existing.tags={...poi.tags};
-  }else {labels.push(poi);indexLabel(poi);}
+  // Do not merge separate OSM nodes solely because they have nearby equal names.
+  // Distinct shop/office identities must remain selectable inside a building.
+  if(existing?.kind==='poi'&&existing.osmType===poi.osmType&&existing.osmId===poi.osmId)continue;
+  labels.push(poi);indexLabel(poi);
  }
  if(profile){profile.record('final-poi',performance.now()-finalClock);finalClock=performance.now();}
  // Attach the final, deduplicated labels and minimap features to their
