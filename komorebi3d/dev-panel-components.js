@@ -120,24 +120,43 @@ export function mountRuntimeStatusPanel(root,api){
  diagnostic.style.cssText='margin:8px 0;padding:8px;border:1px solid #a5bcb0;border-radius:8px;';
  const title=document.createElement('div');title.textContent='🧪 地図JSON読み込みログ';
  title.style.cssText='font-weight:700;font-size:12px;margin-bottom:6px;';
- const copy=document.createElement('button');copy.type='button';copy.textContent='📋 ログをコピー';
- copy.style.cssText='font-size:12px;margin-bottom:6px;padding:5px 8px;';
+ const copy=document.createElement('button');copy.type='button';copy.textContent='📋 全ログをコピー';
+ const toggle=document.createElement('button');toggle.type='button';toggle.textContent='全ログを見る';
+ for(const button of [copy,toggle])button.style.cssText='font-size:12px;margin:0 6px 6px 0;padding:5px 8px;';
+ const summaryLabel=document.createElement('div');summaryLabel.textContent='📌 取得結果・重要ログ';
+ summaryLabel.style.cssText='font-size:12px;font-weight:700;margin:3px 0 4px;';
+ const summary=document.createElement('pre');summary.id='map-debug-summary';summary.textContent='松戸で地図を読み込むと取得結果を表示';
+ const recentLabel=document.createElement('div');recentLabel.textContent='直近の生成ログ';
+ recentLabel.style.cssText='font-size:12px;font-weight:700;margin:8px 0 4px;';
  const pre=document.createElement('pre');pre.id='map-debug-log';pre.textContent='松戸で地図を読み込むとログを表示';
- pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;max-height:230px;overflow:auto;font-size:11px;line-height:1.5;margin:0;';
- diagnostic.append(title,copy,pre);
+ const preStyle='white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;max-height:230px;overflow:auto;font-size:11px;line-height:1.5;margin:0;';
+ summary.style.cssText=preStyle;pre.style.cssText=preStyle;
+ diagnostic.append(title,copy,toggle,summaryLabel,summary,recentLabel,pre);
  (root.querySelector('#map-source-status')||root.querySelector('#label-status')||root).after(diagnostic);
- const onCopy=async()=>{try{await navigator.clipboard.writeText(pre.textContent||'');copy.textContent='コピーしました';}
- catch(_){copy.textContent='テキストを長押ししてコピー';}};
+ let fullLog='',recentLog=pre.textContent,showFull=false;
+ const refreshLog=()=>{pre.textContent=showFull?fullLog:recentLog;};
+ const onToggle=()=>{
+  showFull=!showFull;
+  toggle.textContent=showFull?'直近ログに戻す':'全ログを見る';
+  recentLabel.textContent=showFull?'全ログ（最大512行）':'直近の生成ログ';
+  refreshLog();
+ };
+ const onCopy=async()=>{try{await navigator.clipboard.writeText(fullLog||recentLog||'');copy.textContent='コピーしました';}
+ catch(_){copy.textContent='テキストを長押ししてコピー';onToggle();}};
  copy.addEventListener('click',onCopy);
+ toggle.addEventListener('click',onToggle);
  const fields=new Map(Array.from(root.querySelectorAll('[id]'),node=>[node.id,node]));
+ fields.set('map-debug-summary',summary);
  const render=event=>{
   if(event.type!=='status')return;
+  if(event.id==='map-debug-full-log'){fullLog=event.value; if(showFull)refreshLog(); return;}
+  if(event.id==='map-debug-log'){recentLog=event.value; if(!showFull)refreshLog(); return;}
   const field=fields.get(event.id);
   if(field)field.textContent=event.value;
  };
  for(const [id,value] of Object.entries(api.getState().status ?? {}))render({type:'status',id,value});
  const unsubscribe=api.subscribe(render);
- return ()=>{unsubscribe();copy.removeEventListener('click',onCopy);diagnostic.remove();};
+ return ()=>{unsubscribe();copy.removeEventListener('click',onCopy);toggle.removeEventListener('click',onToggle);diagnostic.remove();};
 }
 
 export function mountTestControlsPanel(root,api){
