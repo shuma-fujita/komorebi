@@ -439,7 +439,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     title.textContent=item.name;
     card.append(header,title);
     if(item.kind==='poi'&&item.tags?.level!==undefined){
-     const floor=document.createElement('span');floor.textContent=' / '+item.tags.level+'階';floor.style.cssText='font-size:10px;color:#7bead8';title.appendChild(floor);
+     const floor=document.createElement('span');floor.textContent=' / level='+item.tags.level;floor.style.cssText='font-size:10px;color:#7bead8';title.appendChild(floor);
     }
     if(item.shopList){
      const count=document.createElement('div');count.style.cssText='font-size:11px;color:#a3f0df;margin:5px 0 4px';
@@ -454,7 +454,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
       row.style.cssText=item.shopLayout==='B'
        ?'margin:5px 2px;padding:7px 6px;border:1px solid #7bead8;border-radius:6px;background:#295350;font:12px/1.4 system-ui'
        :'padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
-      const prefix=shop.tags?.level!==undefined?'['+shop.tags.level+'階] ':'';
+      const prefix=shop.tags?.level!==undefined?'[level='+shop.tags.level+'] ':'';
       row.textContent=prefix+shop.name;row.dataset.osmKey=shop.osmType+':'+shop.osmId;
       row._osmItem=shop;pane.appendChild(row);
      }
