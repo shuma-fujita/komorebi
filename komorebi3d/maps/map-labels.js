@@ -16,7 +16,7 @@ export function visibleOsmTags(tags={},rules=[]){
  return Object.entries(tags).filter(([key])=>!rules.some(rule=>rule.exact===key||(rule.prefix!==undefined&&key.startsWith(rule.prefix))));
 }
 import {pickFocusedBuilding} from './map-focus.js?v=focus-ray-v2-20261119';
-import {groupPoisByBuilding} from './map-occupants.js?v=occupants-v1-20261119';
+import {shopsInFocusedBuilding} from './map-occupants.js?v=occupants-v2-20261119';
 
 export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null}={}){
  const layer=document.createElement('div');
@@ -25,11 +25,14 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
  let buildings=[];
- let shopIndex=new Map(),shopIndexDirty=true,shopMode='A';
+ let cachedShops=[],lastShopKey=null,shopIndexDirty=true,shopMode='A';
  function setShopMode(mode){if(mode!=='A'&&mode!=='B')return;shopMode=mode;}
  function shopsForFocus(){
-  if(shopIndexDirty){shopIndex=groupPoisByBuilding(buildings,entries);shopIndexDirty=false;}
-  return shopIndex.get(focusedKey)||[];
+  if(shopIndexDirty||lastShopKey!==focusedKey){
+   cachedShops=shopsInFocusedBuilding(buildings,entries,focusedKey);
+   shopIndexDirty=false;lastShopKey=focusedKey;
+  }
+  return cachedShops;
  }
  let focusedKey=null,focusedHit=null,pendingKey=null,pendingSince=0,lastFocusAt=-Infinity;
  function appendBuildingFeatures(features){
