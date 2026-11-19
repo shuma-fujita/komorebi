@@ -446,8 +446,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
      count.textContent=(item.shopLayout==='B'?'個別タグ ':'入居施設 ')+item.shopList.length+'件（OSM登録分）';
      card.appendChild(count);
      const pane=document.createElement('div');
-     pane.style.cssText='overflow:auto;overscroll-behavior:contain;scrollbar-width:thin';
-     pane.style.maxHeight=Math.max(30,heightLimit-95)+'px';
+     pane.style.cssText='overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;pointer-events:none';
+     pane.style.maxHeight=Math.max(30,heightLimit-54)+'px';
      pane.dataset.shopPane='true';
      for(const shop of item.shopList){
       const row=document.createElement('div');
@@ -458,14 +458,14 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
       row.textContent=prefix+shop.name;row.dataset.osmKey=shop.osmType+':'+shop.osmId;
       row._osmItem=shop;pane.appendChild(row);
      }
-     const controls=document.createElement('div');
-     controls.style.cssText='display:flex;justify-content:space-between;gap:6px;margin-top:5px;font:11px system-ui';
-     for(const [label,delta] of [['▲ 前へ',-120],['▼ 次へ',120]]){
-      const button=document.createElement('div');button.textContent=label;button.dataset.scrollDelta=String(delta);
-      button.style.cssText='flex:1;padding:5px 3px;text-align:center;border-radius:4px;border:1px solid #7bead8;color:#7bead8';
-      controls.appendChild(button);
-     }
-     card.append(pane,controls);
+     // Only an overflowing list accepts native touch/wheel scrolling; short
+     // lists remain pointer-transparent and keep the original game hit test.
+     pane.addEventListener('click',event=>{
+      event.stopPropagation();
+      const row=event.target.closest('[data-osm-key]');
+      if(row&&pane.contains(row))openEditor(row._osmItem);
+     });
+     card.appendChild(pane);
      item._pane=pane;
     }
     card.style.width=widthLimit+'px';
@@ -479,9 +479,16 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     el.style.display='flex';
     el.style.visibility='hidden';
     const width=el.offsetWidth||widthLimit,height=el.offsetHeight||72;
+    syncShopPane(el);
     el.style.display='none';
     el.style.visibility='';
     return {...item,el,width,height,widthLimit,heightLimit};
+ }
+ // A long list is the only interactive child of the otherwise transparent label.
+ // This lets iOS Safari scroll naturally without activating camera/movement pads.
+ function syncShopPane(el){
+  const pane=el.querySelector('[data-shop-pane]');
+  if(pane)pane.style.pointerEvents=pane.scrollHeight>pane.clientHeight+1?'auto':'none';
  }
  // Pointer-transparent cards keep the existing left/right game controls active.
  // Hit testing is limited to the visible card, not its decorative stem/dot.
@@ -495,7 +502,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     const rect=card.getBoundingClientRect();
     if(clientX>=rect.left&&clientX<=rect.right&&clientY>=rect.top&&clientY<=rect.bottom){
      if(measured.shopList){
-      for(const node of card.querySelectorAll('[data-osm-key],[data-scroll-delta]')){
+      for(const node of card.querySelectorAll('[data-osm-key]')){
        const r=node.getBoundingClientRect();
        if(clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom){
         if(node.dataset.osmKey){
@@ -503,9 +510,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
          const bounds=pane?.getBoundingClientRect();
          if(bounds&&(r.bottom<=bounds.top||r.top>=bounds.bottom))continue;
         }
-        return node._osmHit||(node._osmHit=node.dataset.osmKey
-         ?{owner:measured,editItem:node._osmItem}
-         :{owner:measured,scrollDelta:Number(node.dataset.scrollDelta)});
+        return node._osmHit||(node._osmHit={owner:measured,editItem:node._osmItem});
        }
       }
      }
@@ -519,12 +524,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const owner=measured?.owner||measured;
   if(!owner||editor||!layer.isConnected||owner.el.style.display!=='flex')return false;
   if(!viewports.some(viewport=>viewport.items.includes(owner)||viewport.summary===owner))return false;
-  if(measured.scrollDelta){
-   const pane=owner.el.querySelector('[data-shop-pane]');
-   if(pane)pane.scrollTop+=measured.scrollDelta;
-   return true;
-  }
-  openEditor(measured.editItem||owner);
+   openEditor(measured.editItem||owner);
   return Boolean(editor);
  }
  function sizeItem(measured,widthLimit,heightLimit){
@@ -534,11 +534,12 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   card.style.maxWidth=widthLimit+'px';
   card.style.maxHeight=heightLimit+'px';
   const pane=card.querySelector('[data-shop-pane]');
-  if(pane)pane.style.maxHeight=Math.max(30,heightLimit-95)+'px';
+  if(pane)pane.style.maxHeight=Math.max(30,heightLimit-54)+'px';
   measured.el.style.display='flex';
   measured.el.style.visibility='hidden';
   measured.width=measured.el.offsetWidth||widthLimit;
   measured.height=measured.el.offsetHeight||72;
+  syncShopPane(measured.el);
   measured.el.style.display='none';
   measured.el.style.visibility='';
   measured.widthLimit=widthLimit;measured.heightLimit=heightLimit;
