@@ -25,8 +25,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
  let buildings=[];
- let cachedShops=[],lastShopKey=null,shopIndexDirty=true,shopMode='A';
- function setShopMode(mode){if(mode!=='A'&&mode!=='B')return;shopMode=mode;}
+ let cachedShops=[],lastShopKey=null,shopIndexDirty=true;
  function shopsForFocus(key){
   if(shopIndexDirty||lastShopKey!==key){
    cachedShops=shopsInFocusedBuilding(buildings,entries,key);
@@ -71,17 +70,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    return node;
   };
   const ax=ox+x,ay=oy+y,sx=ox+labelX,sy=oy+labelY;
-  if(item.shopLayout==='B'&&item.shopList){
-   const pane=item._pane;
-   const bounds=pane?.getBoundingClientRect();
-   for(const row of pane?.querySelectorAll('[data-osm-key]')||[]){
-    const r=row.getBoundingClientRect();
-    if(bounds&&r.bottom>bounds.top&&r.top<bounds.bottom){
-     const startX=r.left-hostRect.left+r.width/2,startY=r.top-hostRect.top+r.height/2;
-     debugSvg.appendChild(element('line',{x1:startX,y1:startY,x2:ax,y2:ay,stroke:'#7bead8','stroke-width':1.4}));
-    }
-   }
-  }else debugSvg.appendChild(element('line',{x1:sx,y1:sy,x2:ax,y2:ay,stroke:'#7bead8','stroke-width':1.5}));
+  debugSvg.appendChild(element('line',{x1:sx,y1:sy,x2:ax,y2:ay,stroke:'#7bead8','stroke-width':1.5}));
   debugSvg.appendChild(element('circle',{cx:ax,cy:ay,r:3.5,fill:'#7bead8',stroke:'rgba(23,40,56,.45)','stroke-width':2}));
   if(!debugAnchors)return;
   const right=ax+85>ox+rect.width;
@@ -452,7 +441,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     }
     if(item.shopList){
      const count=document.createElement('div');count.style.cssText='font-size:11px;color:#a3f0df;margin:5px 0 4px';
-     count.textContent=(item.shopLayout==='B'?'個別タグ ':'入居施設 ')+item.shopList.length+'件（OSM登録分）';
+     count.textContent='入居施設 '+item.shopList.length+'件（OSM登録分）';
      card.appendChild(count);
      const pane=document.createElement('div');
      pane.style.cssText='flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:none;pointer-events:none';
@@ -461,9 +450,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
      pane.className='komorebi-tenant-pane';
      for(const shop of item.shopList){
       const row=document.createElement('div');
-      row.style.cssText=item.shopLayout==='B'
-       ?'margin:5px 2px;padding:7px 6px;border:1px solid #7bead8;border-radius:6px;background:#295350;font:12px/1.4 system-ui'
-       :'padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
+      row.style.cssText='padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
       const prefix=shop.tags?.level!==undefined?'[level='+shop.tags.level+'] ':'';
       row.textContent=prefix+shop.name;
       if(shop.outsideFootprint){
@@ -675,9 +662,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    z:(focusedBuilding.bounds[2]+focusedBuilding.bounds[3])/2,
    y:focusedBuilding.height+.9,osmVersion:focusedBuilding.osmVersion,tags:focusedBuilding.tags||{},visibleTags:visibleOsmTags(focusedBuilding.tags||{},ignoreRules),source:focusedBuilding
   }:index>=0?entries[index]:null;
-  // Both layouts retain every matched OSM POI in a scrollable viewport.
-  // A is a single building directory; B renders individual cards and leader lines.
-  const ranked=buildingEntry?[{i:-1,item:{...buildingEntry,shopList:shops,shopLayout:shopMode}}]:[];
+  // One building directory retains every matched OSM POI in a scrollable viewport.
+  const ranked=buildingEntry?[{i:-1,item:{...buildingEntry,shopList:shops}}]:[];
   let inView=0,shown=0;
   const hostRect=host.getBoundingClientRect();
   debugSvg.replaceChildren();
@@ -691,7 +677,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    const heightLimit=Math.max(1,Math.floor(rect.height-42));
    const topInset=Math.min(28,Math.max(8,Math.floor(rect.height*.06)));
    const {item}=ranked[0];
-   const signature=shopMode+'|'+selectedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')+':'+(shop.outsideFootprint?'outside':'inside')).join('|');
+   const signature=selectedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')+':'+(shop.outsideFootprint?'outside':'inside')).join('|');
    if(viewport.summary?.signature!==signature){
     viewport.summary?.el.remove();
     viewport.summary=createItem(item,widthLimit,heightLimit);
@@ -769,5 +755,5 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   return false;
  }
  function clearTappedBuilding(){tappedBuilding=null;}
- return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,setShopMode,reconcileLabels,replaceCanvas,setDebugAnchors,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
