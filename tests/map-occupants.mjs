@@ -12,8 +12,8 @@ const labels=[poi(1,10,10,5),poi(2,2,2,1),poi(3,6,6,2),poi(4,30,30,1),poi(5,10,1
 assert.equal(pointInFootprint(10,10,outer.points),true);
 assert.equal(pointInFootprint(30,30,outer.points),false);
 assert.equal(pointInFootprint(0,5,outer.points),true,'boundary counted as inside');
-assert.deepEqual(shopsInFocusedBuilding([outer,inner,other],labels,'way:1').map(v=>v.osmId),[2,1,5],
- 'all outer stores sorted by level, inner/other excluded');
+assert.deepEqual(shopsInFocusedBuilding([outer,inner,other],labels,'way:1').map(v=>v.osmId),[1,2,5],
+ 'all outer stores sorted by descending level, inner/other excluded');
 assert.deepEqual(shopsInFocusedBuilding([outer,inner,other],labels,'way:2').map(v=>v.osmId),[3]);
 assert.deepEqual(shopsInFocusedBuilding([outer,inner,other],labels,'way:3'),[]);
 assert.deepEqual(shopsInFocusedBuilding([outer,inner,other],labels,'way:999'),[]);
