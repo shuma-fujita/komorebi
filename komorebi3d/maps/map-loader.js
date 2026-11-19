@@ -1,5 +1,5 @@
-import {fetchLiveMatsudoMap} from './map-overpass.js?v=single-overpass60-20261119';
-// The legacy 500m source tries live Overpass, then safely falls back to the checked-in JSON.
+import {fetchLiveMatsudoMap} from './map-overpass.js?v=single-overpass120-250m-20261119';
+// The old map mode fetches live 250m OSM, falling back to the checked-in 500m JSON.
 const MAP_URL='./maps/data/matsudo.json';
 const TILE_INDEX_URL='./maps/data/tiles-2km/index.json';
 const TILE_ROOT='./maps/data/tiles-2km/';
@@ -20,11 +20,11 @@ export async function loadMap({onLog=()=>{},signal,source='old'}={}){
  if(source==='old'){
   try{
    const live=verify(await fetchLiveMatsudoMap({onLog,signal}));
-   onLog('OSM最新500m: 検証PASS / 要素 '+live.elements.length+'件 / '+Math.round(performance.now()-start)+'ms');
+   onLog('OSM最新250m: 検証PASS / 要素 '+live.elements.length+'件 / '+Math.round(performance.now()-start)+'ms');
    return live;
   }catch(error){
    if(signal?.aborted)throw error;
-   onLog('OSM最新500m: 取得失敗 ('+String(error.message||error)+') / 保存済みmatsudo.jsonへ切替');
+   onLog('OSM最新250m: 取得失敗 ('+String(error.message||error)+') / 保存済みmatsudo.jsonへ切替');
   }
  }
  let url=MAP_URL,label='matsudo.json';
