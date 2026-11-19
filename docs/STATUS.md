@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 ビルタグが表示される瞬間だけテナントスクロール位置を初期化（main反映・実機未確認）：** ユーザーは①焦点が外れた時のリセットではなく②タグ非表示→表示時のリセットを採用。`maps/map-labels.js` は毎フレームタグを一旦 `display:none` にしてから表示判定するため、その前に `wasSummaryVisible` を取得。画面内判定を通過し実際にタグを表示する際、前回非表示だった場合にだけ `pane.scrollTop=0` と `syncShopPane` を呼ぶ。連続表示中は初期化せず既存指スクロールを維持。OSM編集・水色スクロールバー・最大高さ10件相当・画面サイズ処理・ヘリ操作は変更なし。`dev.template.html` と生成済み `dev.html` のキャッシュキー、`development-info.json` matsudoを更新。**GitHub mainから再取得した構文と表示遷移の静的検証PASS。GitHub Actions・Pages・新しい再表示時リセットの実機動作は未確認。**
+
 > **2026-11-19 ビルタグの最大高さを10件相当に調整（main反映／実機未確認）：** ユーザー指定は1行テナント9件＋2行テナント1件が収まる高さの目安（店舗名の行数制限ではなく3〜4行以上の折り返しも許す）。`maps/map-labels.js` に初回生成時と画面サイズ変更時、実際の行CSSの行高・上下余白・罫線を読み取って `10 × 1行の行高 + 追加1行高` を一覧ペインの最大高さとする処理を追加。現行ビューポート上限を超えないようクランプし、店舗が少ないときは自然な高さ、長いときだけ既存の水色スクロールバー・上下山形アイコンと実機PASS済みスワイプ方式で閲覧。ビル名表示・OSM編集・ヘリ操作・A/B表示は維持。`dev.template.html` と生成済み `dev.html` のJS参照クエリ、`development-info.json` を更新。**GitHub main再取得で構文・静的条件10件PASS。GitHub Actions／Pages配信／今回の高さの実機動作は未確認。**
 
 > **2026-11-19 テナント一覧に装飾スクロールバー＋上下矢印（main反映／実機未確認）：** ユーザーからアトレ松戸での店舗一覧指スクロール実機PASS報告あり。提供されたUI画像を目標に、`maps/map-labels.js` 内の店舗ペイン右側へ枠色 `#7bead8` の細い軌道・明るいつまみ・上下山形アイコンを追加。ペインが実際にオーバーフローする場合にのみ表示、`scrollTop / scrollHeight / clientHeight` からつまみ位置・長さを更新。装飾部は `pointer-events:none`、スクロールバー本体の操作機能は付けない。既存のタッチスワイプ・ヘリ操作・OSM編集・A/B切替・level降順表示は維持。`dev.template.html`／生成済み`dev.html` のラベルJSキャッシュキーと `development-info.json` matsudoを更新。**GitHub main再取得による構文・表示条件・配線の静的検証PASS。GitHub Actions、Pages配信、iPhone実機での新しい装飾UI確認は未実施。**
