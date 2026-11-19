@@ -16,6 +16,7 @@ export function visibleOsmTags(tags={},rules=[]){
  return Object.entries(tags).filter(([key])=>!rules.some(rule=>rule.exact===key||(rule.prefix!==undefined&&key.startsWith(rule.prefix))));
 }
 import {pickFocusedBuilding} from './map-focus.js?v=focus-ray-v2-20261119';
+import {groupPoisByBuilding} from './map-occupants.js?v=occupants-v1-20261119';
 
 export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null}={}){
  const layer=document.createElement('div');
@@ -24,11 +25,17 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
  let buildings=[];
+ let shopIndex=new Map(),shopIndexDirty=true,shopMode='A';
+ function setShopMode(mode){if(mode!=='A'&&mode!=='B')return;shopMode=mode;}
+ function shopsForFocus(){
+  if(shopIndexDirty){shopIndex=groupPoisByBuilding(buildings,entries);shopIndexDirty=false;}
+  return shopIndex.get(focusedKey)||[];
+ }
  let focusedKey=null,focusedHit=null,pendingKey=null,pendingSince=0,lastFocusAt=-Infinity;
  function appendBuildingFeatures(features){
   if(!features?.length)return;
   for(const feature of features)if(feature.type==='building'&&feature.osmId!=null)buildings.push(feature);
-  lastFocusAt=-Infinity;
+  lastFocusAt=-Infinity;shopIndexDirty=true;
  }
  function setBuildingFeatures(features){
   buildings=[];
@@ -362,11 +369,12 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   if(!labels.length)return;
   for(const label of labels)entries.push({...label,source:label,visibleTags:visibleOsmTags(label.tags,ignoreRules)});
   for(const viewport of viewports)for(let i=0;i<labels.length;i++)viewport.items.push(null);
+  shopIndexDirty=true;
  }
  function setLabels(labels){
   layer.replaceChildren(debugSvg);
   entries=[];
-  for(const viewport of viewports)viewport.items=[];
+  for(const viewport of viewports){viewport.items=[];viewport.summary?.el.remove();viewport.summary=null;}
   appendLabels(labels);
  }
  // Finalize POI/building merges without discarding unchanged tag cards.
@@ -395,6 +403,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    viewport.items=after;
   }
   entries=next;
+  shopIndexDirty=true;
+  for(const viewport of viewports){viewport.summary?.el.remove();viewport.summary=null;}
  }
  // Instantiate HTML only when a feature enters the screen, not for every OSM POI.
  function createItem(item,widthLimit,heightLimit){
@@ -410,11 +420,24 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
      tag.textContent=key+': '+String(value);
      header.appendChild(tag);
     }
-    if(!item.visibleTags.length)header.style.display='none';
+    if(!item.visibleTags.length||item.kind==='poi'||item.shopList)header.style.display='none';
     const title=document.createElement('div');
     title.style.cssText='max-width:186px;overflow:hidden;text-overflow:ellipsis;color:#fff;font:600 13px/1.4 system-ui,-apple-system,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.28);';
     title.textContent=item.name;
     card.append(header,title);
+    if(item.kind==='poi'&&item.tags?.level!==undefined){
+     const floor=document.createElement('span');floor.textContent=' / '+item.tags.level+'階';floor.style.cssText='font-size:10px;color:#7bead8';title.appendChild(floor);
+    }
+    if(item.shopList){
+     const count=document.createElement('div');count.style.cssText='font-size:11px;color:#a3f0df;margin:5px 0 4px';
+     count.textContent='入居施設 '+item.shopList.length+'件（OSM登録分）';card.appendChild(count);
+     for(const shop of item.shopList){
+      const row=document.createElement('div');row.style.cssText='padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
+      const prefix=shop.tags?.level!==undefined?'['+shop.tags.level+'階] ':'';
+      row.textContent=prefix+shop.name;row.dataset.osmKey=shop.osmType+':'+shop.osmId;
+      row._osmItem=shop;card.appendChild(row);
+     }
+    }
     card.style.width=widthLimit+'px';
     card.style.maxWidth=widthLimit+'px';
     card.style.maxHeight=heightLimit+'px';
@@ -436,20 +459,29 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   if(editor||!layer.isConnected)return null;
   for(const viewport of viewports){
    if(!viewport.canvas.isConnected)continue;
-   for(const measured of viewport.items){
+   for(const measured of [...viewport.items,viewport.summary]){
     if(!measured||measured.el.style.display!=='flex')continue;
     const card=measured.el.firstElementChild;
     const rect=card.getBoundingClientRect();
-    if(clientX>=rect.left&&clientX<=rect.right&&clientY>=rect.top&&clientY<=rect.bottom)
+    if(clientX>=rect.left&&clientX<=rect.right&&clientY>=rect.top&&clientY<=rect.bottom){
+     if(measured.shopList){
+      for(const node of card.querySelectorAll('[data-osm-key]')){
+       const r=node.getBoundingClientRect();
+       if(clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom)
+        return {owner:measured,editItem:node._osmItem};
+      }
+     }
      return measured;
+    }
    }
   }
   return null;
  }
  function openHit(measured){
-  if(!measured||editor||!layer.isConnected||measured.el.style.display!=='flex')return false;
-  if(!viewports.some(viewport=>viewport.items.includes(measured)))return false;
-  openEditor(measured);
+  const owner=measured?.owner||measured;
+  if(!owner||editor||!layer.isConnected||owner.el.style.display!=='flex')return false;
+  if(!viewports.some(viewport=>viewport.items.includes(owner)||viewport.summary===owner))return false;
+  openEditor(measured.editItem||owner);
   return Boolean(editor);
  }
  function sizeItem(measured,widthLimit,heightLimit){
@@ -496,12 +528,24 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    lastFocusAt=now;
   }
   const index=focusedKey===null?-1:entries.findIndex(item=>item.kind==='building'&&item.osmType+':'+item.osmId===focusedKey);
-  const ranked=index<0?[]:[{i:index,item:entries[index]}];
+  const focusedBuilding=focusedKey===null?null:buildings.find(b=>b.osmType+':'+b.osmId===focusedKey);
+  const shops=focusedBuilding?shopsForFocus():[];
+  const buildingEntry=index<0&&focusedBuilding?{
+   kind:'building',name:'建物（'+focusedKey+'）',osmType:focusedBuilding.osmType,osmId:focusedBuilding.osmId,
+   x:(focusedBuilding.bounds[0]+focusedBuilding.bounds[1])/2,
+   z:(focusedBuilding.bounds[2]+focusedBuilding.bounds[3])/2,
+   y:focusedBuilding.height+.9,tags:{},visibleTags:[],source:focusedBuilding
+  }:index>=0?entries[index]:null;
+  const ranked=buildingEntry?(shopMode==='A'
+   ?[{i:-1,item:{...buildingEntry,shopList:shops}}]
+   :[...(index>=0?[{i:index,item:buildingEntry}]:[]),
+      ...shops.map(shop=>({i:entries.indexOf(shop),item:shop})).filter(v=>v.i>=0)]):[];
   let inView=0,shown=0;
   const hostRect=host.getBoundingClientRect();
   debugSvg.replaceChildren();
   for(const viewport of viewports){
    for(const item of viewport.items)if(item)item.el.style.display='none';
+   if(viewport.summary)viewport.summary.el.style.display='none';
    const rect=viewport.canvas.getBoundingClientRect();
    if(rect.width<1||rect.height<1)continue;
    const scale=rect.height/(2*tanHalf),occupied=[];
@@ -510,7 +554,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    const heightLimit=Math.max(1,Math.floor(rect.height-42));
    let viewShown=0;
    for(const {i,item} of ranked){
-    if(viewShown>=1)break;
+    // All facility tags of the focused building are candidates in B mode.
     let vx=item.x-ex,vy=item.y-ey,vz=item.z-ez;
     let depth=vx*fx+vy*fy+vz*fz;
     let x=depth>.2?rect.width/2+(vx*rx+vz*rz)*scale/depth:NaN;
@@ -526,7 +570,16 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
      }
     }
     if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height))continue;
-    const measured=viewport.items[i]||(viewport.items[i]=createItem(item,widthLimit,heightLimit));
+    let measured;
+    if(i===-1){
+     const signature=focusedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')).join('|');
+     if(viewport.summary?.signature!==signature){
+      viewport.summary?.el.remove();
+      viewport.summary=createItem(item,widthLimit,heightLimit);
+      viewport.summary.signature=signature;
+     }
+     measured=viewport.summary;
+    }else measured=viewport.items[i]||(viewport.items[i]=createItem(item,widthLimit,heightLimit));
     sizeItem(measured,widthLimit,heightLimit);
     const wd=measured.width;
     // Clamp only the HTML card; the 3D position and label data are unchanged.
@@ -547,5 +600,5 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   }
   return {total:entries.length,inRange:ranked.length,inView,shown};
  }
- return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,setShopMode,reconcileLabels,replaceCanvas,setDebugAnchors,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
