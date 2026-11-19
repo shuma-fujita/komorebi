@@ -488,12 +488,12 @@ button.panel-add-button{color:var(--g-accent)}
 <div class="screen-settings" data-visible="compare">
 <div class="screen-card" data-screen="A">
 <div class="screen-title">画面A</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old">旧500m</label><label><input type="radio" name="screen-map-A" value="new" checked>新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>OSM 500m</label><label><input type="radio" name="screen-map-A" value="new">新2km</label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧500m</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old" checked>OSM 500m</label><label><input type="radio" name="screen-map-B" value="new">新2km</label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
 </div>
 </div>
@@ -1667,7 +1667,7 @@ async function loadMatsudoMapInBackground(){
  try{
   const ignoreRules=await loadOsmTagIgnore();
   if(!isCurrentMatsudoMapRequest(token,controller))return;
-  for(const source of ['old','new']){
+  for(const source of ['old',...(screenConfigs.A.map==='new'||screenConfigs.B.map==='new'?['new']:[])]){
    if(!isCurrentMatsudoMapRequest(token,controller))return;
    const name=source==='old'?'OSM最新500m（失敗時は保存JSON）':'2kmタイル '+TEST_TILE_ID;
    try{
@@ -2013,7 +2013,7 @@ function setScreenConfig({screen,setting,value}={}){
  if(setting==='engine')void reconfigureScreenRenderer(screen);
  if(setting==='map'&&activeWorld==='matsudo'){
    if(matsudoMaps[value])loadOsmTagIgnore().then(rules=>applyMatsudoScreenLabels(screen,rules)).catch(error=>addMapDebug('ラベル切替失敗: '+error.message));
-   else{matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;}
+   else{matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;if(value==='new')void loadMatsudoMapInBackground();}
    if(miniMapVisible)paintDebugMap();
   }
  publishGameState();return true;
