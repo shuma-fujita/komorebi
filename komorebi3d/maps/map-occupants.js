@@ -66,7 +66,7 @@ export function shopsInFocusedBuilding(buildings,labels,focusedKey){
    if(poi.x>=a-TENANT_OUTSIDE_TOLERANCE_METRES&&poi.x<=c+TENANT_OUTSIDE_TOLERANCE_METRES&&
       poi.z>=d-TENANT_OUTSIDE_TOLERANCE_METRES&&poi.z<=e+TENANT_OUTSIDE_TOLERANCE_METRES&&
       footprintDistance(poi.x,poi.z,b.points)<=TENANT_OUTSIDE_TOLERANCE_METRES){
-    if(++nearby>1)break;
+    nearby++;
    }
   }
   if(!containing&&nearby===1)result.push({...poi,outsideFootprint:true});
