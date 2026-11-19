@@ -41,7 +41,7 @@ test('records fetch timing and uses normalized format',async()=>{
  };
  const result=await fetchLiveMatsudoMap({
   onLog:line=>log.push(line),fetchImpl:async(url,options)=>{
-   assert.match(url,/overpass-api\.de/);
+   assert.match(url,/overpass\.private\.coffee/);
    assert.ok(options.signal);
    return {ok:true,status:200,json:async()=>many};
   }
