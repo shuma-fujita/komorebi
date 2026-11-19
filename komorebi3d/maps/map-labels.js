@@ -15,7 +15,7 @@ export async function loadOsmTagIgnore(url='./maps/osm-tags.ignore'){
 export function visibleOsmTags(tags={},rules=[]){
  return Object.entries(tags).filter(([key])=>!rules.some(rule=>rule.exact===key||(rule.prefix!==undefined&&key.startsWith(rule.prefix))));
 }
-import {pickFocusedBuilding} from './map-focus.js?v=focus-ray-v2-20261119';
+import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=focus-ray-tap-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=occupants-v3-desc-20261119';
 
 export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null}={}){
@@ -35,6 +35,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   return cachedShops;
  }
  let focusedKey=null,focusedHit=null,pendingKey=null,pendingSince=0,lastFocusAt=-Infinity;
+ let tappedBuilding=null,lastCamera=null;
  function appendBuildingFeatures(features){
   if(!features?.length)return;
   for(const feature of features)if(feature.type==='building'&&feature.osmId!=null)buildings.push(feature);
@@ -43,6 +44,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  function setBuildingFeatures(features){
   buildings=[];
   focusedKey=null;focusedHit=null;pendingKey=null;pendingSince=0;
+  tappedBuilding=null;
   appendBuildingFeatures(features);
  }
  let debugAnchors=false;
@@ -617,6 +619,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   function update(camera,player){
   const empty={total:entries.length,inRange:0,inView:0,shown:0};
   if(!camera||!layer.isConnected)return empty;
+  lastCamera=camera;
   const [ex,ey,ez]=camera.eye,[tx,ty,tz]=camera.target;
   const px=player?.x??tx,py=player?.y??ty,pz=player?.z??tz;
   let fx=tx-ex,fy=ty-ey,fz=tz-ez,fl=Math.hypot(fx,fy,fz);
@@ -639,11 +642,14 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    if(focusedKey===key)focusedHit=selected?.hitPoint??null;
    lastFocusAt=now;
   }
-  const index=focusedKey===null?-1:entries.findIndex(item=>item.kind==='building'&&item.osmType+':'+item.osmId===focusedKey);
-  const focusedBuilding=focusedKey===null?null:buildings.find(b=>b.osmType+':'+b.osmId===focusedKey);
+  // Tap selection overrides the center ray; camera focus still updates.
+  const selectedKey=tappedBuilding?.key??focusedKey;
+  const selectedHit=tappedBuilding?.hitPoint??focusedHit;
+  const index=selectedKey===null?-1:entries.findIndex(item=>item.kind==='building'&&item.osmType+':'+item.osmId===selectedKey);
+  const focusedBuilding=selectedKey===null?null:buildings.find(b=>b.osmType+':'+b.osmId===selectedKey);
   const shops=focusedBuilding?shopsForFocus():[];
   const buildingEntry=index<0&&focusedBuilding?{
-   kind:'building',name:'建物（'+focusedKey+'）',osmType:focusedBuilding.osmType,osmId:focusedBuilding.osmId,
+   kind:'building',name:'建物（'+selectedKey+'）',osmType:focusedBuilding.osmType,osmId:focusedBuilding.osmId,
    x:(focusedBuilding.bounds[0]+focusedBuilding.bounds[1])/2,
    z:(focusedBuilding.bounds[2]+focusedBuilding.bounds[3])/2,
    y:focusedBuilding.height+.9,osmVersion:focusedBuilding.osmVersion,tags:focusedBuilding.tags||{},visibleTags:visibleOsmTags(focusedBuilding.tags||{},ignoreRules),source:focusedBuilding
@@ -664,7 +670,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    const heightLimit=Math.max(1,Math.floor(rect.height-42));
    const topInset=Math.min(28,Math.max(8,Math.floor(rect.height*.06)));
    const {item}=ranked[0];
-   const signature=shopMode+'|'+focusedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')).join('|');
+   const signature=shopMode+'|'+selectedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')).join('|');
    if(viewport.summary?.signature!==signature){
     viewport.summary?.el.remove();
     viewport.summary=createItem(item,widthLimit,heightLimit);
@@ -679,8 +685,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    let depth=vx*fx+vy*fy+vz*fz;
    let x=depth>.2?rect.width/2+(vx*rx+vz*rz)*scale/depth:NaN;
    let y=depth>.2?rect.height/2-(vx*ux+vy*uy+vz*uz)*scale/depth:NaN;
-   if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height)&&focusedHit){
-    vx=focusedHit[0]-ex;vy=focusedHit[1]-ey;vz=focusedHit[2]-ez;
+   if(!(depth>.2&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height)&&selectedHit){
+    vx=selectedHit[0]-ex;vy=selectedHit[1]-ey;vz=selectedHit[2]-ez;
     depth=vx*fx+vy*fy+vz*fz;
     if(depth>.2){
      x=rect.width/2+(vx*rx+vz*rz)*scale/depth;
@@ -716,5 +722,19 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   }
   return {total:entries.length,inRange:ranked.length,inView,shown};
  }
- return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,setShopMode,reconcileLabels,replaceCanvas,setDebugAnchors,scrollPaneAt,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ function selectTappedBuildingAt(clientX,clientY){
+  if(editor||!lastCamera||!layer.isConnected)return false;
+  for(const viewport of viewports){
+   if(!viewport.canvas.isConnected)continue;
+   const rect=viewport.canvas.getBoundingClientRect();
+   if(clientX<rect.left||clientX>rect.right||clientY<rect.top||clientY>rect.bottom)continue;
+   const selected=pickBuildingAtScreen(buildings,lastCamera,clientX-rect.left,clientY-rect.top,rect.width,rect.height);
+   if(!selected)return false;
+   tappedBuilding={key:selected.osmType+':'+selected.osmId,hitPoint:selected.hitPoint};
+   return true;
+  }
+  return false;
+ }
+ function clearTappedBuilding(){tappedBuilding=null;}
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,setShopMode,reconcileLabels,replaceCanvas,setDebugAnchors,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
