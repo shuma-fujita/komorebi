@@ -15,10 +15,13 @@ function intersectBuilding(building,eye,dir,maxDistance){
  const points=building.points,h=building.height;
  if(!Array.isArray(points)||points.length<3||!(h>0))return Infinity;
  const [ex,ey,ez]=eye,[dx,dy,dz]=dir;
- let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
- for(const [x,z] of points){
-  minX=Math.min(minX,x);maxX=Math.max(maxX,x);
-  minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z);
+ let [minX,maxX,minZ,maxZ]=building.bounds||[];
+ if(!Number.isFinite(minX)||!Number.isFinite(maxX)||!Number.isFinite(minZ)||!Number.isFinite(maxZ)){
+  minX=Infinity;maxX=-Infinity;minZ=Infinity;maxZ=-Infinity;
+  for(const [x,z] of points){
+   minX=Math.min(minX,x);maxX=Math.max(maxX,x);
+   minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z);
+  }
  }
  // Cheap three-dimensional bounding-box rejection before polygon-edge tests.
  let lo=0,hi=maxDistance;
