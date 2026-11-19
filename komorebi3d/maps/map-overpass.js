@@ -1,8 +1,5 @@
 // Live Matsudo 500m OSM snapshot. Public Overpass is best-effort; callers keep a local JSON fallback.
-export const OVERPASS_ENDPOINTS=[
- 'https://overpass.private.coffee/api/interpreter',
- 'https://overpass-api.de/api/interpreter'
-];
+export const OVERPASS_ENDPOINT='https://overpass.private.coffee/api/interpreter';
 export const OVERPASS_TIMEOUT_MS=30000;
 // Match the existing matsudo.json 500m bounding box and map-builder origin.
 export const MATSUDo_BBOX=[35.782194,139.897842,35.786686,139.903378];
@@ -39,47 +36,36 @@ export function normalizeMatsudoOverpass(data){
  return {source:'OpenStreetMap contributors',license:'ODbL-1.0',center:[35.78444,139.90061],
   bbox:MATSUDo_BBOX.join(','),elements,osmTimestamp:data.osm3s?.timestamp_osm_base||null};
 }
-// Two endpoints share a 30s overall budget: 15s primary, remaining time secondary.
+// One live request only, with up to 30 seconds for the primary server.
 export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPASS_TIMEOUT_MS,fetchImpl=fetch}={}){
  if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
  const started=performance.now();
- const query=encodeURIComponent(buildMatsudoOverpassQuery());
- const errors=[];
- for(let i=0;i<OVERPASS_ENDPOINTS.length;i++){
+ const controller=new AbortController();
+ const abort=()=>controller.abort();
+ signal?.addEventListener('abort',abort,{once:true});
+ const timer=setTimeout(()=>controller.abort(),timeoutMs);
+ const host=new URL(OVERPASS_ENDPOINT).hostname;
+ try{
+  onLog('OSM最新500m: '+host+' 取得開始（上限'+Math.round(timeoutMs/1000)+'秒）');
+  const response=await fetchImpl(OVERPASS_ENDPOINT+'?data='+encodeURIComponent(buildMatsudoOverpassQuery()),{signal:controller.signal,cache:'no-store'});
+  onLog('OSM最新500m: '+host+' HTTP '+response.status+' / '+Math.round(performance.now()-started)+'ms');
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const result=normalizeMatsudoOverpass(await response.json());
+  const buildings=result.elements.filter(e=>e.type==='way'&&e.tags?.building&&e.geometry?.length>=4).length;
+  const roads=result.elements.filter(e=>e.type==='way'&&e.tags?.highway&&e.geometry?.length>=2).length;
+  const facilities=result.elements.filter(e=>hasTag(e.tags,FACILITY_KEYS)).length;
+  if(buildings<10||roads<10||facilities<1)throw Error('地図データ不足（建物'+buildings+'・道路'+roads+'・施設'+facilities+'）');
   if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
-  const elapsed=performance.now()-started,remaining=timeoutMs-elapsed;
-  if(remaining<=0){onLog('OSM最新500m: 全体時間上限 '+Math.round(timeoutMs/1000)+'秒に到達');break;}
-  const endpoint=OVERPASS_ENDPOINTS[i];
-  const host=new URL(endpoint).hostname;
-  const attemptBudget=Math.max(1,Math.floor(i===0?Math.min(15000,remaining):remaining));
-  const controller=new AbortController();
-  const abort=()=>controller.abort();
-  signal?.addEventListener('abort',abort,{once:true});
-  const timer=setTimeout(()=>controller.abort(),attemptBudget);
-  const attemptStart=performance.now();
-  try{
-   onLog('OSM最新500m: '+(i+1)+'/'+OVERPASS_ENDPOINTS.length+' '+host+' 取得開始（上限'+Math.ceil(attemptBudget/1000)+'秒）');
-   const response=await fetchImpl(endpoint+'?data='+query,{signal:controller.signal,cache:'no-store'});
-   onLog('OSM最新500m: '+host+' HTTP '+response.status+' / '+Math.round(performance.now()-attemptStart)+'ms');
-   if(!response.ok)throw Error('HTTP '+response.status);
-   const result=normalizeMatsudoOverpass(await response.json());
-   const buildings=result.elements.filter(e=>e.type==='way'&&e.tags?.building&&e.geometry?.length>=4).length;
-   const roads=result.elements.filter(e=>e.type==='way'&&e.tags?.highway&&e.geometry?.length>=2).length;
-   const facilities=result.elements.filter(e=>hasTag(e.tags,FACILITY_KEYS)).length;
-   if(buildings<10||roads<10||facilities<1)throw Error('地図データ不足（建物'+buildings+'・道路'+roads+'・施設'+facilities+'）');
-   if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
-   if(controller.signal.aborted)throw Error('応答タイムアウト');
-   onLog('OSM最新500m: 取得・変換 '+Math.round(performance.now()-started)+'ms / '+result.elements.length+'件 / OSM反映時刻 '+(result.osmTimestamp||'不明')+' / 接続先 '+host);
-   return result;
-  }catch(error){
-   if(signal?.aborted)throw error;
-   const reason=controller.signal.aborted?'タイムアウト':String(error.message||error);
-   errors.push(host+': '+reason);
-   onLog('OSM最新500m: '+host+' 失敗 ('+reason+') / '+Math.round(performance.now()-attemptStart)+'ms');
-  }finally{
-   clearTimeout(timer);
-   signal?.removeEventListener('abort',abort);
-  }
+  if(controller.signal.aborted)throw Error('応答タイムアウト');
+  onLog('OSM最新500m: 取得・変換 '+Math.round(performance.now()-started)+'ms / '+result.elements.length+'件 / OSM反映時刻 '+(result.osmTimestamp||'不明')+' / 接続先 '+host);
+  return result;
+ }catch(error){
+  if(signal?.aborted)throw error;
+  const reason=controller.signal.aborted?'タイムアウト':String(error.message||error);
+  onLog('OSM最新500m: '+host+' 失敗 ('+reason+') / '+Math.round(performance.now()-started)+'ms');
+  throw Error('Overpass取得失敗：'+host+': '+reason);
+ }finally{
+  clearTimeout(timer);
+  signal?.removeEventListener('abort',abort);
  }
- throw Error('Overpass全接続先失敗：'+errors.join(' / '));
 }
