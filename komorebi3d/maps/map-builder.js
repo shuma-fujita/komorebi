@@ -1,3 +1,4 @@
+import {inferBuildingLevelsFromTenants} from './map-tenant-levels.js?v=tenant-level-infer-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=convenience-dark-handles-v9-20261112';
@@ -167,6 +168,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
   return batch;
  }
  const convenienceBuildings=matchConvenienceBuildings(map.elements,xy,HALF);
+ const inferredTenantLevels=inferBuildingLevelsFromTenants(map.elements,xy,HALF);
  const roadSegments=[];
  for(const way of map.elements){
   if(!way.tags?.highway||['construction','proposed'].includes(way.tags.highway))continue;
@@ -235,11 +237,14 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const xs=p.map(q=>q[0]),zs=p.map(q=>q[1]),minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
    if(minX>HALF||maxX< -HALF||minZ>HALF||maxZ< -HALF)return;
    let height=Number.parseFloat(tags.height);
-   if(!Number.isFinite(height)||height<2||height>180){
-    const levels=Number.parseFloat(tags['building:levels']);
-    height=Number.isFinite(levels)&&levels>0?Math.min(60,levels*3):4;
-   }
-   building(buildings[e.id%palette.length],p,height,palette[e.id%palette.length],resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height),roadSegments,tags);
+   const levels=Number.parseFloat(tags['building:levels']);
+   const validHeight=Number.isFinite(height)&&height>=2&&height<=180;
+   const validLevels=Number.isFinite(levels)&&levels>0;
+   // Infer only where neither authoritative height nor floor count is usable.
+   const inferredLevels=!validHeight&&!validLevels?(inferredTenantLevels.get(e.id)||null):null;
+   if(!validHeight)height=validLevels?Math.min(60,levels*3):inferredLevels?inferredLevels*4:4;
+   building(buildings[e.id%palette.length],p,height,palette[e.id%palette.length],
+    resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels),roadSegments,tags);
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};mapFeatures.push(feature);originalOrder.set(feature,index);}
    const name=String(tags['name:ja']||tags.name||'').trim();
    if(name){const label={kind:'building',osmType:e.type,osmId:e.id,osmVersion:e.version??null,name,tags:{...tags},x:(minX+maxX)/2,z:(minZ+maxZ)/2,y:height+.9};labels.push(label);originalOrder.set(label,index);}
