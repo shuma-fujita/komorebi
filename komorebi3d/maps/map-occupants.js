@@ -1,3 +1,4 @@
+import {BUILDING_POI_OUTSIDE_TOLERANCE_METRES} from './building-poi-match-const.js?v=shared-outside-1m-20261119';
 // Associate OSM POI nodes with the containing building footprint.
 // Keep real OSM identities. Never infer tenancy from nearby names alone.
 const EPS=1e-7;
@@ -19,7 +20,7 @@ function footprintArea(points){
 }
 // Match the convenience 100cm exterior tolerance without claiming an outside
 // POI belongs to an ambiguous pair of neighboring buildings.
-export const TENANT_OUTSIDE_TOLERANCE_METRES=1;
+export const TENANT_OUTSIDE_TOLERANCE_METRES=BUILDING_POI_OUTSIDE_TOLERANCE_METRES;
 function footprintDistance(x,z,points){
  let shortest=Infinity;
  for(let i=0;i<points.length;i++){
