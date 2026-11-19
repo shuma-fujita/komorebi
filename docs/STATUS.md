@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 単独Overpassの取得上限を60秒へ延長（main反映／実機未確認）：** ユーザー実機で第1サーバー `overpass.private.coffee` が30,009msでタイムアウトし、保存済みJSONへの切替・3D生成404msを確認。指示に従い、同じ1サーバーのみ利用してブラウザ側上限30→60秒、Overpassクエリ指定35→65秒に変更。第2サーバー接続なし。失敗時の `matsudo.json` フォールバックと地図生成は従来どおり。`map-loader.js`／`dev.template.html`／`dev.html` のキャッシュキーを更新し、テスト期待値も更新。**構文・設定の静的確認PASS。実API、GitHub Actions、Pages、Safari実機は未確認。**
+
+
 > **2026-11-19 最新方針：Overpassは第1サーバーのみ30秒（main反映／実機未確認）：** ユーザー指示により第2接続先`overpass-api.de`を撤去。松戸500m起動時は`overpass.private.coffee`へ1回だけリクエストし最大30秒待機。Overpassクエリ上限35秒。失敗・タイムアウト・データ不足は以前と同じ保存済み`matsudo.json`へ切替。切替後の第2サーバー接続は行わない。`map-overpass.js`本体、テスト、`map-loader.js`／`dev.template.html`／`dev.html`のブラウザーキャッシュキーを更新。模擬HTTP502で1回のみの通信・失敗ログを確認PASS。**実際のOverpass応答・GitHub Actions／Pages・iPhone Safari実機は未確認。** 旧2kmタイル・森・固定Engine・既存JSONは未変更。
 
 
