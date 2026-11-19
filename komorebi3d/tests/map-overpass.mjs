@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 // Import as an ES module even when the repo has no package.json type=module.
 const source=await readFile(new URL('../maps/map-overpass.js',import.meta.url),'utf8');
-const {buildMatsudoOverpassQuery,normalizeMatsudoOverpass,fetchLiveMatsudoMap,OVERPASS_ENDPOINTS,OVERPASS_TIMEOUT_MS}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {buildMatsudoOverpassQuery,normalizeMatsudoOverpass,fetchLiveMatsudoMap,OVERPASS_ENDPOINT,OVERPASS_TIMEOUT_MS}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 
-test('30s shared budget and 35s Overpass query timeout',()=>{
+test('30s single-server budget and 35s Overpass query timeout',()=>{
  assert.equal(OVERPASS_TIMEOUT_MS,30000);
  assert.match(buildMatsudoOverpassQuery(),/\[timeout:35\]/);
 });
@@ -53,33 +53,17 @@ test('records fetch timing and uses normalized format',async()=>{
  assert.equal(result.elements.length,28);
  assert.ok(log.some(line=>line.includes('取得・変換')));
 });
-test('tries private.coffee before overpass-api.de and recovers from HTTP 502',async()=>{
- assert.match(OVERPASS_ENDPOINTS[0],/private\.coffee/);
- assert.match(OVERPASS_ENDPOINTS[1],/overpass-api\.de/);
- const attempts=[],log=[];
- const ready={
-  ...sample,
-  elements:[
-   ...sample.elements,
-   ...Array.from({length:12},(_,i)=>({...sample.elements[2],id:300+i})),
-   ...Array.from({length:12},(_,i)=>({...sample.elements[3],id:400+i}))
-  ]
- };
- const result=await fetchLiveMatsudoMap({onLog:v=>log.push(v),fetchImpl:async(url)=>{
-  attempts.push(url);
-  return attempts.length===1?{ok:false,status:502}:{ok:true,status:200,json:async()=>ready};
- }});
- assert.equal(attempts.length,2);
- assert.match(attempts[0],/private\.coffee/);
- assert.match(attempts[1],/overpass-api\.de/);
- assert.equal(result.elements.length,28);
- assert.ok(log.some(x=>x.includes('HTTP 502')));
- assert.ok(log.some(x=>x.includes('取得・変換')));
-});
-test('fails after both endpoints fail without unbounded retry',async()=>{
- let calls=0;
- await assert.rejects(fetchLiveMatsudoMap({fetchImpl:async()=>{calls++;return {ok:false,status:503};}}),/Overpass全接続先失敗/);
- assert.equal(calls,2);
+test('only contacts private.coffee and falls back on HTTP failure',async()=>{
+ assert.match(OVERPASS_ENDPOINT,/overpass\\.private\\.coffee/);
+ const urls=[],logs=[];
+ await assert.rejects(fetchLiveMatsudoMap({
+  onLog:line=>logs.push(line),
+  fetchImpl:async url=>{urls.push(url);return {ok:false,status:502};}
+ }),/Overpass取得失敗.*HTTP 502/);
+ assert.equal(urls.length,1);
+ assert.match(urls[0],/overpass\\.private\\.coffee/);
+ assert.ok(logs.some(line=>line.includes('HTTP 502')));
+ assert.ok(logs.some(line=>line.includes('失敗')));
 });
 test('honors canceled worlds before sending requests',async()=>{
  const controller=new AbortController();controller.abort();
