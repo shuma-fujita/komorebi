@@ -131,7 +131,19 @@ export function mountRuntimeStatusPanel(root,api){
  const pre=document.createElement('pre');pre.id='map-debug-log';pre.textContent='松戸で地図を読み込むとログを表示';
  const preStyle='white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;max-height:230px;overflow:auto;font-size:11px;line-height:1.5;margin:0;';
  summary.style.cssText=preStyle;pre.style.cssText=preStyle;
- diagnostic.append(title,copy,toggle,summaryLabel,summary,recentLabel,pre);
+ const diagnosticHeading=document.createElement('div');
+ diagnosticHeading.textContent='🔎 Overpass通信診断（地図表示は変更しません）';
+ diagnosticHeading.style.cssText='font-size:12px;font-weight:700;margin:10px 0 5px;';
+ const checkConnection=document.createElement('button');
+ checkConnection.type='button';checkConnection.textContent='接続確認';
+ const checkBuildings=document.createElement('button');
+ checkBuildings.type='button';checkBuildings.textContent='建物のみ取得';
+ for(const button of [checkConnection,checkBuildings])button.style.cssText='font-size:12px;margin:0 6px 6px 0;padding:5px 8px;';
+ const diagnosticOutput=document.createElement('pre');
+ diagnosticOutput.id='overpass-diagnostic';
+ diagnosticOutput.textContent='ボタンを押したときだけ軽い問い合わせを行います';
+ diagnosticOutput.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.5;margin:0;';
+ diagnostic.append(title,copy,toggle,summaryLabel,summary,recentLabel,pre,diagnosticHeading,checkConnection,checkBuildings,diagnosticOutput);
  (root.querySelector('#map-source-status')||root.querySelector('#label-status')||root).after(diagnostic);
  let fullLog='',recentLog=pre.textContent,showFull=false;
  const refreshLog=()=>{pre.textContent=showFull?fullLog:recentLog;};
@@ -145,8 +157,22 @@ export function mountRuntimeStatusPanel(root,api){
  catch(_){copy.textContent='テキストを長押ししてコピー';onToggle();}};
  copy.addEventListener('click',onCopy);
  toggle.addEventListener('click',onToggle);
+ let diagnosticRunning=false;
+ const runDiagnostic=async kind=>{
+  if(diagnosticRunning||typeof api.runMapDiagnostic!=='function')return;
+  diagnosticRunning=true;
+  checkConnection.disabled=checkBuildings.disabled=true;
+  try{await api.runMapDiagnostic(kind);}
+  catch(error){if(!diagnosticOutput.textContent.includes('失敗'))diagnosticOutput.textContent+='\n診断失敗: '+String(error.message||error);}
+  finally{diagnosticRunning=false;checkConnection.disabled=checkBuildings.disabled=false;}
+ };
+ const onPing=()=>void runDiagnostic('ping');
+ const onBuildings=()=>void runDiagnostic('buildings');
+ checkConnection.addEventListener('click',onPing);
+ checkBuildings.addEventListener('click',onBuildings);
  const fields=new Map(Array.from(root.querySelectorAll('[id]'),node=>[node.id,node]));
  fields.set('map-debug-summary',summary);
+ fields.set('overpass-diagnostic',diagnosticOutput);
  const render=event=>{
   if(event.type!=='status')return;
   if(event.id==='map-debug-full-log'){fullLog=event.value; if(showFull)refreshLog(); return;}
@@ -156,7 +182,7 @@ export function mountRuntimeStatusPanel(root,api){
  };
  for(const [id,value] of Object.entries(api.getState().status ?? {}))render({type:'status',id,value});
  const unsubscribe=api.subscribe(render);
- return ()=>{unsubscribe();copy.removeEventListener('click',onCopy);toggle.removeEventListener('click',onToggle);diagnostic.remove();};
+ return ()=>{unsubscribe();copy.removeEventListener('click',onCopy);toggle.removeEventListener('click',onToggle);checkConnection.removeEventListener('click',onPing);checkBuildings.removeEventListener('click',onBuildings);diagnostic.remove();};
 }
 
 export function mountTestControlsPanel(root,api){
