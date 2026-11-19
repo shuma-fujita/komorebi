@@ -60,7 +60,7 @@ export function matchLoveHotelBuildings(elements,project,halfSize){
    const raw=String(element.tags?.level??'').trim();
    // OSM level is zero-based. For the specifically requested D37 Tokyo
    // Building, physical storey 5 is intentional even though its POI says level=5.
-   const hasLevel=element.tags?.amenity==='brothel'&&/^\\d+$/.test(raw)&&Number.isSafeInteger(Number(raw));
+   const hasLevel=element.tags?.amenity==='brothel'&&/^\d+$/.test(raw)&&Number.isSafeInteger(Number(raw));
    const floor=hasLevel?(owner.tags.name==='第37東京ビル'&&Number(raw)===5?5:Number(raw)+1):null;
    const previous=matched.get(owner.id)||{whole:false,levels:[]};
    if(floor!==null&&floor>0&&!previous.whole)previous.levels.push(floor);
