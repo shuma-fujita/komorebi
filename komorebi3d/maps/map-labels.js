@@ -650,7 +650,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    lastFocusAt=now;
   }
   // A stable new camera building clears manual hiding; a brief/null ray does not.
-  if(manuallyHiddenKey!==null&&focusedKey!==null&&focusedKey!==hiddenAtCameraKey){
+  if(manuallyHiddenKey!==null&&hiddenAtCameraKey!==null&&focusedKey!==null&&focusedKey!==hiddenAtCameraKey){
    manuallyHiddenKey=null;hiddenAtCameraKey=null;
    tappedBuilding=null;
   }
