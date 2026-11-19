@@ -481,6 +481,18 @@ button.panel-add-button{color:var(--g-accent)}
 </div>
 <!-- @screen-settings:end -->
 <div class="test-separator"></div>
+<div class="test-section-title">🏢 焦点ビル内の店舗表示（A/B比較）</div>
+<div class="screen-settings shop-mode-settings" data-visible="compare" style="height:auto">
+<div class="screen-card" data-screen="A">
+<div class="screen-title">画面A</div>
+<div class="mode-buttons" role="group" aria-label="画面Aの店舗表示方式"><button type="button" data-shop-screen="A" data-shop-mode="A" aria-pressed="true">A 一覧</button><button type="button" data-shop-screen="A" data-shop-mode="B" aria-pressed="false">B 個別</button></div>
+</div>
+<div class="screen-card" data-screen="B">
+<div class="screen-title">画面B</div>
+<div class="mode-buttons" role="group" aria-label="画面Bの店舗表示方式"><button type="button" data-shop-screen="B" data-shop-mode="A" aria-pressed="false">A 一覧</button><button type="button" data-shop-screen="B" data-shop-mode="B" aria-pressed="true">B 個別</button></div>
+</div>
+</div>
+<div class="test-separator"></div>
 <div class="test-section-title npc-anchor">🐹 NPC負荷・表示テスト</div>
 <div class="buttons"><button type="button" id="npc-stress-toggle" aria-pressed="false">🐹 ハムスター ×1000</button><button type="button" id="map-toggle" aria-pressed="false">🗺️ マップ表示</button></div>
 <div class="debug-controls">
