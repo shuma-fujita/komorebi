@@ -63,6 +63,10 @@ export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPAS
    onLog('OSM最新500m: '+host+' HTTP '+response.status+' / '+Math.round(performance.now()-attemptStart)+'ms');
    if(!response.ok)throw Error('HTTP '+response.status);
    const result=normalizeMatsudoOverpass(await response.json());
+   const buildings=result.elements.filter(e=>e.type==='way'&&e.tags?.building&&e.geometry?.length>=4).length;
+   const roads=result.elements.filter(e=>e.type==='way'&&e.tags?.highway&&e.geometry?.length>=2).length;
+   const facilities=result.elements.filter(e=>hasTag(e.tags,FACILITY_KEYS)).length;
+   if(buildings<10||roads<10||facilities<1)throw Error('地図データ不足（建物'+buildings+'・道路'+roads+'・施設'+facilities+'）');
    if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
    if(controller.signal.aborted)throw Error('応答タイムアウト');
    onLog('OSM最新500m: 取得・変換 '+Math.round(performance.now()-started)+'ms / '+result.elements.length+'件 / OSM反映時刻 '+(result.osmTimestamp||'不明')+' / 接続先 '+host);
