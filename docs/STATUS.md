@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 Overpass取得待機を30秒に延長（main反映・実機未確認）：** 前回のユーザー実機では第1サーバーが8秒タイムアウト、第2サーバーは約1秒でHTTP502。旧GitHub運用時の短すぎるタイムアウトの経験を踏まえ、`maps/map-overpass.js` の合計上限を15秒→30秒、主系上限を8秒→15秒、予備系に残り最大15秒を配分。Overpassクエリ側の `[timeout:20]` も `[timeout:35]` に変更。2段階接続、失敗時の保存済み500m JSON切替、キャンセル、地図生成・固定Engine・森は変更なし。`map-loader.js`／`dev.template.html`／`dev.html` のキャッシュキーを更新。`tests/map-overpass.mjs` に上限値のテスト追加。**GitHub反映済み／実通信・Safari実機・Actionsは未確認。**
+
+
 > **2026-11-19 Overpass API二段階接続（main反映／実機未確認）：** ユーザー実機ログで`overpass-api.de`がHTTP502（1068ms）となり、保存済み500m JSONへの切替が成功したことを確認。`maps/map-overpass.js`の接続先を第1`overpass.private.coffee`／第2`overpass-api.de`に変更。全体待機上限15秒を共有し第1接続先は最大8秒、応答が失敗した場合のみ第2を試す。HTTP失敗、タイムアウト、応答形式不正、地図データ不足は次接続先へ。各ホストのHTTP・所要時間・失敗理由・最終取得先を記録し、両方失敗した場合は従来の`map-loader.js`の保存済み500m JSON切替を維持。キャンセル時は再試行・JSON切替をしない。重要ログ固定表示に各接続先の試行内容も追加、`dev.template.html`／`dev.html`のloader参照キャッシュを更新。`tests/map-overpass.mjs`に2接続先の切替と全失敗ケースを追加。**取得モジュールの模擬HTTP502→200動作・ログはPASS。GitHub Actions／Pages／Safari実機／実際の公開API取得時間は未確認。** 地図生成・森・固定Engine・2kmタイル原本は変更なし。
 
 
