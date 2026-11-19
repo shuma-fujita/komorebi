@@ -703,14 +703,16 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
       occupied.some(p=>labelX-wd/2<p.right+8&&labelX+wd/2>p.left-8&&top<p.bottom+8&&labelY>p.top-8))continue;
     occupied.push({left:labelX-wd/2,right:labelX+wd/2,top,bottom:labelY});
     const el=measured.el;
-    // Reset only on hidden -> visible, never on a continuously visible frame.
+    // Recalculate the cyan rail only after the card is displayed: while
+    // display:none, WebViews can report clientHeight=0 and hide the rail.
     if(i===-1&&!wasSummaryVisible){
      const pane=el.querySelector('[data-shop-pane]');
-     if(pane){pane.scrollTop=0;syncShopPane(el);}
+     if(pane)pane.scrollTop=0;
     }
     el.style.display='flex';
     el.style.left=(rect.left-hostRect.left+labelX)+'px';
     el.style.top=(rect.top-hostRect.top+labelY)+'px';
+    if(i===-1&&!wasSummaryVisible)syncShopPane(el);
     drawDebugAnchor(measured,rect,hostRect,x,y,labelX,labelY);
     viewShown++;shown++;
    }
