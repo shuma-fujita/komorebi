@@ -882,7 +882,7 @@ async function loadMatsudoMapInBackground(){
  try{
   const ignoreRules=await loadOsmTagIgnore();
   if(!isCurrentMatsudoMapRequest(token,controller))return;
-  for(const source of ['old','new']){
+  for(const source of ['old',...(screenConfigs.A.map==='new'||screenConfigs.B.map==='new'?['new']:[])]){
    if(!isCurrentMatsudoMapRequest(token,controller))return;
    const name=source==='old'?'OSM最新500m（失敗時は保存JSON）':'2kmタイル '+TEST_TILE_ID;
    try{
@@ -1228,7 +1228,7 @@ function setScreenConfig({screen,setting,value}={}){
  if(setting==='engine')void reconfigureScreenRenderer(screen);
  if(setting==='map'&&activeWorld==='matsudo'){
    if(matsudoMaps[value])loadOsmTagIgnore().then(rules=>applyMatsudoScreenLabels(screen,rules)).catch(error=>addMapDebug('ラベル切替失敗: '+error.message));
-   else{matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;}
+   else{matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;if(value==='new')void loadMatsudoMapInBackground();}
    if(miniMapVisible)paintDebugMap();
   }
  publishGameState();return true;
