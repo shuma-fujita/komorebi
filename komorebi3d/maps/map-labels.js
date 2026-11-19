@@ -36,6 +36,13 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  }
  let focusedKey=null,focusedHit=null,pendingKey=null,pendingSince=0,lastFocusAt=-Infinity;
  let tappedBuilding=null,lastCamera=null;
+ // Shared display decision: camera/tap priority uses the same manual hide gate.
+ let manuallyHiddenKey=null,hiddenAtCameraKey=null;
+ function displayedSelection(){
+  if(manuallyHiddenKey!==null)return {key:null,hitPoint:null};
+  return tappedBuilding?{key:tappedBuilding.key,hitPoint:tappedBuilding.hitPoint}:
+   {key:focusedKey,hitPoint:focusedHit};
+ }
  function appendBuildingFeatures(features){
   if(!features?.length)return;
   for(const feature of features)if(feature.type==='building'&&feature.osmId!=null)buildings.push(feature);
@@ -44,7 +51,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  function setBuildingFeatures(features){
   buildings=[];
   focusedKey=null;focusedHit=null;pendingKey=null;pendingSince=0;
-  tappedBuilding=null;
+  tappedBuilding=null;manuallyHiddenKey=null;hiddenAtCameraKey=null;
   appendBuildingFeatures(features);
  }
  let debugAnchors=false;
@@ -642,9 +649,12 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    if(focusedKey===key)focusedHit=selected?.hitPoint??null;
    lastFocusAt=now;
   }
-  // Tap selection overrides the center ray; camera focus still updates.
-  const selectedKey=tappedBuilding?.key??focusedKey;
-  const selectedHit=tappedBuilding?.hitPoint??focusedHit;
+  // A stable new camera building clears manual hiding; a brief/null ray does not.
+  if(manuallyHiddenKey!==null&&focusedKey!==null&&focusedKey!==hiddenAtCameraKey){
+   manuallyHiddenKey=null;hiddenAtCameraKey=null;
+   tappedBuilding=null;
+  }
+  const {key:selectedKey,hitPoint:selectedHit}=displayedSelection();
   const index=selectedKey===null?-1:entries.findIndex(item=>item.kind==='building'&&item.osmType+':'+item.osmId===selectedKey);
   const focusedBuilding=selectedKey===null?null:buildings.find(b=>b.osmType+':'+b.osmId===selectedKey);
   const shops=focusedBuilding?shopsForFocus(selectedKey):[];
@@ -730,7 +740,19 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    if(clientX<rect.left||clientX>rect.right||clientY<rect.top||clientY>rect.bottom)continue;
    const selected=pickBuildingAtScreen(buildings,lastCamera,clientX-rect.left,clientY-rect.top,rect.width,rect.height);
    if(!selected)return false;
-   tappedBuilding={key:selected.osmType+':'+selected.osmId,hitPoint:selected.hitPoint};
+   const key=selected.osmType+':'+selected.osmId;
+   if(manuallyHiddenKey===key){
+    // The same building reopens when explicitly tapped again.
+    manuallyHiddenKey=null;hiddenAtCameraKey=null;
+    tappedBuilding={key,hitPoint:selected.hitPoint};
+   }else if(displayedSelection().key===key){
+    // Toggle off irrespective of whether camera or tap originally showed it.
+    manuallyHiddenKey=key;hiddenAtCameraKey=focusedKey;
+    tappedBuilding=null;
+   }else{
+    manuallyHiddenKey=null;hiddenAtCameraKey=null;
+    tappedBuilding={key,hitPoint:selected.hitPoint};
+   }
    return true;
   }
   return false;
