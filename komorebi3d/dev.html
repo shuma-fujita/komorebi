@@ -1619,7 +1619,7 @@ function productRenderSnapshot(screen,frameId){
   objects
  });
 }
-// Matsudo loads the local 500m JSON snapshot; requests remain cancellable on world switches.
+// Matsudo 500m attempts live Overpass with local JSON fallback; requests remain cancellable on world switches.
 const MAP_BUILD_BUDGET_MS=6; // Tune after real-device performance measurements.
 // Step 5: aggregate only, keeping the 32-line map log limit unchanged.
 function createMapBuildProfiler(){
