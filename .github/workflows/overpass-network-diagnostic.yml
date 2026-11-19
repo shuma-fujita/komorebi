@@ -19,6 +19,8 @@ jobs:
       - name: Inspect runner network and Overpass reachability (read only)
         shell: bash
         run: |
+          # GitHub runs bash with -e; diagnostic failures must not stop later tests.
+          set +e
           set -u
           echo "=== Komorebi Overpass network diagnostic ==="
           echo "Time (UTC): $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
