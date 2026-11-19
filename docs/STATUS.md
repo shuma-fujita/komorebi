@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 最新方針：Overpassは第1サーバーのみ30秒（main反映／実機未確認）：** ユーザー指示により第2接続先`overpass-api.de`を撤去。松戸500m起動時は`overpass.private.coffee`へ1回だけリクエストし最大30秒待機。Overpassクエリ上限35秒。失敗・タイムアウト・データ不足は以前と同じ保存済み`matsudo.json`へ切替。切替後の第2サーバー接続は行わない。`map-overpass.js`本体、テスト、`map-loader.js`／`dev.template.html`／`dev.html`のブラウザーキャッシュキーを更新。模擬HTTP502で1回のみの通信・失敗ログを確認PASS。**実際のOverpass応答・GitHub Actions／Pages・iPhone Safari実機は未確認。** 旧2kmタイル・森・固定Engine・既存JSONは未変更。
+
+
 > **2026-11-19 Overpass取得待機を30秒に延長（main反映・実機未確認）：** 前回のユーザー実機では第1サーバーが8秒タイムアウト、第2サーバーは約1秒でHTTP502。旧GitHub運用時の短すぎるタイムアウトの経験を踏まえ、`maps/map-overpass.js` の合計上限を15秒→30秒、主系上限を8秒→15秒、予備系に残り最大15秒を配分。Overpassクエリ側の `[timeout:20]` も `[timeout:35]` に変更。2段階接続、失敗時の保存済み500m JSON切替、キャンセル、地図生成・固定Engine・森は変更なし。`map-loader.js`／`dev.template.html`／`dev.html` のキャッシュキーを更新。`tests/map-overpass.mjs` に上限値のテスト追加。**GitHub反映済み／実通信・Safari実機・Actionsは未確認。**
 
 
