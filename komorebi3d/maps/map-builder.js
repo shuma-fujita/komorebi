@@ -3,6 +3,8 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
+import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-storefront-20261119';
+import {paintFoodWall} from '../objects/buildings/food/common.js?v=food-storefront-20261119';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=lawson-storefront-20261119';
 // Step 4-B: keep the Step 3 initial ordering, then reprioritize only unfinished
@@ -104,7 +106,7 @@ function top(m,p,h,t){
  }
  if(idx.length===3){const a=p[idx[0]],b=p[idx[1]],c=p[idx[2]];if(ccw)tri(m,[a[0],h,a[1]],[c[0],h,c[1]],[b[0],h,b[1]],t);else tri(m,[a[0],h,a[1]],[b[0],h,b[1]],[c[0],h,c[1]],t);}
 }
-function building(m,p,h,t,spans,roadSegments,tags,pinkSpans=[]){
+function building(m,p,h,t,spans,roadSegments,tags,pinkSpans=[],foodSpans=[]){
  const n=p.length,area=signedArea(p),outward=area>0?1:-1;
  const edges=p.map((a,i)=>{
   const b=p[(i+1)%n],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz)||1;
@@ -127,7 +129,7 @@ function building(m,p,h,t,spans,roadSegments,tags,pinkSpans=[]){
  }
  for(let i=0;i<n;i++){
   const e=edges[i],side=i===front?'front':i===back?'back':'side';
-  paintConvenienceWall(quad,m,e.a,e.b,h,t,spans,side,outward);
+  paintFoodWall(quad,m,e.a,e.b,h,t,spans,foodSpans,side,outward);
   paintLoveHotelWall(quad,m,e.a,e.b,pinkSpans,LOVE_HOTEL_COLOR,outward);
  }
  top(m,p,h,resolveOsmConvenienceRoofColor(spans,tags,h,t));
@@ -172,6 +174,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
   return batch;
  }
  const convenienceBuildings=matchConvenienceBuildings(map.elements,xy,HALF);
+ const foodBuildings=matchFoodBuildings(map.elements,xy,HALF);
  const loveHotelBuildings=matchLoveHotelBuildings(map.elements,xy,HALF);
  const inferredTenantLevels=inferBuildingLevelsFromTenants(map.elements,xy,HALF);
  const roadSegments=[];
@@ -251,7 +254,8 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const tint=resolveLoveHotelColor(e.id,loveHotelBuildings,palette[e.id%palette.length],tags,height,inferredLevels);
    const pinkSpans=resolveLoveHotelFloorSpans(e.id,loveHotelBuildings,tags,height,inferredLevels)||[];
    building(buildings[e.id%palette.length],p,height,tint,
-    resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels),roadSegments,tags,pinkSpans);
+    resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels),roadSegments,tags,pinkSpans,
+    resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels));
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};mapFeatures.push(feature);originalOrder.set(feature,index);}
    const name=String(tags['name:ja']||tags.name||'').trim();
    if(name){const label={kind:'building',osmType:e.type,osmId:e.id,osmVersion:e.version??null,name,tags:{...tags},x:(minX+maxX)/2,z:(minZ+maxZ)/2,y:height+.9};labels.push(label);originalOrder.set(label,index);}
