@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 松戸500mライブOSM取得（main反映／実機未確認）：** 松戸ワールド入場時、既存500m地図ソース（old）は `maps/map-overpass.js` から公開Overpass APIへ建物・道路・鉄道・店舗の小範囲問い合わせを1回行い、OSM要素を既存`map-builder.js`入力形式に変換する。500m範囲は保存済み`matsudo.json`と同一bbox。15秒上限、HTTP失敗・429・応答形式不正・データ不足の際は保存済み`matsudo.json`に自動切替（キャンセル時は切替しない）。API所要時間・OSM反映時刻・切替理由を既存地図ログへ記録。A/B初期地図を500mにし、2kmはユーザー選択時のみ読込。 `map-loader.js`、`dev.template.html`、`dev.html`、共通テストパネル、モック、およびモックUI状態を更新。 `tests/map-overpass.mjs`に変換・範囲・キャンセル・HTTP模擬テストを追加。**静的配線照合はPASS。Nodeテスト実行・Overpass実通信時間・GitHub Actions・Pages配信・Safari実機は未確認。** 旧地図JSON・2km原本・固定Engine・森は変更なし。次の実機確認：松戸入場後の「OSM最新500m」ログ（HTTP／取得・変換／OSM反映時刻）と3D建物・道路・店舗表示、失敗時のJSON切替、森との往復、2km選択時の描画を確認する。
+
+
 更新日：2026-11-19
 
 > この文書は**現時点の仕様・進行中の作業・次の課題・確認待ち**を記す。完了済み工程の細かい試行錯誤、差し戻した案、旧バグの修正過程はGit履歴で追う。**「コード反映」「静的テストPASS」「GitHub Actions PASS」「ユーザー実機PASS」は別の状態**として扱う。古い記録の「未実装・未確認」を後のPASSより優先しない。
