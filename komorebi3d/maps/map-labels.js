@@ -576,7 +576,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    kind:'building',name:'建物（'+focusedKey+'）',osmType:focusedBuilding.osmType,osmId:focusedBuilding.osmId,
    x:(focusedBuilding.bounds[0]+focusedBuilding.bounds[1])/2,
    z:(focusedBuilding.bounds[2]+focusedBuilding.bounds[3])/2,
-   y:focusedBuilding.height+.9,tags:{},visibleTags:[],source:focusedBuilding
+   y:focusedBuilding.height+.9,osmVersion:focusedBuilding.osmVersion,tags:focusedBuilding.tags||{},visibleTags:visibleOsmTags(focusedBuilding.tags||{},ignoreRules),source:focusedBuilding
   }:index>=0?entries[index]:null;
   // Both layouts retain every matched OSM POI in a scrollable viewport.
   // A is a single building directory; B renders individual cards and leader lines.
