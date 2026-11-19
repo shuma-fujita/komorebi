@@ -446,9 +446,10 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
      count.textContent=(item.shopLayout==='B'?'個別タグ ':'入居施設 ')+item.shopList.length+'件（OSM登録分）';
      card.appendChild(count);
      const pane=document.createElement('div');
-     pane.style.cssText='overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;pointer-events:none';
+     pane.style.cssText='flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:none;pointer-events:none';
      pane.style.maxHeight=Math.max(30,heightLimit-54)+'px';
      pane.dataset.shopPane='true';
+     pane.className='komorebi-tenant-pane';
      for(const shop of item.shopList){
       const row=document.createElement('div');
       row.style.cssText=item.shopLayout==='B'
@@ -465,7 +466,27 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
       const row=event.target.closest('[data-osm-key]');
       if(row&&pane.contains(row))openEditor(row._osmItem);
      });
-     card.appendChild(pane);
+     const wrapper=document.createElement('div');
+     wrapper.style.cssText='display:flex;align-items:stretch;gap:6px;min-width:0';
+     const rail=document.createElement('div');
+     rail.style.cssText='display:none;flex:0 0 12px;flex-direction:column;align-items:center;gap:4px;pointer-events:none;color:#7bead8';
+     rail.setAttribute('aria-hidden','true');
+     const chevron=up=>{
+      const arrow=document.createElement('span');
+      arrow.style.cssText='display:block;flex:none;width:7px;height:7px;border-top:2px solid #7bead8;border-left:2px solid #7bead8;transform:rotate('+(up?'45':'225')+'deg);margin:'+(up?'4px 0 0':'0 0 4px')+';opacity:.95';
+      return arrow;
+     };
+     const track=document.createElement('div');
+     track.style.cssText='position:relative;flex:1;width:7px;min-height:10px;border-radius:9px;background:rgba(123,234,216,.16);border:1px solid rgba(123,234,216,.6);box-sizing:border-box';
+     const thumb=document.createElement('div');
+     thumb.style.cssText='position:absolute;top:0;left:0;right:0;height:16px;border-radius:8px;background:#7bead8;box-shadow:0 0 5px rgba(123,234,216,.48)';
+     track.appendChild(thumb);
+     rail.append(chevron(true),track,chevron(false));
+     wrapper.append(pane,rail);
+     const scrollbarStyle=document.createElement('style');
+     scrollbarStyle.textContent='.komorebi-tenant-pane::-webkit-scrollbar{display:none;width:0;height:0}';
+     card.append(scrollbarStyle,wrapper);
+     pane.addEventListener('scroll',()=>syncShopPane(el),{passive:true});
      item._pane=pane;
     }
     card.style.width=widthLimit+'px';
@@ -488,7 +509,19 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  // This lets iOS Safari scroll naturally without activating camera/movement pads.
  function syncShopPane(el){
   const pane=el.querySelector('[data-shop-pane]');
-  if(pane)pane.style.pointerEvents=pane.scrollHeight>pane.clientHeight+1?'auto':'none';
+  if(!pane)return;
+  const rail=pane.nextElementSibling;
+  const scrollable=pane.scrollHeight>pane.clientHeight+1;
+  pane.style.pointerEvents=scrollable?'auto':'none';
+  if(!rail)return;
+  rail.style.display=scrollable?'flex':'none';
+  if(!scrollable)return;
+  const track=rail.children[1],thumb=track.firstElementChild;
+  const trackHeight=track.clientHeight;
+  const thumbHeight=Math.max(12,Math.min(trackHeight,trackHeight*pane.clientHeight/pane.scrollHeight));
+  const maxScroll=Math.max(1,pane.scrollHeight-pane.clientHeight);
+  thumb.style.height=thumbHeight+'px';
+  thumb.style.transform='translateY('+(Math.max(0,Math.min(1,pane.scrollTop/maxScroll))*Math.max(0,trackHeight-thumbHeight))+'px)';
  }
  // Resolve the visible scrollable tenant list by screen coordinates, independent
  // of WebView pointer hit-testing and the overlay's pointer-events setting.
