@@ -1,4 +1,5 @@
 import {inferBuildingLevelsFromTenants} from './map-tenant-levels.js?v=tenant-level-infer-20261119';
+import {matchLoveHotelBuildings,resolveLoveHotelColor} from '../objects/buildings/love-hotel/osm-adapter.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=tenant-level-facade-20261119';
@@ -168,6 +169,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
   return batch;
  }
  const convenienceBuildings=matchConvenienceBuildings(map.elements,xy,HALF);
+ const loveHotelBuildings=matchLoveHotelBuildings(map.elements,xy,HALF);
  const inferredTenantLevels=inferBuildingLevelsFromTenants(map.elements,xy,HALF);
  const roadSegments=[];
  for(const way of map.elements){
@@ -243,7 +245,8 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // Infer only where neither authoritative height nor floor count is usable.
    const inferredLevels=!validHeight&&!validLevels?(inferredTenantLevels.get(e.id)||null):null;
    if(!validHeight)height=validLevels?Math.min(60,levels*3):inferredLevels?inferredLevels*4:4;
-   building(buildings[e.id%palette.length],p,height,palette[e.id%palette.length],
+   const tint=resolveLoveHotelColor(e.id,loveHotelBuildings,palette[e.id%palette.length]);
+   building(buildings[e.id%palette.length],p,height,tint,
     resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels),roadSegments,tags);
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};mapFeatures.push(feature);originalOrder.set(feature,index);}
    const name=String(tags['name:ja']||tags.name||'').trim();
