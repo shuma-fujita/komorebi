@@ -1068,6 +1068,8 @@ function resetGameForTest(){
  matsudoNpcStressSelected=false;
  setMiniMapVisible(false);
  setRenderMode('B');
+ setShopMode({screen:'A',mode:'A'});
+ setShopMode({screen:'B',mode:'B'});
  publishRuntimeStatus('collision-status','衝突判定：待機中');publishGameState();
 }
 // The game owns house/stair logic; Engine owns orbit yaw, pitch, distance and pose.
