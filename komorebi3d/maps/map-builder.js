@@ -240,7 +240,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
     height=Number.isFinite(levels)&&levels>0?Math.min(60,levels*3):4;
    }
    building(buildings[e.id%palette.length],p,height,palette[e.id%palette.length],resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height),roadSegments,tags);
-   {const feature={type:'building',points:p,height,osmType:e.type,osmId:e.id};mapFeatures.push(feature);originalOrder.set(feature,index);}
+   {const feature={type:'building',points:p,height,osmType:e.type,osmId:e.id,bounds:[minX,maxX,minZ,maxZ]};mapFeatures.push(feature);originalOrder.set(feature,index);}
    const name=String(tags['name:ja']||tags.name||'').trim();
    if(name){const label={kind:'building',osmType:e.type,osmId:e.id,osmVersion:e.version??null,name,tags:{...tags},x:(minX+maxX)/2,z:(minZ+maxZ)/2,y:height+.9};labels.push(label);originalOrder.set(label,index);}
    buildingCount++;
