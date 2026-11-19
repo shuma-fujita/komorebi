@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 アトレ松戸でテナント一覧の指スクロール不具合に対応（main反映・実機未確認）：** 実機では前へ／次へボタンの削除は反映されたが、テナント一覧をスワイプするとアプリ内ブラウザの外側ページがスクロールし、テスト操作パネルが現れる問題をユーザー報告。`map-labels.js` に表示中かつオーバーフローしているテナント一覧の矩形を特定する `scrollPaneAt(x,y)` を追加。`dev.template.html` と生成済み `dev.html` でドキュメント捕捉フェーズのtouchstart/move/end/cancelを使い、一覧上から始まったタッチだけ `preventDefault()` でページ移動を阻止し `pane.scrollTop` を手動更新。対象タッチのpointerdownはヘリ操作パッドへ伝えない。短い一覧、タグ外、テスト操作パネルおよびOSM編集モーダルの操作は従来どおり。ラベルJSのキャッシュキーと `development-info.json` のmatsudo欄を更新。**JavaScript構文・静的配線チェックPASS。GitHub Actions・Pages配信・iPhone/アプリ内ブラウザでのスクロール実機PASSは未確認。** 次はアトレ松戸で一覧スワイプ、ページ固定、ヘリ操作、店舗行タップを確認。
+
 > **2026-11-19 テナント一覧の操作を必要時のみ指スクロールへ変更（main反映／実機確認待ち）：** ユーザー希望によりA/Bの店舗一覧の「▲ 前へ」「▼ 次へ」ボタンを削除。`maps/map-labels.js` の一覧ペインは高さ上限を画面に合わせ、内容がはみ出した時だけ子ペインに `pointer-events:auto`、`touch-action:pan-y`、ネイティブ縦スクロールを有効化。短い一覧は従来同様にポインター透過し、ゲーム操作と既存のタップ判定を維持。長い一覧の店舗行タップはペインのclickから該当OSM編集を開き、スクロール中はネイティブ挙動に委ねる。親のタグDOM・線SVGは従来どおりpointer透過。`dev.template.html`と生成済み`dev.html`の読み込みキャッシュキー、`development-info.json`のmatsudo欄を更新。**GitHub再取得によるJS構文・静的配線確認PASS。GitHub Actions／Pages配信／iPhone実機スクロールは未確認。**
 
 > **2026-11-19 店舗一覧Aを標準・OSM level降順（main反映／実機未確認）：** A一覧の方が見やすいというユーザー実機フィードバックに従い、店舗表示モードを画面A/Bとも初期値Aに変更（テスト操作パネルでB個別へ変更できる比較機能は維持）。`map-occupants.js` の店舗ソートは数値levelが高い順、数値level未登録は後ろ、同条件は日本語店舗名順。`dev.template.html`、生成済み`dev.html`、`mock.template.html`、生成済み`mock.html`、`dev-panel-components.js` と `panels/test.html` の初期値とリセット処理を調整。`tests/map-occupants.mjs` の想定順を更新し、GitHub再取得による静的整合と簡易ソート実行PASS。**GitHub Actions・Pages・今回の実機動作は未確認。**
