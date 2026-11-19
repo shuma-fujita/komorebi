@@ -4,8 +4,11 @@ import {CONVENIENCE_DOOR_WIDTH_M,CONVENIENCE_TARGET_PANEL_WIDTH_M} from './const
 import {familymart} from './familymart.js?v=convenience-sign-v1-20261112';
 import {sevenEleven} from './seven-eleven.js?v=seven-sign-green-bands-v2-20261112';
 import {ministop} from './ministop.js?v=ministop-white-logo-v2-20261112';
+import {lawson} from './lawson.js?v=lawson-storefront-20261119';
+import {lawsonStore100} from './lawson-store100.js?v=lawson-storefront-20261119';
 const FOREST_SIGN_BRANDS={
- 'familymart':familymart,'seven-eleven':sevenEleven,'ministop':ministop
+ 'familymart':familymart,'seven-eleven':sevenEleven,'ministop':ministop,
+ 'lawson':lawson,'lawson-store100':lawsonStore100
 };
 
 // Each footprint edge is an independent interval [0,length]. No corner posts or
