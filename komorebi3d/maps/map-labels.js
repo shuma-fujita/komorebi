@@ -15,12 +15,26 @@ export async function loadOsmTagIgnore(url='./maps/osm-tags.ignore'){
 export function visibleOsmTags(tags={},rules=[]){
  return Object.entries(tags).filter(([key])=>!rules.some(rule=>rule.exact===key||(rule.prefix!==undefined&&key.startsWith(rule.prefix))));
 }
+import {pickFocusedBuilding} from './map-focus.js?v=focus-ray-v1-20261119';
+
 export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
+ let buildings=[];
+ let focusedKey=null,pendingKey=null,pendingSince=0,lastFocusAt=-Infinity;
+ function appendBuildingFeatures(features){
+  if(!features?.length)return;
+  for(const feature of features)if(feature.type==='building'&&feature.osmId!=null)buildings.push(feature);
+  lastFocusAt=-Infinity;
+ }
+ function setBuildingFeatures(features){
+  buildings=[];
+  focusedKey=null;pendingKey=null;pendingSince=0;
+  appendBuildingFeatures(features);
+ }
  let debugAnchors=false;
  const debugSvg=document.createElementNS('http://www.w3.org/2000/svg','svg');
  debugSvg.setAttribute('aria-hidden','true');
@@ -470,12 +484,18 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const ux=-fy*rz,uy=fx*rz-fz*rx,uz=fy*rx;
   const tanHalf=Math.tan((camera.fovDegrees??45)*Math.PI/360);
   if(!(tanHalf>0))return empty;
-  const ranked=entries.map((item,i)=>({
-   i,item,
-   cameraDistance:Math.hypot(item.x-ex,item.y-ey,item.z-ez),
-   playerDistance:Math.hypot(item.x-px,item.y-py,item.z-pz)
-  })).filter(entry=>entry.cameraDistance<=200)
-    .sort((a,b)=>a.playerDistance-b.playerDistance);
+  // Select the frontmost actual building along the camera's center ray.
+  // A short dwell avoids rapid label flicker when the crosshair crosses an edge.
+  const now=performance.now();
+  if(now-lastFocusAt>=80){
+   const selected=pickFocusedBuilding(buildings,camera);
+   const key=selected?selected.osmType+':'+selected.osmId:null;
+   if(key!==pendingKey){pendingKey=key;pendingSince=now;}
+   if(focusedKey!==pendingKey&&now-pendingSince>=120)focusedKey=pendingKey;
+   lastFocusAt=now;
+  }
+  const index=focusedKey===null?-1:entries.findIndex(item=>item.kind==='building'&&item.osmType+':'+item.osmId===focusedKey);
+  const ranked=index<0?[]:[{i:index,item:entries[index]}];
   let inView=0,shown=0;
   const hostRect=host.getBoundingClientRect();
   debugSvg.replaceChildren();
@@ -489,7 +509,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    const heightLimit=Math.max(1,Math.floor(rect.height-42));
    let viewShown=0;
    for(const {i,item} of ranked){
-    if(viewShown>=20)break;
+    if(viewShown>=1)break;
     const vx=item.x-ex,vy=item.y-ey,vz=item.z-ez;
     const depth=vx*fx+vy*fy+vz*fz;
     if(depth<=.2)continue;
@@ -517,5 +537,5 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   }
   return {total:entries.length,inRange:ranked.length,inView,shown};
  }
- return {setLabels,appendLabels,reconcileLabels,replaceCanvas,setDebugAnchors,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
