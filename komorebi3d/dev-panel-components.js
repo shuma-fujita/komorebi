@@ -157,7 +157,7 @@ export function mountTestControlsPanel(root,api){
   screens:{A:{map:'old',engine:'B'},B:{map:'new',engine:'B'}},
   mapVisible:find('map-toggle')?.getAttribute('aria-pressed')==='true',
   labelDebugVisible:false,
-  shopModes:{A:'A',B:'B'}
+  shopModes:{A:'A',B:'A'}
  });
  let localState={...initial};
  const readState=()=>api?api.getState():localState;
