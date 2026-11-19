@@ -1,6 +1,6 @@
 // Live Matsudo 500m OSM snapshot. Public Overpass is best-effort; callers keep a local JSON fallback.
 export const OVERPASS_ENDPOINT='https://overpass.private.coffee/api/interpreter';
-export const OVERPASS_TIMEOUT_MS=30000;
+export const OVERPASS_TIMEOUT_MS=60000;
 // Match the existing matsudo.json 500m bounding box and map-builder origin.
 export const MATSUDo_BBOX=[35.782194,139.897842,35.786686,139.903378];
 const FACILITY_KEYS=['shop','amenity','tourism','office','leisure','healthcare'];
@@ -9,7 +9,7 @@ const hasTag=(tags,keys)=>keys.some(key=>Object.prototype.hasOwnProperty.call(ta
 export function buildMatsudoOverpassQuery(){
  const bbox=MATSUDo_BBOX.join(',');
  // Regex on tag keys keeps the request compact. "out geom" includes way vertices.
- return '[out:json][timeout:35];('+
+ return '[out:json][timeout:65];('+
   'node[~"^(shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
   'way[~"^(building|highway|railway|shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
   'relation[~"^(shop|amenity|tourism|office|leisure|healthcare)$"~"."]('+bbox+');'+
@@ -36,7 +36,7 @@ export function normalizeMatsudoOverpass(data){
  return {source:'OpenStreetMap contributors',license:'ODbL-1.0',center:[35.78444,139.90061],
   bbox:MATSUDo_BBOX.join(','),elements,osmTimestamp:data.osm3s?.timestamp_osm_base||null};
 }
-// One live request only, with up to 30 seconds for the primary server.
+// One live request only, with up to 60 seconds for the primary server.
 export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPASS_TIMEOUT_MS,fetchImpl=fetch}={}){
  if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
  const started=performance.now();
