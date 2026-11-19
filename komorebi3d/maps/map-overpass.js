@@ -1,5 +1,13 @@
 // Live Matsudo 250m OSM snapshot. Public Overpass is best-effort; callers keep a local JSON fallback.
-export const OVERPASS_ENDPOINT='https://overpass.private.coffee/api/interpreter';
+export const OVERPASS_ENDPOINTS=Object.freeze({
+ coffee:'https://overpass.private.coffee/api/interpreter',
+ official:'https://overpass-api.de/api/interpreter'
+});
+export const OVERPASS_ENDPOINT=OVERPASS_ENDPOINTS.coffee;
+export function resolveOverpassEndpoint(server='coffee'){
+ if(!Object.prototype.hasOwnProperty.call(OVERPASS_ENDPOINTS,server))throw Error('許可されていないOverpass接続先');
+ return OVERPASS_ENDPOINTS[server];
+}
 export const OVERPASS_TIMEOUT_MS=120000;
 // Centered on the existing Matsudo 500m map origin; half-size is 125m.
 export const MATSUDo_BBOX=[35.783317,139.899226,35.785563,139.901994];
@@ -37,17 +45,18 @@ export function normalizeMatsudoOverpass(data){
   bbox:MATSUDo_BBOX.join(','),areaSizeM:250,elements,osmTimestamp:data.osm3s?.timestamp_osm_base||null};
 }
 // One live request only, with up to 120 seconds for the primary server.
-export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPASS_TIMEOUT_MS,fetchImpl=fetch}={}){
+export async function fetchLiveMatsudoMap({signal,onLog=()=>{},timeoutMs=OVERPASS_TIMEOUT_MS,fetchImpl=fetch,server='coffee'}={}){
  if(signal?.aborted)throw signal.reason||new DOMException('Aborted','AbortError');
  const started=performance.now();
  const controller=new AbortController();
  const abort=()=>controller.abort();
  signal?.addEventListener('abort',abort,{once:true});
  const timer=setTimeout(()=>controller.abort(),timeoutMs);
- const host=new URL(OVERPASS_ENDPOINT).hostname;
+ const endpoint=resolveOverpassEndpoint(server);
+ const host=new URL(endpoint).hostname;
  try{
   onLog('OSM最新250m: '+host+' 取得開始（上限'+Math.round(timeoutMs/1000)+'秒）');
-  const response=await fetchImpl(OVERPASS_ENDPOINT+'?data='+encodeURIComponent(buildMatsudoOverpassQuery()),{signal:controller.signal,cache:'no-store'});
+  const response=await fetchImpl(endpoint+'?data='+encodeURIComponent(buildMatsudoOverpassQuery()),{signal:controller.signal,cache:'no-store'});
   onLog('OSM最新250m: '+host+' HTTP '+response.status+' / '+Math.round(performance.now()-started)+'ms');
   if(!response.ok)throw Error('HTTP '+response.status);
   const result=normalizeMatsudoOverpass(await response.json());
