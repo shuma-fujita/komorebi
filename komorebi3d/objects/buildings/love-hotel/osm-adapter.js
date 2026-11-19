@@ -17,7 +17,7 @@ function contains(point,points){
  return inside;
 }
 export function matchLoveHotelBuildings(elements,project,halfSize){
- const matched=new Set(),cells=new Map();
+ const matched=new Map(),cells=new Map();
  const cellKey=(x,z)=>x+','+z;
  for(const element of elements){
   if(element.type!=='way'||!element.tags?.building||element.tags.building==='no'||
@@ -35,8 +35,8 @@ export function matchLoveHotelBuildings(elements,project,halfSize){
   }
   const area=Math.abs(twice)/2;
   if(area<3||area>35000||minX>halfSize||maxX< -halfSize||minZ>halfSize||maxZ< -halfSize)continue;
-  if(isLoveHotel(element.tags))matched.add(element.id);
-  const building={id:element.id,points,area,minX,maxX,minZ,maxZ};
+  if(isLoveHotel(element.tags))matched.set(element.id,{whole:true,levels:[]});
+  const building={id:element.id,points,area,minX,maxX,minZ,maxZ,tags:element.tags};
   for(let ix=Math.floor(minX/GRID_METRES);ix<=Math.floor(maxX/GRID_METRES);ix++)
    for(let iz=Math.floor(minZ/GRID_METRES);iz<=Math.floor(maxZ/GRID_METRES);iz++){
     const key=cellKey(ix,iz);
@@ -56,10 +56,36 @@ export function matchLoveHotelBuildings(elements,project,halfSize){
       !contains(point,building.points))continue;
    if(!owner||building.area<owner.area)owner=building;
   }
-  if(owner)matched.add(owner.id);
+  if(owner){
+   const raw=String(element.tags?.level??'').trim();
+   // OSM level is zero-based. For the specifically requested D37 Tokyo
+   // Building, physical storey 5 is intentional even though its POI says level=5.
+   const hasLevel=element.tags?.amenity==='brothel'&&/^\\d+$/.test(raw)&&Number.isSafeInteger(Number(raw));
+   const floor=hasLevel?(owner.tags.name==='第37東京ビル'&&Number(raw)===5?5:Number(raw)+1):null;
+   const previous=matched.get(owner.id)||{whole:false,levels:[]};
+   if(floor!==null&&floor>0&&!previous.whole)previous.levels.push(floor);
+   else previous.whole=true;
+   matched.set(owner.id,previous);
+  }
  }
  return matched;
 }
-export function resolveLoveHotelColor(buildingId,matched,baseColor){
- return matched.has(buildingId)?LOVE_HOTEL_COLOR:baseColor;
+export function resolveLoveHotelFloorSpans(buildingId,matched,tags,height,inferredLevels=null){
+ const selection=matched.get(buildingId);
+ if(!selection||selection.whole||!selection.levels.length)return [];
+ const explicit=Number(tags?.['building:levels']);
+ const count=Number.isInteger(explicit)&&explicit>0?explicit:inferredLevels;
+ if(!Number.isSafeInteger(count)||count<=0)return null; // Preserve legacy whole-wall fallback.
+ const floorHeight=height/count;
+ if(!Number.isFinite(floorHeight)||floorHeight<=0)return null;
+ const floors=[...new Set(selection.levels)];
+ if(floors.some(floor=>floor<1||floor>count))return null;
+ return floors.sort((a,b)=>a-b).map(floor=>({
+  bottom:(floor-1)*floorHeight,top:Math.min(height,floor*floorHeight)
+ }));
+}
+export function resolveLoveHotelColor(buildingId,matched,baseColor,tags={},height=0,inferredLevels=null){
+ if(!matched.has(buildingId))return baseColor;
+ const spans=resolveLoveHotelFloorSpans(buildingId,matched,tags,height,inferredLevels);
+ return matched.get(buildingId).whole||spans===null?LOVE_HOTEL_COLOR:baseColor;
 }
