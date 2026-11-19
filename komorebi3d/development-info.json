@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "松戸500m最新OSMはoverpass.private.coffeeのみ最大30秒待機。第2サーバー接続廃止、失敗時は保存JSON切替（模擬PASS／実機待ち）",
+  "matsudo": "松戸500mの最新OSM取得はoverpass.private.coffeeへ1回だけ接続し最大60秒待機。クエリ65秒、失敗時は保存JSONに切替（静的確認PASS／実機待ち）",
   "common": "地図ログを重要イベント固定＋直近12行＋全履歴最大512行に整理し、全ログ閲覧・コピー対応（構文確認PASS／実機待ち）"
 }
