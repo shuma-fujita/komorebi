@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 松戸OSMを完全手動接続へ変更（main反映・実機未確認）：** ユーザー指示。松戸ワープ時は `loadMatsudoMapInBackground()` が `loadMap(source:'old',live:false)` を実行し、保存済み `matsudo.json` のみ取得・表示する。外部Overpass APIへの**自動通信は禁止**。2kmタイルはこれまでどおり必要時ローカルJSONをロード。実行ステータスログに接続先セレクト（Private Coffee、overpass-api.de の二択）、「接続確認」「建物のみ取得」「最新250m地図を手動取得」「診断ログをコピー」を用意。二択以外は `resolveOverpassEndpoint` が拒否。診断は手動時のみ20秒上限・独立ログ・地図表示不変。250mライブ地図は手動ボタン時のみ `fetchManualOsmMap` → `loadMatsudoMapInBackground({live:true,server})` → `fetchLiveMatsudoMap` で選択中サーバーに最大120秒通信し、成功時250m地図へ表示更新、失敗時は既存500m保存JSONへフォールバック。ミニマップ250m表示も対応。両画面のJSキャッシュキー更新、テストに二大サービス限定を追加。**保存JSONのみの起動を模擬検証（外部API呼び出し0件）、構文・配線を静的確認済み。GitHub Actions・Pages・Safari実機は未確認。**
+
+
 > **2026-11-19 Overpass切り分け用の手動診断（main反映／Safari実機未確認）：** 通常の松戸250m・単独overpass.private.coffee・取得120秒・保存済み500m JSONフォールバックは変更なし。軽量診断モジュール `maps/map-overpass-diagnostic.js` を追加し、「接続確認」（松戸駅中心のごく小さなnode bboxに`out count`）と「建物のみ取得」（250m bboxのbuilding wayに`out count`）を手動実行可能にした。いずれも独立の20秒上限、取得した要素の件数のみ応答、HTTPステータス・経過時間・失敗理由を別ログ `overpass-diagnostic` に表示する。自動診断や3D差し替えは行わず、同じ既存Overpassホストへの読取専用通信で、診断ログは地図ログと分離。実行ステータスパネルに2つのボタンを追加（ゲームAPIの`runMapDiagnostic`経由）。`dev.template.html`と`dev.html`の共通UIスクリプト参照キャッシュも更新。`tests/map-overpass-diagnostic.mjs`追加。**模擬HTTP 200/502、構文、ゲームAPI配線は確認PASS。実公開API通信・GitHub Actions・Pages・Safari実機は未確認。** 次の実機確認は、実行ステータスの2ボタンをそれぞれ押し、独立した結果ログをコピーすること。
 
 
