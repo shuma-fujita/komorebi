@@ -1641,11 +1641,23 @@ function createMapBuildProfiler(){
 }
 let mapLoadToken=0,mapLoadController=null;
 let mapFrameProbe=null; // Step 5-F: existing game rAF frame cadence only.
+// Keep a readable recent tail, a persistent acquisition/result summary, and a bounded full copy log.
 const mapDebugLog=[];
+const mapDebugSummary=[];
+const MAP_DEBUG_HISTORY_LIMIT=512;
+const MAP_DEBUG_RECENT_LIMIT=12;
 function addMapDebug(line){
- mapDebugLog.push(new Date().toLocaleTimeString('ja-JP',{hour12:false})+' '+line);
- if(mapDebugLog.length>32)mapDebugLog.shift();
- publishRuntimeStatus('map-debug-log',mapDebugLog.join('\n'));
+ const entry=new Date().toLocaleTimeString('ja-JP',{hour12:false})+' '+line;
+ mapDebugLog.push(entry);
+ if(mapDebugLog.length>MAP_DEBUG_HISTORY_LIMIT)mapDebugLog.shift();
+ // Preserve acquisition status even after many geometry diagnostics arrive.
+ if(/^(開始 \/|OSM最新500m: (Overpass取得開始|HTTP |取得・変換 |検証PASS|取得失敗)|JSON: .*?(HTTP |検証PASS)|地図生成: 完了|失敗:)/.test(line)){
+  mapDebugSummary.push(entry);
+  if(mapDebugSummary.length>24)mapDebugSummary.shift();
+ }
+ publishRuntimeStatus('map-debug-summary',mapDebugSummary.join('\n')||'取得結果を確認中…');
+ publishRuntimeStatus('map-debug-full-log',mapDebugLog.join('\n'));
+ publishRuntimeStatus('map-debug-log',mapDebugLog.slice(-MAP_DEBUG_RECENT_LIMIT).join('\n'));
 }
 // Matsudo owns the map request lifecycle. World switching only disposes the old session.
 function cancelMatsudoMapRequest(){
@@ -1661,7 +1673,7 @@ async function loadMatsudoMapInBackground(){
  cancelMatsudoMapRequest();
  const controller=new AbortController();mapLoadController=controller;
  const token=++mapLoadToken;
- mapDebugLog.length=0;addMapDebug('開始 / 500m: OSM最新→保存JSON予備 / 2kmタイル '+TEST_TILE_ID);
+ mapDebugLog.length=0;mapDebugSummary.length=0;addMapDebug('開始 / 500m: OSM最新→保存JSON予備 / 2kmタイル '+TEST_TILE_ID);
  const onLog=line=>{if(isCurrentMatsudoMapRequest(token,controller))addMapDebug(line);};
  publishRuntimeStatus('map-source-status','🗺️ A/B地図 読み込み中');
  try{
