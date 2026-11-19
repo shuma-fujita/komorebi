@@ -490,6 +490,21 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const pane=el.querySelector('[data-shop-pane]');
   if(pane)pane.style.pointerEvents=pane.scrollHeight>pane.clientHeight+1?'auto':'none';
  }
+ // Resolve the visible scrollable tenant list by screen coordinates, independent
+ // of WebView pointer hit-testing and the overlay's pointer-events setting.
+ function scrollPaneAt(clientX,clientY){
+  if(editor||!layer.isConnected)return null;
+  for(const viewport of viewports){
+   if(!viewport.canvas.isConnected)continue;
+   const measured=viewport.summary;
+   if(measured?.el.style.display!=='flex')continue;
+   const pane=measured.el.querySelector('[data-shop-pane]');
+   if(!pane||pane.scrollHeight<=pane.clientHeight+1)continue;
+   const rect=pane.getBoundingClientRect();
+   if(clientX>=rect.left&&clientX<=rect.right&&clientY>=rect.top&&clientY<=rect.bottom)return pane;
+  }
+  return null;
+ }
  // Pointer-transparent cards keep the existing left/right game controls active.
  // Hit testing is limited to the visible card, not its decorative stem/dot.
  function hitTest(clientX,clientY){
@@ -645,5 +660,5 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   }
   return {total:entries.length,inRange:ranked.length,inView,shown};
  }
- return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,setShopMode,reconcileLabels,replaceCanvas,setDebugAnchors,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,setShopMode,reconcileLabels,replaceCanvas,setDebugAnchors,scrollPaneAt,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
