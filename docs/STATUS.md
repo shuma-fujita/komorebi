@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-19 松戸500mのGitHub Actions手動更新を実装（main反映・未実行）：** 新規 `.github/workflows/matsudo-osm-manual.yml` は `workflow_dispatch` のみで、push・schedule・PRではOSM取得を起動しない。以前から移行済みの `komorebi3d/maps/fetch-map.py` を Ubuntu上で実行し、POST形式でPrivate Coffee→overpass-api.deの許可済み2ホスト（最大2巡）に接続。500m四方 `matsudo.json` の中心・bbox・建物/道路/施設件数を検証し、成功時だけ `main` の `matsudo.json` 単一ファイルをコミット・更新。失敗時は既存JSONを保持。通常の松戸入場は保存JSONを読むだけでOverpass APIには接続しない。**ワークフローはGitHubへ作成したが、実際のActions実行成功・ユーザー実機・Pages反映は未確認。** JSON更新コミットによってGitHub Pages配信のデプロイは起こり得るが、OSM取得Actionsは再実行されない。
+
 > **2026-11-19 松戸OSMを完全手動接続へ変更（main反映・実機未確認）：** ユーザー指示。松戸ワープ時は `loadMatsudoMapInBackground()` が `loadMap(source:'old',live:false)` を実行し、保存済み `matsudo.json` のみ取得・表示する。外部Overpass APIへの**自動通信は禁止**。2kmタイルはこれまでどおり必要時ローカルJSONをロード。実行ステータスログに接続先セレクト（Private Coffee、overpass-api.de の二択）、「接続確認」「建物のみ取得」「最新250m地図を手動取得」「診断ログをコピー」を用意。二択以外は `resolveOverpassEndpoint` が拒否。診断は手動時のみ20秒上限・独立ログ・地図表示不変。250mライブ地図は手動ボタン時のみ `fetchManualOsmMap` → `loadMatsudoMapInBackground({live:true,server})` → `fetchLiveMatsudoMap` で選択中サーバーに最大120秒通信し、成功時250m地図へ表示更新、失敗時は既存500m保存JSONへフォールバック。ミニマップ250m表示も対応。両画面のJSキャッシュキー更新、テストに二大サービス限定を追加。**保存JSONのみの起動を模擬検証（外部API呼び出し0件）、構文・配線を静的確認済み。GitHub Actions・Pages・Safari実機は未確認。**
 
 
