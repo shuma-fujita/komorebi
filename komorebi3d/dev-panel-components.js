@@ -69,7 +69,7 @@ export function createGameView(root){
    const ctx=mapContexts[screen],map=screen==='A'?elements.mapA:elements.mapB;
    const mapCanvas=screen==='A'?elements.mapCanvasA:elements.mapCanvasB;
    if(!ctx)return;
-   const town=worldId==='matsudo',span=town?(mapSpan===2000?2000:500):100,half=span/2;
+   const town=worldId==='matsudo',span=town?([250,500,2000].includes(mapSpan)?mapSpan:500):100,half=span/2;
    const w=mapCanvas.width,h=mapCanvas.height;
    const wx=x=>(x+half)*w/span,wz=z=>(z+half)*h/span;
    const title=map.querySelector('.debug-map-title');
