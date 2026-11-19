@@ -5,7 +5,7 @@ function renderFauxGame(state){
  const surface=document.getElementById('play-surface');
  if(!surface)return;
  const mode=state.renderMode;
- const names={map:{old:'旧500m',new:'新2km'},engine:{A:'WebGL',B:'Three.js'}};
+ const names={map:{old:'OSM 500m',new:'新2km'},engine:{A:'WebGL',B:'Three.js'}};
  const shown=mode==='compare'?['A','B']:[mode];
  surface.classList.toggle('ab-compare',mode==='compare');
  surface.replaceChildren();
