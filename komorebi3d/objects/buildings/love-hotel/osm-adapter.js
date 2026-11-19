@@ -1,9 +1,9 @@
-// Match OSM love hotels to complete building footprints before progressive drawing.
+// Match OSM love hotels and amenity=brothel facilities to complete building footprints before progressive drawing.
 // This adapter only selects building colors; normal shape and height stay unchanged.
 import {LOVE_HOTEL_COLOR} from './const.js?v=love-hotel-pink-20261119';
 
 const GRID_METRES=25;
-const isLoveHotel=tags=>tags?.amenity==='love_hotel';
+const isLoveHotel=tags=>tags?.amenity==='love_hotel'||tags?.amenity==='brothel';
 function contains(point,points){
  const [x,z]=point;
  let inside=false;
