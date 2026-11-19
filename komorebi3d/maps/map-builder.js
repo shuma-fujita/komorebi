@@ -1,5 +1,5 @@
 import {inferBuildingLevelsFromTenants} from './map-tenant-levels.js?v=tenant-level-infer-20261119';
-import {matchLoveHotelBuildings,resolveLoveHotelColor} from '../objects/buildings/love-hotel/osm-adapter.js?v=love-hotel-pink-20261119';
+import {matchLoveHotelBuildings,resolveLoveHotelColor} from '../objects/buildings/love-hotel/osm-adapter.js?v=brothel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=shared-outside-1m-20261119';
