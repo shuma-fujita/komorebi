@@ -613,7 +613,7 @@ import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-init
 import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=matsudo-0_0-20261116";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=step5a-poi-name-index-20261115";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=label-connector-20261118";
+import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=focus-building-20261119";
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
 const $=id=>document.getElementById(id);
@@ -1653,7 +1653,7 @@ async function loadMatsudoMapInBackground(){
     const displayStats={near:0,far:0,groups:0,merged:0,meshTotal:0,vertexTotal:0};
     function publishPendingDisplay(processed,total,q){
      if(!pendingDisplay.length)return;
-     const start=performance.now(),entries=pendingDisplay.splice(0),allLabels=[];
+     const start=performance.now(),entries=pendingDisplay.splice(0),allLabels=[],allMapFeatures=[];
      displayStats.groups++;
      if(entries.length>1)displayStats.merged++;
      for(const entry of entries){
@@ -1676,12 +1676,13 @@ async function loadMatsudoMapInBackground(){
       displayed.labels.push(...batch.labels);
       displayed.mapFeatures.push(...batch.mapFeatures);
       allLabels.push(...batch.labels);
+      allMapFeatures.push(...batch.mapFeatures);
       quarterStats.labelCount+=batch.labels.length;
      }
      const labelStart=performance.now();
      for(const screen of ['A','B'])if(screenConfigs[screen].map===source){
       const layer=matsudoLabels[screen];
-      if(layer)layer.appendLabels(allLabels);
+      if(layer){layer.appendLabels(allLabels);layer.appendBuildingFeatures(allMapFeatures);}
       else applyMatsudoScreenLabels(screen,ignoreRules);
       const current=matsudoLabels[screen];
       if(current){
@@ -1783,7 +1784,10 @@ async function loadMatsudoMapInBackground(){
     const reconcileStart=performance.now();
     displayed.labels=next.labels;
     displayed.mapFeatures=next.mapFeatures;
-    for(const screen of ['A','B'])if(screenConfigs[screen].map===source)matsudoLabels[screen]?.reconcileLabels(next.labels);
+    for(const screen of ['A','B'])if(screenConfigs[screen].map===source){
+     matsudoLabels[screen]?.reconcileLabels(next.labels);
+     matsudoLabels[screen]?.setBuildingFeatures(next.mapFeatures);
+    }
     profile.record('screen-reconcile',performance.now()-reconcileStart);
     onLog('計測: '+name+' / '+profile.format('preparation'));
     onLog('計測: '+name+' / '+profile.format('feature'));
@@ -1851,6 +1855,7 @@ function applyMatsudoScreenLabels(screen,ignoreRules){
  if(data&&gameView?.surface){
   matsudoLabels[screen]=createMapLabels(gameView.surface,ignoreRules,{screen,onEditorStateChange:setOsmEditorOpen});
   matsudoLabels[screen].setLabels(data.labels);
+  matsudoLabels[screen].setBuildingFeatures(data.mapFeatures);
   matsudoLabels[screen].setDebugAnchors(labelDebugVisible);
  }
 }
@@ -2052,7 +2057,7 @@ function frame(t){
      const stats=layer.update({...hudPose,fovDegrees:45},{x:game.x,y:flightAltitude,z:game.z});
      descriptions.push(screen+':'+stats.shown+'/'+stats.total);
     }
-    publishRuntimeStatus('label-status','🏙️ 屋上名：'+descriptions.join(' / '));
+    publishRuntimeStatus('label-status','🏙️ 焦点建物タグ：'+descriptions.join(' / '));
   }catch(error){publishRuntimeStatus('label-status','🏙️ 屋上名：描画診断エラー '+String(error.message||error));}
  }
  // When the game panel is removed, keep simulation state but pause GPU drawing.
