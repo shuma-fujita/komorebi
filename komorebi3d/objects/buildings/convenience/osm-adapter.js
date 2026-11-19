@@ -1,3 +1,4 @@
+import {BUILDING_POI_OUTSIDE_TOLERANCE_METRES} from '../../../maps/building-poi-match-const.js?v=shared-outside-1m-20261119';
 // OSM adapter: brand matching, OSM floor metadata and legacy storefront walls.
 import {CONVENIENCE_DOOR_WIDTH_M} from './const.js?v=convenience-one-sign-v3-20261112';
 import {convenienceRoofColor,paintConvenienceGlazing,paintConvenienceSign} from './common.js?v=convenience-dark-handles-v10-20261112';
@@ -7,7 +8,7 @@ import {lawsonStore100} from './lawson-store100.js?v=convenience-v4-20261112';
 import {ministop} from './ministop.js?v=ministop-white-logo-v2-20261112';
 import {lawson} from './lawson.js?v=convenience-v4-20261112';
 // Distance tolerance in centimetres; edit 100 to adjust the allowed POI offset.
-export const CONVENIENCE_MATCH_TOLERANCE_CM=100;
+export const CONVENIENCE_MATCH_TOLERANCE_CM=BUILDING_POI_OUTSIDE_TOLERANCE_METRES*100;
 // Specific Lawson sub-brands must be resolved before the general Lawson name.
 const brands=[sevenEleven,familymart,lawsonStore100,ministop,lawson];
 const normalized=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
