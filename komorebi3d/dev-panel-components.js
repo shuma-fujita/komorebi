@@ -154,7 +154,7 @@ export function mountTestControlsPanel(root,api){
   npcRenderDistance:Number(find('npc-render-distance')?.defaultValue ?? 70),
   renderMode:find('mode-a')?.getAttribute('aria-pressed')==='true'?'A':
    find('mode-compare')?.getAttribute('aria-pressed')==='true'?'compare':'B',
-  screens:{A:{map:'old',engine:'B'},B:{map:'new',engine:'B'}},
+  screens:{A:{map:'old',engine:'B'},B:{map:'old',engine:'B'}},
   mapVisible:find('map-toggle')?.getAttribute('aria-pressed')==='true',
   labelDebugVisible:false
  });
