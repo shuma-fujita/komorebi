@@ -447,7 +447,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
      card.appendChild(count);
      const pane=document.createElement('div');
      pane.style.cssText='flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:none;pointer-events:none';
-     pane.style.maxHeight=Math.max(30,heightLimit-54)+'px';
+     pane.style.maxHeight=Math.max(30,heightLimit-54)+'px'; // adjusted after row styles are measurable
      pane.dataset.shopPane='true';
      pane.className='komorebi-tenant-pane';
      for(const shop of item.shopList){
@@ -499,11 +499,28 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     // Measure the complete, wrapped label once (not on every animation frame).
     el.style.display='flex';
     el.style.visibility='hidden';
+    limitShopPaneHeight(el,heightLimit);
     const width=el.offsetWidth||widthLimit,height=el.offsetHeight||72;
     syncShopPane(el);
     el.style.display='none';
     el.style.visibility='';
     return {...item,el,width,height,widthLimit,heightLimit};
+ }
+ // Cap the directory at nine one-line tenant rows plus one two-line row.
+ // Measure font/spacing from the rendered row rather than fixing a pixel height;
+ // longer shop names may wrap to any number of lines and remain scrollable.
+ function limitShopPaneHeight(el,heightLimit){
+  const pane=el.querySelector('[data-shop-pane]');
+  if(!pane)return;
+  const row=pane.firstElementChild;
+  if(!row){pane.style.maxHeight=Math.max(30,heightLimit-54)+'px';return;}
+  const style=getComputedStyle(row);
+  const metric=key=>Number.parseFloat(style[key])||0;
+  const lineHeight=metric('lineHeight')||16.8;
+  const oneLineHeight=lineHeight+metric('paddingTop')+metric('paddingBottom')+
+   metric('borderTopWidth')+metric('borderBottomWidth')+metric('marginTop')+metric('marginBottom');
+  const tenRowsWithOneExtraLine=10*oneLineHeight+lineHeight;
+  pane.style.maxHeight=Math.max(30,Math.min(heightLimit-54,Math.ceil(tenRowsWithOneExtraLine)))+'px';
  }
  // A long list is the only interactive child of the otherwise transparent label.
  // This lets iOS Safari scroll naturally without activating camera/movement pads.
@@ -582,9 +599,9 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   card.style.maxWidth=widthLimit+'px';
   card.style.maxHeight=heightLimit+'px';
   const pane=card.querySelector('[data-shop-pane]');
-  if(pane)pane.style.maxHeight=Math.max(30,heightLimit-54)+'px';
   measured.el.style.display='flex';
   measured.el.style.visibility='hidden';
+  limitShopPaneHeight(measured.el,heightLimit);
   measured.width=measured.el.offsetWidth||widthLimit;
   measured.height=measured.el.offsetHeight||72;
   syncShopPane(measured.el);
