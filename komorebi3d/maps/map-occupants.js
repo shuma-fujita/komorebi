@@ -21,15 +21,17 @@ export function shopsInFocusedBuilding(buildings,labels,focusedKey){
  const focused=buildings.find(b=>b.type==='building'&&b.osmType+':'+b.osmId===focusedKey);
  if(!focused)return [];
  const [minX,maxX,minZ,maxZ]=focused.bounds||[-Infinity,Infinity,-Infinity,Infinity];
- const result=[],focusedArea=footprintArea(focused.points);
+ const result=[],focusedArea=focused.area??footprintArea(focused.points);
  for(const poi of labels){
   if(poi.kind!=='poi'||poi.osmId==null||poi.x<minX||poi.x>maxX||poi.z<minZ||poi.z>maxZ||
      !pointInFootprint(poi.x,poi.z,focused.points))continue;
   // A shop in a nested, smaller building belongs to that building.
   const nested=buildings.some(b=>{
-   if(b===focused||b.type!=='building'||footprintArea(b.points)>=focusedArea)return false;
+   if(b===focused||b.type!=='building')return false;
    const [a,c,d,e]=b.bounds||[-Infinity,Infinity,-Infinity,Infinity];
-   return poi.x>=a&&poi.x<=c&&poi.z>=d&&poi.z<=e&&pointInFootprint(poi.x,poi.z,b.points);
+   if(poi.x<a||poi.x>c||poi.z<d||poi.z>e)return false;
+   if((b.area??footprintArea(b.points))>=focusedArea)return false;
+   return pointInFootprint(poi.x,poi.z,b.points);
   });
   if(!nested)result.push(poi);
  }
