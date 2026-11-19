@@ -3,8 +3,13 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 // Import as an ES module even when the repo has no package.json type=module.
 const source=await readFile(new URL('../maps/map-overpass.js',import.meta.url),'utf8');
-const {buildMatsudoOverpassQuery,normalizeMatsudoOverpass,fetchLiveMatsudoMap,OVERPASS_ENDPOINT,OVERPASS_TIMEOUT_MS}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {buildMatsudoOverpassQuery,normalizeMatsudoOverpass,fetchLiveMatsudoMap,OVERPASS_ENDPOINT,OVERPASS_TIMEOUT_MS,OVERPASS_ENDPOINTS,resolveOverpassEndpoint}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 
+test('only the two approved Overpass endpoints are selectable',()=>{
+ assert.equal(resolveOverpassEndpoint('coffee'),OVERPASS_ENDPOINTS.coffee);
+ assert.equal(resolveOverpassEndpoint('official'),OVERPASS_ENDPOINTS.official);
+ assert.throws(()=>resolveOverpassEndpoint('other'),/許可されていない/);
+});
 test('120s single-server budget and 125s Overpass query timeout',()=>{
  assert.equal(OVERPASS_TIMEOUT_MS,120000);
  assert.match(buildMatsudoOverpassQuery(),/\[timeout:125\]/);
