@@ -119,6 +119,8 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={},previewRat
  //   lower:      distance >= (-u -(1-2*previewRatio)*tanHalf*b)/
  //                          (previewRatio*tanHalf)
  // Maximize these expressions over all yaw angles and all eight box corners.
+ // Vertical horizontal-components are collinear, so use absolute sums;
+ // only the left/right fit combines orthogonal radial and tangent terms.
  const radius=Math.hypot(width,depth)/2;
  const elevation=Math.abs(backward[1]);
  const horizontal=Math.sqrt(1-elevation*elevation);
@@ -129,10 +131,10 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={},previewRat
  const minDepth=radius*horizontal+halfHeight*elevation+.2;
  const horizontalDistance=radius*Math.hypot(horizontal,1/horizontalSlope)+
   halfHeight*elevation;
- const upperDistance=(radius*Math.hypot(elevation,tanHalf*horizontal)+
+ const upperDistance=(radius*Math.abs(tanHalf*horizontal-elevation)+
   halfHeight*(horizontal+tanHalf*elevation))/verticalSlope;
  const bottomCoefficient=(1-2*visibleRatio)*tanHalf;
- const lowerDistance=(radius*Math.hypot(elevation,bottomCoefficient*horizontal)+
+ const lowerDistance=(radius*Math.abs(elevation-bottomCoefficient*horizontal)+
   halfHeight*Math.abs(horizontal+bottomCoefficient*elevation))/verticalSlope;
  let distance=Math.max(minDepth,horizontalDistance,upperDistance,lowerDistance);
  // Default distance fits all corners; pinch modifies only distance.
