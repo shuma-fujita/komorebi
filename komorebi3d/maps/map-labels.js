@@ -2,6 +2,7 @@
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=fixed-oauth-redirect-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=sheet-three-stops-20261120';
+import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=keyboard-half-20261121';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=readable-osm-errors-20261121';
@@ -84,7 +85,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
  }
 
  // JSON edit/confirm, with strictly isolated OSM development-server level test.
- let editor=null,editorMotion=null,editorScrollGuard=null,editorPreviewGestures=null,previewActive=false;
+ let editor=null,editorMotion=null,editorScrollGuard=null,editorPreviewGestures=null,editorKeyboardLayout=null,previewActive=false;
  function setPreviewActive(value){
   previewActive=Boolean(value);
   // The OSM label layer is independent from the editor mask (a host child).
@@ -99,6 +100,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
  function closeEditor(){
   if(!editor)return;
   editorMotion?.destroy();editorMotion=null;
+  editorKeyboardLayout?.destroy();editorKeyboardLayout=null;
   editorScrollGuard?.destroy();editorScrollGuard=null;
   editorPreviewGestures?.destroy();editorPreviewGestures=null;
   editor.remove();editor=null;
@@ -545,6 +547,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   setSource(linkedTestTarget?'test':'production');
   form.style.position='relative';form.style.zIndex='2';
   mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
+  editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form,previewTouch,getSheetMode:()=>editorMotion?.getMode()});
   editorScrollGuard=guardSheetScroll(mask,form);
   const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
   const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
