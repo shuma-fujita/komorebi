@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 OSMタグ編集画面の表示順設定を実装（main反映／実機未確認）：** 新規 `komorebi3d/maps/osm-tags.order` で `name`、`name:ja`、`name:en`、`name:*`、`level` の順に優先表示。未一致項目および同一ルール内は元のOSMタグ登録順を維持。`*` は任意長文字列で、`addr:*` や `*:name` のような将来のルール追加に対応。新規 `maps/osm-tag-order.js` にルール解析・安定優先順位ソート・初回1回の設定取得（取得失敗時は元の順）を実装。`maps/map-labels.js` の編集UI `renderTags()` のみでソートし、本番OSMとテストOSMの全タグを削除せず表示。OSM保存・認証・level追加制限・通常ゲームのビルタグ表示・A/B・3段階シート・ビル回転操作は変更なし。`dev.html` と `dev.template.html` のモジュールキャッシュキー更新。**JavaScript構文・優先順・元順維持・ワイルドカード・元データ不変の模擬テストPASS／実機Safari・Actions未確認。**
+
+
 > **2026-11-21 未使用OSMタグignore機能の完全撤去（main反映／実機未確認）：** `komorebi3d/maps/osm-tags.ignore` を削除し、`maps/map-labels.js` の `parseOsmTagIgnore`・`loadOsmTagIgnore`・`visibleOsmTags`・`ignoreRules` 受け渡しを撤去。タグチップは現在の通常ゲームの建物＋店舗一覧で非表示になっていたため、生成ループ・`visibleTags` 保存・ヘッダーDOMも削除（建物名・店舗名・編集ボタンの動作は維持）。`dev.html`／`dev.template.html` の初期地図読込とA/Bソース切替からignoreファイルのフェッチを撤去し、A/B切替では直接ラベル再構築を呼ぶ。ネオンOSMタグ編集シートは元々 `baseTags` の全タグを直接表示するため影響なし。本番／テスト切替、保存安全策、ビル自動回転・表示抑制フラグ等は維持。**JS構文とignore参照0件・編集全タグ経路の静的確認PASS／Actionsと実機Safari未確認。**
 
 
