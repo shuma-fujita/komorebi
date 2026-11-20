@@ -36,7 +36,7 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry,dra
  if(draft?.tags){
   const numericLevels=tenantNodes.filter(n=>n.tags?.shop==='convenience')
    .flatMap(n=>String(n.tags.level??'').split(';').map(v=>v.trim()))
-   .filter(v=>/^\\d+$/.test(v)).map(Number)
+   .filter(v=>/^\d+$/.test(v)).map(Number)
    .filter(v=>Number.isSafeInteger(v)&&v>=0&&v<45);
   const maxLevel=numericLevels.length?Math.max(...numericLevels):-1;
   if(maxLevel>=0){
