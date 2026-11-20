@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-20 編集ビルの横スワイプ回転・ピンチ拡大縮小（main反映／実機未確認）：** `maps/building-preview-gestures.js` を新設し、編集中の上半分だけを覆う透明なタッチ領域で1本指の横移動による水平角（yaw）の変更、2本指の距離変化による倍率0.55～3倍の拡大縮小を受け付ける。縦方向の指移動によるpitch/roll変更はしない。`maps/building-editor-preview.js` の専用カメラにyaw/zoomを追加し、A/B両方に同じ角度・倍率を反映。`map-labels.js` はジェスチャー領域の配置・イベント破棄を担当し、ボトムシートのつまみや本文スクロールから分離。閉じたら角度・倍率を破棄し、ヘリカメラ・通常A/Bモードへ復帰。`dev.template.html`／`dev.html` の参照を更新。**外部ライブラリなし、専用JS構文確認PASS。GitHub ActionsやSafari／ChatGPT内ブラウザの実機動作は未確認。**
+
+
 > **2026-11-20 編集ビルを上半分中央へ配置（main反映／実機未確認）：** 50:50ボトムシートが下半分を覆うので、ビル単独プレビューの従来の画面全体中心(y=50%)を、可視上半分の中心(y=25%)へ変更。`maps/building-editor-preview.js` の専用カメラでカメラのeye/targetを投影上方向の逆へ平行移動し、A/B各Canvasの縦横比と選択ビルの幅・奥行・高さ（8頂点）に基づき、可視領域内に収まる距離を反復算出する。固定Engine、元のゲームカメラ・ヘリ位置・OSM原本・画面比率は変更なし。`dev.template.html`／`dev.html` キャッシュキー更新。**コード反映のみでSafari／ChatGPT内ブラウザ実機とGitHub ActionsのPASSは未確認。**
 
 
