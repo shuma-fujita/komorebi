@@ -119,7 +119,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   handle.setAttribute('role','button');
   handle.setAttribute('aria-label','下にスワイプして編集画面を閉じる');
   handle.setAttribute('tabindex','0');
-  handle.style.cssText='position:sticky;top:0;z-index:5;box-sizing:border-box;height:36px;margin:0 -16px 6px;padding:0 16px;display:flex;align-items:center;justify-content:center;background:#f8fcfa;border-radius:18px 18px 0 0;touch-action:none;overscroll-behavior:none;cursor:grab;user-select:none;-webkit-user-select:none;';
+  handle.style.cssText='position:sticky;top:0;z-index:5;box-sizing:border-box;height:36px;margin:0 -16px 6px;padding:0 16px;display:flex;align-items:center;justify-content:center;background:#152c26;border-radius:18px 18px 0 0;touch-action:none;overscroll-behavior:none;cursor:grab;user-select:none;-webkit-user-select:none;';
   const grip=document.createElement('span');
   grip.className='komo-grip';
   grip.style.cssText='display:block;width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
