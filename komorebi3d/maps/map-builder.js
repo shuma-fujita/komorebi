@@ -256,7 +256,11 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    building(buildings[e.id%palette.length],p,height,tint,
     resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels),roadSegments,tags,pinkSpans,
     resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels));
-   {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};mapFeatures.push(feature);originalOrder.set(feature,index);}
+   {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
+    // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.
+    Object.defineProperty(feature,'previewSource',{value:e});
+    Object.defineProperty(feature,'previewTile',{value:map.tile??null});
+    mapFeatures.push(feature);originalOrder.set(feature,index);}
    const name=String(tags['name:ja']||tags.name||'').trim();
    if(name){const label={kind:'building',osmType:e.type,osmId:e.id,osmVersion:e.version??null,name,tags:{...tags},x:(minX+maxX)/2,z:(minZ+maxZ)/2,y:height+.9};labels.push(label);originalOrder.set(label,index);}
    buildingCount++;
