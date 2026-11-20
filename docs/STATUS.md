@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-20 0:100編集シートのスクロールが背後テスト操作画面へ伝わる問題を修正（main反映／実機未確認）：** `maps/sheet-scroll-guard.js` を新設し、編集中のマスク上でタッチ・ホイールのスクロール可否を判定。編集シート内部がスクロール可能な方向はネイティブ動作を許可し、上端・下端またはシート外では `preventDefault` で背後のテスト操作画面／ページへのスクロールチェーンを防ぐ。フォームに `-webkit-overflow-scrolling:touch` を追加。シート終了時にイベントを解除。`maps/map-labels.js` のみへ接続、`dev.template.html`／`dev.html` キャッシュキー更新。50:50→0:100→50:50→閉じる、ネオンタグ入力・iOSキーボード、A/B自動回転・ピンチには手を加えていない。**JS構文・境界スクロールの模擬テストPASS／iPhone Safari・ChatGPT内ブラウザとActions実機未確認。**
+
+
 > **2026-11-20 タグ編集ボトムシート3段階ドラッグ（main反映／実機未確認）：** `maps/sheet-motion.js` をつまみの half(50:50) / full(0:100) / dismiss のステートマシンへ変更。50%状態からつまみを上へ56px程度引くと100%へ、100%から下へ65px程度引くと50%へスナップ、50%をさらに下へ90px以上（またはフリック）引くと閉じる。100%から1回の連続ドラッグで50%より下へ90px以上通り越した場合も閉じる。ドラッグ中は高さと位置を指へ追従、Web Animations APIでスナップ、reduce-motion設定では即座に切替。つまみのEnter/Spaceは50/100トグル、Escapeで閉じる。`maps/map-labels.js` で接続し `dev.template.html`/`dev.html` キャッシュキー更新。既存のOSMタグ入力・キーボード対策、A/Bビルプレビュー・自動回転・ピンチ、閉じた際のヘリ視点復帰は変更なし。**純JS構文チェック・模擬イベントでhalf→full→half→dismissと破棄をPASS、ActionsとiPhone Safari/ChatGPT内ブラウザの実機PASSは未確認。**
 
 
