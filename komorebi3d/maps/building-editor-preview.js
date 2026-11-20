@@ -63,19 +63,26 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={}){
   right[0]*forward[1]-right[1]*forward[0]
  ];
  const tanHalf=Math.tan(45*Math.PI/360);
- // Fit against a yaw-independent bounding cylinder. Its projected envelope
- // remains the same through all 360 degrees, so orbiting never changes zoom.
- // The visible top half corresponds to vertical NDC 0..1 (with margins).
+ // Exact perspective bounds for every horizontal orbit angle.
+ // The rectangular footprint's corners rotate on a circle of this radius.
+ // Solve the horizontal and upper/lower projection inequalities analytically,
+ // instead of adding conservative depth and width limits independently.
+ // 4% clear margin around the visible upper-half viewport; 1.5% safety.
  const radius=Math.hypot(width,depth)/2;
  const elevation=Math.abs(backward[1]);
  const horizontal=Math.sqrt(1-elevation*elevation);
- const depthExtent=radius*horizontal+height*.5*elevation;
- const upExtent=radius*elevation+height*.5*horizontal;
- let distance=Math.max(
-  18,
-  depthExtent+radius/(.84*tanHalf*safeAspect),
-  (upExtent/tanHalf+.88*depthExtent)/.38
- )*1.02;
+ const halfHeight=height*.5;
+ const maxX=.96,upperY=.96,lowerY=.04;
+ const horizontalSlope=maxX*tanHalf*safeAspect;
+ const verticalSlope=(upperY-.5)*tanHalf;
+ const minDepth=radius*horizontal+halfHeight*elevation+1;
+ const horizontalDistance=radius*Math.hypot(1,horizontalSlope*horizontal)/horizontalSlope+
+  halfHeight*elevation;
+ const upperDistance=(radius*Math.abs(verticalSlope*horizontal-elevation)+
+  halfHeight*Math.abs(horizontal+verticalSlope*elevation))/verticalSlope;
+ const lowerDistance=(radius*Math.abs(verticalSlope*horizontal+elevation)+
+  halfHeight*Math.abs(-horizontal+verticalSlope*elevation))/verticalSlope;
+ let distance=Math.max(5,minDepth,horizontalDistance,upperDistance,lowerDistance)*1.015;
  // Default distance fits all corners; pinch modifies only distance.
  distance/=Math.max(.55,Math.min(3,Number.isFinite(zoom)?zoom:1));
  const offset=distance*tanHalf*.5;
