@@ -52,10 +52,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   tagHidden=Boolean(value);
   if(tagHidden){
    tappedBuilding=null;
-   for(const viewport of viewports){
+   for(const viewport of viewports)
     if(viewport.summary?.el)viewport.summary.el.style.display='none';
-    for(const item of viewport.items)if(item?.el)item.el.style.display='none';
-   }
    debugSvg.replaceChildren();
   }
  }
