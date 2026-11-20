@@ -1,6 +1,7 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-auto-comment-20261113';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
+import {attachSheetMotion} from './sheet-motion.js?v=sheet-fling-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
 export function parseOsmTagIgnore(source){
@@ -81,9 +82,10 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  }
 
  // JSON edit/confirm, with strictly isolated OSM development-server level test.
- let editor=null;
+ let editor=null,editorMotion=null;
  function closeEditor(){
   if(!editor)return;
+  editorMotion?.destroy();editorMotion=null;
   editor.remove();editor=null;
   onEditorStateChange?.(false);
  }
@@ -105,39 +107,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   grip.style.cssText='display:block;width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
   handle.appendChild(grip);
   handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();closeEditor();}});
-  // Prevent the page's own touch scrolling on the grip when the embedding browser permits it.
-  // Host/OS pull-to-dismiss gestures may still take precedence outside the webpage.
-  handle.addEventListener('touchmove',event=>{if(event.cancelable)event.preventDefault();event.stopPropagation();},{passive:false});
-  // Only the grip captures downward gestures; the editor body remains scrollable.
-  let drag=null;
-  handle.addEventListener('pointerdown',event=>{
-   if(!event.isPrimary||event.button!==0)return;
-   drag={pointerId:event.pointerId,startY:event.clientY,distance:0};
-   form.style.transition='none';
-   handle.setPointerCapture(event.pointerId);
-   event.preventDefault();event.stopPropagation();
-  });
-  handle.addEventListener('pointermove',event=>{
-   if(!drag||drag.pointerId!==event.pointerId)return;
-   drag.distance=Math.max(0,event.clientY-drag.startY);
-   form.style.transform='translateY('+drag.distance+'px)';
-   event.preventDefault();event.stopPropagation();
-  });
-  function finishGripDrag(event,cancelled=false){
-   if(!drag||drag.pointerId!==event.pointerId)return;
-   const distance=drag.distance;
-   drag=null;
-   if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId);
-   if(!cancelled&&distance>=Math.min(90,form.clientHeight*.25)){
-    closeEditor();
-   }else{
-    form.style.transition='transform 160ms ease-out';
-    form.style.transform='translateY(0)';
-   }
-   event.preventDefault();event.stopPropagation();
-  }
-  handle.addEventListener('pointerup',event=>finishGripDrag(event));
-  handle.addEventListener('pointercancel',event=>finishGripDrag(event,true));
+  // Motion controller owns grip dragging, fling velocity and sheet transitions.
+  editorMotion=attachSheetMotion(form,handle,closeEditor);
   form.appendChild(handle);
   const title=document.createElement('h3');
   title.textContent=item.name+'｜OSMタグの編集';
