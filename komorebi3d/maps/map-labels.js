@@ -1,5 +1,5 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
-import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=fixed-oauth-redirect-20261121';
+import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,isOsmTestLoginConfigured,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=pages-oauth-secret-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=ratio-centered-20261121';
 import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=keyboard-canvas-top-20261121';
@@ -180,13 +180,6 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    update();
   };
   decorateStatus(copyStatus);
-  const copyClientLabel=document.createElement('label');
-  copyClientLabel.textContent='テスト環境OAuth Client ID';
-  copyClientLabel.style.cssText='display:block;margin:5px 0;font-size:12px;';
-  const copyClient=document.createElement('input');
-  copyClient.placeholder='開発用Client ID（ログイン済みなら不要）';
-  copyClient.style.cssText='box-sizing:border-box;width:100%;padding:8px;border:1px solid #91aca0;border-radius:6px;';
-  copyClientLabel.appendChild(copyClient);
   const copyAuth=document.createElement('button');copyAuth.type='button';copyAuth.textContent='テスト環境へログイン';
   const copyConsentLabel=document.createElement('label');
   copyConsentLabel.style.cssText='display:block;margin:9px 0;font-size:12px;';
@@ -205,10 +198,6 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   copyActionError.hidden=true;
   copyActionError.setAttribute('role','alert');
   const clearCopyActionError=()=>{copyActionError.hidden=true;copyActionError.textContent='';};
-  const copyLink=document.createElement('a');
-  copyLink.href=OSM_TEST_ORIGIN+'/oauth2/applications';copyLink.target='_blank';copyLink.rel='noopener noreferrer';
-  copyLink.textContent='テスト環境のOAuthアプリを確認・登録';
-  copyLink.style.cssText='display:block;font-size:12px;margin:5px 0;';
   const copySuccess=document.createElement('div');
   copySuccess.hidden=true;
   // Same green palette as the selected Matsudo world button.
@@ -218,7 +207,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   const copyResult=document.createElement('div');
   copyResult.style.cssText='margin-top:7px;font-size:12px;';
   copySuccess.append(copySuccessText,copyResult);
-  copyPane.append(copyInfo,copyPreview,copyStatus,copyClientLabel,copyAuth,copyLink,copyConsentLabel,copyExecute,copyActionError,copySuccess);
+  copyPane.append(copyInfo,copyPreview,copyStatus,copyAuth,copyConsentLabel,copyExecute,copyActionError,copySuccess);
   const savedTestLink=getOsmTestLink(item.osmType,String(item.osmId));
   let linkedTestTarget=savedTestLink;
   let copySource=null,copyBusy=false,copyCreated=Boolean(savedTestLink);
@@ -254,7 +243,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   });
   copyAuth.addEventListener('click',async()=>{
    clearCopyActionError();
-   try{await startOsmTestLogin(copyClient.value);}catch(e){copyStatus.textContent='認証開始エラー: '+e.message;}
+   try{await startOsmTestLogin();}catch(e){copyStatus.textContent='認証開始エラー: '+e.message;}
   });
   copyConsent.addEventListener('change',refreshCopyButtons);
   copyExecute.addEventListener('click',async()=>{
@@ -262,7 +251,9 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    clearCopyActionError();
    if(!copySource){copyStatus.textContent='まだコピー元を取得できていません。上の「テスト環境へコピー」を開き直して、コピー元データが表示されるか確認してください。';return;}
    if(!hasOsmTestToken()){
-    copyActionError.textContent='Komorebi側のOAuth認証が未完了です。\n\n「テスト環境OAuth Client ID」を入力してください。\n\nClient IDをお忘れの場合は、「テスト環境のOAuthアプリを確認・登録」からログインし、登録済みアプリのClient IDをコピーして入力してください。\n\nアプリを登録していない場合は、ログイン後に新規登録してください。\n\nテスト環境のアカウントをお持ちでない場合は、アカウントを作成してください。\n\nClient IDを入力したら、「テスト環境へログイン」を押してください。';
+    copyActionError.textContent=isOsmTestLoginConfigured()
+     ? 'Komorebi側のOAuth認証が未完了です。「テスト環境へログイン」を押して認証してください。'
+     : 'KomorebiのOAuth設定が未完了です。管理者によるGitHub Actions SecretsとPages公開設定が必要です。';
     copyActionError.hidden=false;
     return;
    }
@@ -335,18 +326,12 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   const testHelp=document.createElement('p');
   testHelp.textContent='本番の店舗IDは利用できません。テストサーバーにある階数未登録の店舗・施設IDを入力してください。送信対象はlevelタグのみです。';
   testHelp.style.cssText='font-size:12px;color:#4e655b;';
-  const testLink=document.createElement('a');
-  testLink.href=OSM_TEST_ORIGIN+'/oauth2/applications/new';
-  testLink.target='_blank';testLink.rel='noopener noreferrer';
-  testLink.textContent='テスト用OAuthアプリを登録（別タブ）';
-  testLink.style.cssText='display:block;font-size:12px;margin:6px 0;color:#205b7a;';
   const testField=(captionText,placeholder,value='')=>{
    const wrap=document.createElement('label');wrap.style.cssText='display:block;font-size:12px;font-weight:700;margin:8px 0;';
    const label=document.createElement('span');label.textContent=captionText;label.style.display='block';
    const input=document.createElement('input');input.value=value;input.placeholder=placeholder;input.style.cssText=inputStyle;
    wrap.append(label,input);testPane.appendChild(wrap);return input;
   };
-  const clientId=testField('開発用OAuth Client ID（認証後は再入力不要）','開発サーバーで登録したClient ID');
   const oauth=makeButton('テスト環境にログイン');
   const logout=makeButton('認証を解除');
   const targetType=document.createElement('select');targetType.style.cssText=inputStyle;
@@ -373,7 +358,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    loadTarget.disabled=busy;
   };
   oauth.addEventListener('click',async()=>{
-   try{await startOsmTestLogin(clientId.value);}catch(e){testStatus.textContent='認証開始エラー: '+e.message;}
+   try{await startOsmTestLogin();}catch(e){testStatus.textContent='認証開始エラー: '+e.message;}
   });
   logout.addEventListener('click',()=>{forgetOsmTestToken();testStatus.textContent='テスト用認証を解除しました。';syncTestControls();});
   async function loadTest(){
@@ -406,7 +391,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    }catch(e){testStatus.textContent='テスト送信失敗: '+e.message+'。本番OSMへの送信は行っていません。';}
    finally{busy=false;syncTestControls();}
   });
-  testPane.append(testHeading,testHelp,testLink,oauth,logout,typeLabel,targetId.parentElement,loadTarget,testDetails,consentLabel,send,testStatus);
+  testPane.append(testHeading,testHelp,oauth,logout,typeLabel,targetId.parentElement,loadTarget,testDetails,consentLabel,send,testStatus);
   review.appendChild(testPane);
 
   const confirm=makeButton('変更内容を確認',true),back=makeButton('編集に戻る');
