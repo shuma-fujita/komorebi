@@ -499,10 +499,12 @@ function setOsmEditorOpen(open,details=null){
    }catch(error){console.warn('ビル単独プレビュー生成失敗',error);}
    modeBeforeOsmEditor=renderMode;
    // Temporarily expose both existing viewports without changing the saved A/B preference.
+   for(const screen of ['A','B'])matsudoLabels[screen]?.setPreviewActive(true);
    setRenderMode('compare',{persist:false});
   }
  }else if(activeOsmEditors===0){
   editorBuildingPreview=null;
+  for(const screen of ['A','B'])matsudoLabels[screen]?.setPreviewActive(false);
   if(modeBeforeOsmEditor!==null){
    const restoreMode=modeBeforeOsmEditor;
    modeBeforeOsmEditor=null;
