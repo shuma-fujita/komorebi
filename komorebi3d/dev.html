@@ -611,9 +611,10 @@ import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/
 import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=matsudo-2km-ab-20261120";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-initializer-20261117";
 import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=matsudo-2km-ab-20261120";
-import {createMapBuildSteps} from "./maps/map-builder.js?v=food-storefront-20261119";
+import {createMapBuildSteps} from "./maps/map-builder.js?v=building-preview-source-20261120";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=osm-editor-sheet-fling-20261120";
+import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=building-isolated-preview-20261120";
+import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=building-preview-20261120";
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
 const $=id=>document.getElementById(id);
@@ -1033,18 +1034,23 @@ if(gameView){
 const LABEL_TAP_TOLERANCE_PX=8;
 const labelTapPointers=new Map();
 const activeGamePointers=new Set();
-let activeOsmEditors=0,modeBeforeOsmEditor=null;
-function setOsmEditorOpen(open){
+let activeOsmEditors=0,modeBeforeOsmEditor=null,editorBuildingPreview=null;
+function setOsmEditorOpen(open,details=null){
  const wasOpen=activeOsmEditors>0;
  activeOsmEditors=Math.max(0,activeOsmEditors+(open?1:-1));
  if(open){
   labelTapPointers.clear();inputManager.pause();
   if(!wasOpen){
+   editorBuildingPreview=null;
+   try{
+    editorBuildingPreview=createBuildingEditorPreview(details?.building,details?.shops,createMeshGeometry);
+   }catch(error){console.warn('ビル単独プレビュー生成失敗',error);}
    modeBeforeOsmEditor=renderMode;
    // Temporarily expose both existing viewports without changing the saved A/B preference.
    setRenderMode('compare',{persist:false});
   }
  }else if(activeOsmEditors===0){
+  editorBuildingPreview=null;
   if(modeBeforeOsmEditor!==null){
    const restoreMode=modeBeforeOsmEditor;
    modeBeforeOsmEditor=null;
@@ -1602,6 +1608,17 @@ function setLabelDebugVisible(visible){
 const matsudoMaps={old:null,new:null};
 let flightAltitude=0;
 function productRenderSnapshot(screen,frameId){
+ // The tenant editor renders just the selected building, not the helicopter or city.
+ // The game and camera rig stay untouched; closing the editor restores their snapshot.
+ if(activeWorld==='matsudo'&&activeOsmEditors>0&&editorBuildingPreview){
+  const canvas=screen==='A'?gameView?.canvasA:gameView?.canvasB;
+  const aspect=(canvas?.clientWidth||1)/Math.max(1,canvas?.clientHeight||1);
+  const camera=buildingEditorCamera(editorBuildingPreview,aspect);
+  const objects=editorBuildingPreview.geometry.map((geometry,i)=>({
+   id:'editor-building:'+i,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true
+  }));
+  return createMeshRenderSnapshot({frameId,camera:{...camera,fovDegrees:45,near:.1,far:2200},objects});
+ }
  const pose=cameraRig.getPose({x:game.x,z:game.z},0);
  if(activeWorld==='matsudo'){
   const ghostIndex=renderParts.findIndex(p=>p.name==='ghost-helicopter');
