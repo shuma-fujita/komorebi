@@ -269,7 +269,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   metadata.style.cssText='font-size:11px;color:#587166;margin:4px 0;';
   const rows=document.createElement('div');
   rows.setAttribute('aria-label','OSMタグ一覧');
-  const inputStyle='box-sizing:border-box;width:100%;min-width:0;padding:8px;border:1px solid #aabfb5;border-radius:7px;background:white;color:#152b25;font:13px/1.4 system-ui,-apple-system,sans-serif;';
+  const inputStyle='box-sizing:border-box;width:100%;min-width:0;padding:8px;border:1px solid #aabfb5;border-radius:7px;background:white;color:#152b25;font:16px/1.4 system-ui,-apple-system,sans-serif;';
   function addRow(key='',value='',editable=false){
    const row=document.createElement('div');row.className='komo-tag-row';
    const k=document.createElement('input');k.value=key;k.placeholder='タグ名';
@@ -278,6 +278,9 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    const v=document.createElement('input');v.value=value;v.placeholder='値';
    v.setAttribute('aria-label','タグの値');v.style.cssText=inputStyle;
    v.readOnly=!editable;
+   // Existing OSM keys cannot be renamed. Tapping the key focuses its value
+   // immediately so a single tap opens the iPhone software keyboard.
+   if(key&&editable)k.addEventListener('click',()=>v.focus());
    row.append(k,v);rows.appendChild(row);
   }
   const tagsHeader=document.createElement('p');
@@ -383,7 +386,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const confirm=makeButton('変更内容を確認',true),back=makeButton('編集に戻る');
   confirm.className='komo-action';back.className='komo-action komo-action-secondary';
   confirm.hidden=true;
-  let activeSource='production',testTags=null,testDraft=null,testReady=false,sourceRequest=0;
+  let activeSource='production',testTags=null,testDraft=null,productionDraft=null,testReady=false,sourceRequest=0;
   const sourceRow=document.createElement('div');
   sourceRow.style.cssText='display:flex;align-items:center;gap:10px;margin:13px 0;';
   const sourceHeading=document.createElement('strong');sourceHeading.textContent='表示データ';
@@ -428,14 +431,16 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    if(source!=='production'&&source!=='test')return;
    if(!review.hidden)back.click();
    if(activeSource==='test'&&testReady)testDraft=captureDraft();
+   if(activeSource==='production')productionDraft=captureDraft();
    activeSource=source;
    const request=++sourceRequest;
    for(const [name,button] of Object.entries(sourceButtons))
     button.setAttribute('aria-pressed',String(name===source));
    if(source==='production'){
     testReady=false;
-    renderTags(baseTags,false);
-    sourceStatus.textContent='本番OSM（読み取り専用）。本番には変更を送信しません。';
+    renderTags(productionDraft??baseTags,true);
+    add.hidden=true;
+    sourceStatus.textContent='本番OSMのタグを表示中。値はここで入力して試せますが、本番への送信・保存は行いません。実際の編集はテストOSMで行ってください。';
     return;
    }
    if(!linkedTestTarget){
