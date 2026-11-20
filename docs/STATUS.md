@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 編集ビル3Dの画面比率対応センタリング（main反映／実機未確認）：** `maps/building-editor-layout.js` に `BUILDING_PREVIEW_RATIO=0.3` を定義。`building-editor-preview.js` の従来50:50固定カメラ（全キャンバスの25%にビルを表示）を、画面上のプレビュー比率 `p` に応じた上部可視領域の中心 `p/2` に投影する方式へ変更。視野範囲の縦フィット計算も `p` から導出。`map-labels.js` のプレビュー領域・タグシート、`sheet-motion.js` のドラッグ境界、`editor-keyboard-layout.js` のキーボード処理も共通比率に統一。30:70／40:60／50:50／60:40を想定したカメラ中心・回転・ズームの回帰テストとキーボードサイズテストを追加。`dev.template.html`・生成済み`dev.html`のモジュール参照を更新。OSM本番／テスト送信・固定Engine・マップ原本は変更なし。**GitHub反映済み／Nodeテスト実行・GitHub Actions・Safari実機は未確認。**
+
+
 > **2026-11-21 OSMコピーOAuth未認証警告の表示位置修正（main反映／実機未確認）：** 「Komorebi側のOAuth認証が未完了です…」を従来のコピー途中ステータス表示から切り離し、「確認してコピーを作成」の直下に独立したエラー枠で表示。タグ追加後のテストOSM送信失敗と同じ `komo-osm-feedback[data-status-kind=error]` を使用。表示中だけ赤枠とし、認証再試行・コピー再試行で解除。認証・送信ロジックは変更なし。`building-tag-editor-theme.js` に非表示時のスタイルを追加、`map-labels.js` / `dev.template.html` / `dev.html` のキャッシュキー更新。**実機Safari・Actions・実OAuth未確認。**
 
 
