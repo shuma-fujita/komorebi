@@ -485,11 +485,25 @@ if(gameView){
 const LABEL_TAP_TOLERANCE_PX=8;
 const labelTapPointers=new Map();
 const activeGamePointers=new Set();
-let activeOsmEditors=0;
+let activeOsmEditors=0,modeBeforeOsmEditor=null;
 function setOsmEditorOpen(open){
+ const wasOpen=activeOsmEditors>0;
  activeOsmEditors=Math.max(0,activeOsmEditors+(open?1:-1));
- if(open){labelTapPointers.clear();inputManager.pause();}
- else if(activeOsmEditors===0&&!document.hidden)inputManager.resume();
+ if(open){
+  labelTapPointers.clear();inputManager.pause();
+  if(!wasOpen){
+   modeBeforeOsmEditor=renderMode;
+   // Temporarily expose both existing viewports without changing the saved A/B preference.
+   setRenderMode('compare',{persist:false});
+  }
+ }else if(activeOsmEditors===0){
+  if(modeBeforeOsmEditor!==null){
+   const restoreMode=modeBeforeOsmEditor;
+   modeBeforeOsmEditor=null;
+   setRenderMode(restoreMode,{persist:false});
+  }
+  if(!document.hidden)inputManager.resume();
+ }
 }
 function findLabelHit(x,y){
  if(activeWorld!=='matsudo')return null;
@@ -688,7 +702,9 @@ function paintDebugMap(){
  if(!miniMapVisible||!gameView)return;
  for(const screen of ['A','B']){
   if(renderMode!=='compare'&&renderMode!==screen)continue;
-  const source=screenConfigs[screen].map;
+  // During editor preview both viewports show the same new 2km baseline,
+  // without applying or claiming test-OSM changes yet.
+  const source=activeOsmEditors>0&&matsudoMaps.new?'new':screenConfigs[screen].map;
   gameView.paintMap({screen,worldId:activeWorld,playerX:game.x,playerZ:game.z,
    agents:activeWorld==='forest'?npcManager.agents:[],cafeX:CAFE_X,cafeZ:CAFE_Z,
    features:activeWorld==='matsudo'?(matsudoMaps[source]?.mapFeatures??null):null,
@@ -805,7 +821,9 @@ function productRenderSnapshot(screen,frameId){
  const pose=cameraRig.getPose({x:game.x,z:game.z},0);
  if(activeWorld==='matsudo'){
   const ghostIndex=renderParts.findIndex(p=>p.name==='ghost-helicopter');
-  const source=screenConfigs[screen].map;
+  // During editor preview both viewports show the same new 2km baseline,
+  // without applying or claiming test-OSM changes yet.
+  const source=activeOsmEditors>0&&matsudoMaps.new?'new':screenConfigs[screen].map;
   const objs=(matsudoMaps[source]?.meshes||[]).map((geometry,i)=>({id:'matsudo:'+source+':'+i,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true}));
   if(ghostIndex>=0)objs.push({id:'ghost-helicopter',geometry:engineMeshes[ghostIndex],position:[game.x,flightAltitude,game.z],yaw:game.angle,opacity:1,visible:true});
   return createMeshRenderSnapshot({frameId,camera:{eye:pose.eye,target:pose.target,fovDegrees:45,near:.1,far:2200},objects:objs});
@@ -1301,13 +1319,13 @@ async function reconfigureScreenRenderer(screen){
  else{rendererB=null;loadingB=null;okB=false;}
  if(isVisibleScreen(screen))await ensureScreen(screen);
 }
-function setRenderMode(mode){
+function setRenderMode(mode,{persist=true}={}){
  if(!['A','B','compare'].includes(mode))mode='B';
  renderMode=mode;
  const a=mode!=='B',b=mode!=='A';
  gameView?.setRenderMode(mode);
  if(miniMapVisible)paintDebugMap();
- try{localStorage.setItem('komorebi3d-render-mode-dev',mode)}catch(e){}
+ if(persist)try{localStorage.setItem('komorebi3d-render-mode-dev',mode)}catch(e){}
  if(gameView&&a&&!okA)ensureA();
  if(gameView&&b&&!okB)ensureB();
  publishGameState();
