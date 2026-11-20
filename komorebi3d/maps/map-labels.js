@@ -99,10 +99,23 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const handle=document.createElement('div');
   handle.setAttribute('role','button');
   handle.setAttribute('aria-label','下にスワイプして編集画面を閉じる');
-  handle.style.cssText='position:sticky;top:0;z-index:5;box-sizing:border-box;height:36px;margin:0 -16px 6px;padding:0 16px;display:flex;align-items:center;justify-content:center;background:#f8fcfa;border-radius:18px 18px 0 0;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;';
+  handle.setAttribute('tabindex','0');
+  handle.style.cssText='position:sticky;top:0;z-index:5;box-sizing:border-box;height:36px;margin:0 -16px 6px;padding:0 16px;display:flex;align-items:center;justify-content:center;background:#f8fcfa;border-radius:18px 18px 0 0;touch-action:none;overscroll-behavior:none;cursor:grab;user-select:none;-webkit-user-select:none;';
   const grip=document.createElement('span');
   grip.style.cssText='display:block;width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
   handle.appendChild(grip);
+  const gripClose=document.createElement('button');
+  gripClose.type='button';
+  gripClose.textContent='× 閉じる';
+  gripClose.setAttribute('aria-label','編集ボトムシートを閉じる');
+  gripClose.style.cssText='position:absolute;right:12px;top:3px;height:30px;padding:0 9px;border:1px solid #b8cbc0;border-radius:8px;background:#fff;color:#315749;font:700 12px system-ui;cursor:pointer;touch-action:manipulation;';
+  gripClose.addEventListener('pointerdown',event=>event.stopPropagation());
+  gripClose.addEventListener('click',event=>{event.stopPropagation();closeEditor();});
+  handle.appendChild(gripClose);
+  handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();closeEditor();}});
+  // Prevent the page's own touch scrolling on the grip when the embedding browser permits it.
+  // Host/OS pull-to-dismiss gestures may still take precedence outside the webpage.
+  handle.addEventListener('touchmove',event=>{if(event.cancelable)event.preventDefault();event.stopPropagation();},{passive:false});
   // Only the grip captures downward gestures; the editor body remains scrollable.
   let drag=null;
   handle.addEventListener('pointerdown',event=>{
