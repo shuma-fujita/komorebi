@@ -1,5 +1,6 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-auto-comment-20261113';
+import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
 export function parseOsmTagIgnore(source){
@@ -92,9 +93,13 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const baseTags={...(item.originalTags||item.tags||{})};
   const initial={...baseTags};
   const mask=document.createElement('div');
-  mask.style.cssText='position:absolute;inset:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(8,18,25,.72);pointer-events:auto;';
+  mask.style.cssText='position:absolute;inset:0;z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(8,18,25,.72);pointer-events:auto;';
   const form=document.createElement('form');
-  form.style.cssText='box-sizing:border-box;width:min(100%,430px);max-height:94%;overflow:auto;padding:16px;background:#f8fcfa;color:#18352f;border-radius:14px;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 10px 35px #06140d66;';
+  form.style.cssText='box-sizing:border-box;width:100%;max-height:85%;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:12px 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
+  const handle=document.createElement('div');
+  handle.setAttribute('aria-hidden','true');
+  handle.style.cssText='width:44px;height:5px;border-radius:99px;background:#a9b8b0;margin:0 auto 12px;';
+  form.appendChild(handle);
   const title=document.createElement('h3');
   title.textContent=item.name+'｜OSMタグの編集';
   title.style.cssText='font-size:17px;line-height:1.4;margin:0 0 7px;';
@@ -110,7 +115,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   copyPane.style.cssText='padding:10px;margin:8px 0;background:#edf4ee;border:1px solid #9db7a9;border-radius:9px;';
   const copyInfo=document.createElement('p');
   copyInfo.style.cssText='font-size:12px;margin:2px 0 9px;';
-  copyInfo.textContent='本番OSMから読み取り、元のタグと位置をテストサーバーへ新規コピーします。本番のデータは変更しません。';
+  copyInfo.textContent='本番OSMから読み取り、元のタグと位置をテストサーバーへ新規コピーします。本番のデータは変更しません。コピー済みの場合は同じテストIDを再利用します。';
   const copyPreview=document.createElement('pre');
   copyPreview.hidden=true;
   copyPreview.style.cssText='max-height:22vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:8px;border-radius:6px;background:#fff;color:#173d2e;font:12px/1.5 ui-monospace,monospace;';
@@ -157,7 +162,12 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   copyResult.style.cssText='margin-top:7px;font-size:12px;';
   copySuccess.append(copySuccessText,copyResult);
   copyPane.append(copyInfo,copyPreview,copyStatus,copyClientLabel,copyAuth,copyLink,copyConsentLabel,copyExecute,copySuccess);
-  let copySource=null,copyBusy=false,copyCreated=false;
+  const savedTestLink=getOsmTestLink(item.osmType,String(item.osmId));
+  let copySource=null,copyBusy=false,copyCreated=Boolean(savedTestLink);
+  if(savedTestLink){
+   copyButton.textContent='コピー済み';
+   copyStatus.textContent='テスト環境にコピー済みです。テストID '+savedTestLink.type+'/'+savedTestLink.id+' を再利用できます。';
+  }
   const refreshCopyButtons=()=>{
    copyButton.disabled=copyBusy;
    copyAuth.textContent=hasOsmTestToken()?'テスト環境へ再ログイン':'テスト環境へログイン';
@@ -197,7 +207,9 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    try{
     const result=await createOsmTestCopy(copySource);
     copyCreated=true;
-    copyStatus.textContent='';
+    const saved=saveOsmTestLink(item.osmType,String(item.osmId),result.type,result.id);
+    copyButton.textContent='コピー済み';
+    copyStatus.textContent=saved?'':'※ IDの端末保存に失敗しました。今回のIDを控えてください。';
     copySuccessText.textContent='✅ コピー完了！\nテスト用 '+result.type+'/'+result.id+'\nchangeset '+result.changesetId;
     copySuccess.hidden=false;
     const anchor=document.createElement('a');anchor.href=result.url;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.textContent='テスト環境でコピーを見る';
@@ -271,7 +283,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   for(const type of ['node','way','relation']){const option=document.createElement('option');option.value=type;option.textContent=type;targetType.appendChild(option);}
   const typeLabel=document.createElement('label');typeLabel.style.cssText='display:block;font-size:12px;font-weight:700;margin:8px 0;';typeLabel.textContent='テスト対象の要素種別';
   typeLabel.appendChild(targetType);
-  const targetId=testField('テストサーバーの店舗・施設ID','4365808698 または node/4365808698');
+  const targetId=testField('テストサーバーの店舗・施設ID','4365808698 または node/4365808698',savedTestLink?.id||'');
+  if(savedTestLink)targetType.value=savedTestLink.type;
   const loadTarget=makeButton('テスト対象を読み込む');
   const testDetails=document.createElement('pre');
   testDetails.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;background:#e8f0eb;border-radius:7px;padding:8px;';
@@ -355,7 +368,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     levelValue=null;
     if(eligible&&Object.keys(pending.changes).length===1&&Object.prototype.hasOwnProperty.call(pending.changes,'level')&&/^(?:[0-8])$/.test(String(pending.tags.level))){
      levelValue=Number(pending.tags.level);
-     testStatus.textContent='準備OK: level='+levelValue+'。開発用Client IDで認証し、テスト側の要素IDを指定してください。';
+     testStatus.textContent='準備OK: level='+levelValue+'。'+(savedTestLink?'コピー済みのテストIDを入力済みです。':'初回は上部の「テスト環境へコピー」から複製してください。')+' 認証後、テスト対象を読み込んでください。';
     }else if(eligible){
      testStatus.textContent='テスト送信には、追加する変更を level=0〜8 の1項目だけにしてください（1階は0）。';
     }
