@@ -40,13 +40,24 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  }
  let focusedKey=null,focusedHit=null,pendingKey=null,pendingSince=0,lastFocusAt=-Infinity;
  let tappedBuilding=null,lastCamera=null;
- // Shared display decision: camera/tap priority uses the same manual hide gate.
- let manuallyHiddenKey=null,hiddenAtCameraKey=null;
+ // A blank-space tap or second tap of the same building suppresses ALL
+ // camera-driven tags until a building is explicitly tapped again.
+ let tagHidden=false;
  function displayedSelection(){
-  if(manuallyHiddenKey!==null)return {key:null,hitPoint:null};
+  if(tagHidden)return {key:null,hitPoint:null};
   return tappedBuilding?{key:tappedBuilding.key,hitPoint:tappedBuilding.hitPoint}:
    {key:focusedKey,hitPoint:focusedHit};
  }
+ function setTagHidden(value){
+  tagHidden=Boolean(value);
+  if(tagHidden){
+   tappedBuilding=null;
+   for(const viewport of viewports)if(viewport.summary?.el)viewport.summary.el.style.display='none';
+   debugSvg.replaceChildren();
+  }
+ }
+ function isTagHidden(){return tagHidden;}
+
  function appendBuildingFeatures(features){
   if(!features?.length)return;
   for(const feature of features)if(feature.type==='building'&&feature.osmId!=null)buildings.push(feature);
@@ -55,7 +66,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  function setBuildingFeatures(features){
   buildings=[];
   focusedKey=null;focusedHit=null;pendingKey=null;pendingSince=0;
-  tappedBuilding=null;manuallyHiddenKey=null;hiddenAtCameraKey=null;
+  tappedBuilding=null;
   appendBuildingFeatures(features);
  }
  let debugAnchors=false;
@@ -807,11 +818,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    if(focusedKey===key)focusedHit=selected?.hitPoint??null;
    lastFocusAt=now;
   }
-  // A stable new camera building clears manual hiding; a brief/null ray does not.
-  if(manuallyHiddenKey!==null&&hiddenAtCameraKey!==null&&focusedKey!==null&&focusedKey!==hiddenAtCameraKey){
-   manuallyHiddenKey=null;hiddenAtCameraKey=null;
-   tappedBuilding=null;
-  }
+  // Do not clear tagHidden when the camera turns to another building.
   const {key:selectedKey,hitPoint:selectedHit}=displayedSelection();
   const index=selectedKey===null?-1:entries.findIndex(item=>item.kind==='building'&&item.osmType+':'+item.osmId===selectedKey);
   const focusedBuilding=selectedKey===null?null:buildings.find(b=>b.osmType+':'+b.osmId===selectedKey);
@@ -898,16 +905,12 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    const selected=pickBuildingAtScreen(buildings,lastCamera,clientX-rect.left,clientY-rect.top,rect.width,rect.height);
    if(!selected)return false;
    const key=selected.osmType+':'+selected.osmId;
-   if(manuallyHiddenKey===key){
-    // The same building reopens when explicitly tapped again.
-    manuallyHiddenKey=null;hiddenAtCameraKey=null;
-    tappedBuilding={key,hitPoint:selected.hitPoint};
-   }else if(displayedSelection().key===key){
-    // Toggle off irrespective of whether camera or tap originally showed it.
-    manuallyHiddenKey=key;hiddenAtCameraKey=focusedKey;
-    tappedBuilding=null;
+   if(!tagHidden&&displayedSelection().key===key){
+    // A second tap on the currently displayed building hides all tags.
+    setTagHidden(true);
    }else{
-    manuallyHiddenKey=null;hiddenAtCameraKey=null;
+    // Any actual building tap is the only way to lift suppression.
+    setTagHidden(false);
     tappedBuilding={key,hitPoint:selected.hitPoint};
    }
    return true;
@@ -915,5 +918,5 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   return false;
  }
  function clearTappedBuilding(){tappedBuilding=null;}
- return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,setPreviewActive,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,setPreviewActive,setTagHidden,isTagHidden,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
