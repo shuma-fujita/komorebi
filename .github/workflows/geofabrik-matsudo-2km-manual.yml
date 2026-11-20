@@ -1,11 +1,23 @@
-name: Generate Matsudo 2km JSON from Geofabrik (manual only)
+name: Generate Matsudo 2km JSON from saved Geofabrik PBF
 
-# Staging-only workflow. Never changes deployed map JSON or tile index.
+# A successful Geofabrik download starts this automatically; manual runs reuse a saved artifact.
+# Does not call Geofabrik, overwrite the deployed map, or trigger workflow A.
 on:
   workflow_dispatch:
+    inputs:
+      a_run_id:
+        description: 'Optional successful workflow A run ID (blank = latest available artifact)'
+        type: string
+        required: false
+  workflow_run:
+    workflows:
+      - Download Geofabrik Kanto OSM PBF (manual only)
+    types:
+      - completed
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: geofabrik-matsudo-2km-manual
@@ -14,11 +26,14 @@ concurrency:
 jobs:
   generate:
     name: Generate and validate Matsudo tile 0_0
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - name: Checkout Komorebi
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -46,20 +61,43 @@ jobs:
           print("PASS: tile 0_0 is exactly centered on the existing Matsudo origin")
           PY
 
-      - name: Download Geofabrik Kanto snapshot
+      - name: Restore saved Kanto PBF from workflow A artifact (no Geofabrik network)
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRIGGERED_A_RUN_ID: ${{ github.event.workflow_run.id }}
+          REQUESTED_A_RUN_ID: ${{ inputs.a_run_id }}
         run: |
           set -euo pipefail
-          mkdir -p "${RUNNER_TEMP}/geofabrik"
-          curl --fail --location --show-error --silent \
-            --retry 4 --retry-all-errors --retry-delay 8 \
-            --connect-timeout 20 --max-time 1500 \
-            --output "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf.part" \
-            https://download.geofabrik.de/asia/japan/kanto-latest.osm.pbf
-          mv "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf.part" \
-             "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf"
-          ls -lh "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf"
-
+          artifact="geofabrik-kanto-osm-pbf"
+          selected="${TRIGGERED_A_RUN_ID:-${REQUESTED_A_RUN_ID:-}}"
+          if [ -z "$selected" ]; then
+            echo "Manual run: looking for the newest successful workflow A artifact."
+            while IFS= read -r candidate; do
+              [ -n "$candidate" ] || continue
+              count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$candidate/artifacts" \
+                --jq "[.artifacts[] | select(.name == \"$artifact\" and .expired == false)] | length")"
+              if [ "$count" -gt 0 ]; then
+                selected="$candidate"
+                break
+              fi
+            done < <(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/geofabrik-kanto-pbf-manual.yml/runs?status=success&per_page=50" \
+              --jq '.workflow_runs[].id')
+          fi
+          if [ -z "$selected" ]; then
+            echo "::error::No retained workflow A artifact available. Run A once or provide a successful A run ID."
+            exit 1
+          fi
+          echo "Reusing workflow A run: $selected"
+          mkdir -p "$RUNNER_TEMP/geofabrik"
+          gh run download "$selected" --repo "$GITHUB_REPOSITORY" \
+            --name "$artifact" --dir "$RUNNER_TEMP/geofabrik"
+          (
+            cd "$RUNNER_TEMP/geofabrik"
+            sha256sum --check SHA256SUMS
+          )
+          test -s "$RUNNER_TEMP/geofabrik/kanto-latest.osm.pbf"
+          ls -lh "$RUNNER_TEMP/geofabrik/kanto-latest.osm.pbf"
       - name: Export only Matsudo 2km x 2km JSON
         shell: bash
         run: |
