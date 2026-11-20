@@ -22,6 +22,8 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   Object.assign(game.style,{position:originals.position,top:originals.top,left:originals.left,
    width:originals.width,height:originals.height,zIndex:originals.zIndex});
   if(sheetAtFocus)Object.assign(sheet.style,sheetAtFocus);
+  sheet.style.height=getSheetMode?.()==='full'?'100%':'50%';
+  sheet.style.maxHeight=getSheetMode?.()==='full'?'100%':'50%';
   sheetAtFocus=null;
   previewTouch.style.height=originals.previewHeight;
  }
@@ -46,7 +48,13 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   // Fixed elements use layout-viewport coordinates; keyboard visibility
   // comes from the visual viewport, whose offset can change on iOS scroll.
   game.style.top=vv.offsetTop+'px';
-  if(getSheetMode?.()!=='half')return;
+  if(getSheetMode?.()!=='half'){
+   sheet.style.position='relative';
+   sheet.style.top='';
+   sheet.style.bottom='';
+   sheet.style.maxHeight='100%';
+   return;
+  }
   const visible=keyboardSheetHeight(vv.height,previewHeight);
   sheet.style.position='absolute';
   sheet.style.top=previewHeight+'px';
@@ -84,7 +92,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  vv.addEventListener('resize',schedule);
  vv.addEventListener('scroll',schedule);
  window.addEventListener('resize',schedule);
- return {destroy(){
+ return {refresh:schedule,destroy(){
   sheet.removeEventListener('focusin',onFocusIn);
   sheet.removeEventListener('focusout',onFocusOut);
   vv.removeEventListener('resize',schedule);
