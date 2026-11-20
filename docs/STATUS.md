@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 テストOSM OAuthリダイレクト先固定（main反映／OAuth実認証・実機未確認）：** `maps/osm-test-api.js` の `redirectUri()` は従来 `location.origin+location.pathname` でアクセスした画面パスに依存していた。開発用OAuthアプリに登録するコールバックURLを **`https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html`** に固定（`OSM_TEST_REDIRECT_URI`）。PKCE `state` と `code_verifier` のセッション保持、認可リクエストの `redirect_uri`、トークン交換の `redirect_uri`、コールバックURL照合の各処理で同じ固定URLを使用。別ドメインから開始した場合はsessionStorageが引き継げないため説明付きエラーにする。OAuth認証後の `code/state` は従来どおり履歴から除去。`maps/map-labels.js` と `dev.html`/`dev.template.html` のキャッシュキー更新。テストOSM以外への送信・書込仕様は変更なし。**JS構文・静的連携確認PASS／実際の外部OAuth認証・テスト環境コピー・Safari実機・Actionsは未確認。**
+
+
 > **2026-11-21 OSMタグ編集画面の表示順設定を実装（main反映／実機未確認）：** 新規 `komorebi3d/maps/osm-tags.order` で `name`、`name:ja`、`name:en`、`name:*`、`level` の順に優先表示。未一致項目および同一ルール内は元のOSMタグ登録順を維持。`*` は任意長文字列で、`addr:*` や `*:name` のような将来のルール追加に対応。新規 `maps/osm-tag-order.js` にルール解析・安定優先順位ソート・初回1回の設定取得（取得失敗時は元の順）を実装。`maps/map-labels.js` の編集UI `renderTags()` のみでソートし、本番OSMとテストOSMの全タグを削除せず表示。OSM保存・認証・level追加制限・通常ゲームのビルタグ表示・A/B・3段階シート・ビル回転操作は変更なし。`dev.html` と `dev.template.html` のモジュールキャッシュキー更新。**JavaScript構文・優先順・元順維持・ワイルドカード・元データ不変の模擬テストPASS／実機Safari・Actions未確認。**
 
 
