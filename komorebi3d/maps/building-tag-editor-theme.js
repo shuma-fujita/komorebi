@@ -4,6 +4,7 @@ export function applyBuildingTagEditorTheme(form){
  form.classList.add('komo-tags-sheet');
  const style=document.createElement('style');
  style.textContent=`
+ .komo-tags-sheet [hidden]{display:none!important;}
  .komo-tags-sheet{
   background:linear-gradient(160deg,#152c26 0%,#091a17 82%)!important;
   color:#f4fff9!important;
