@@ -1,5 +1,5 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
-import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,isOsmTestLoginConfigured,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=pages-oauth-secret-20261121';
+import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=lazy-oauth-config-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=ratio-centered-20261121';
 import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=keyboard-canvas-top-20261121';
@@ -251,9 +251,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    clearCopyActionError();
    if(!copySource){copyStatus.textContent='まだコピー元を取得できていません。上の「テスト環境へコピー」を開き直して、コピー元データが表示されるか確認してください。';return;}
    if(!hasOsmTestToken()){
-    copyActionError.textContent=isOsmTestLoginConfigured()
-     ? 'Komorebi側のOAuth認証が未完了です。「テスト環境へログイン」を押して認証してください。'
-     : 'KomorebiのOAuth設定が未完了です。管理者によるGitHub Actions SecretsとPages公開設定が必要です。';
+    copyActionError.textContent='Komorebi側のOAuth認証が未完了です。「テスト環境へログイン」を押して認証してください。';
     copyActionError.hidden=false;
     return;
    }
