@@ -1,0 +1,43 @@
+name: Deploy Komorebi Pages (OAuth config from Secret)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: komorebi-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Validate generated development page
+        run: node komorebi3d/build-dev.mjs --check
+      - name: Prepare Pages artifact without writing Client ID to git
+        env:
+          OSM_TEST_CLIENT_ID: ${{ secrets.OSM_TEST_CLIENT_ID }}
+        run: |
+          mkdir -p _site
+          rsync -a --exclude='.git' --exclude='.github' --exclude='_site' ./ _site/
+          node scripts/write-osm-test-oauth-config.mjs _site/komorebi3d/maps/osm-test-client-config.js
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
