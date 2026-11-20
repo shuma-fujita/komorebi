@@ -88,6 +88,10 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  let editor=null,editorMotion=null,editorScrollGuard=null,editorPreviewGestures=null,previewActive=false;
  function setPreviewActive(value){
   previewActive=Boolean(value);
+  // The OSM label layer is independent from the editor mask (a host child).
+  // Hide the entire layer, including previously created neon-tag items,
+  // for BOTH A/B viewports while the isolated building preview is active.
+  layer.style.display=previewActive?'none':'';
   if(previewActive){
    for(const viewport of viewports)if(viewport.summary?.el)viewport.summary.el.style.display='none';
    debugSvg.replaceChildren();
