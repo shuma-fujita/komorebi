@@ -131,31 +131,8 @@ export function mountRuntimeStatusPanel(root,api){
  const pre=document.createElement('pre');pre.id='map-debug-log';pre.textContent='松戸で地図を読み込むとログを表示';
  const preStyle='white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;max-height:230px;overflow:auto;font-size:11px;line-height:1.5;margin:0;';
  summary.style.cssText=preStyle;pre.style.cssText=preStyle;
- const diagnosticHeading=document.createElement('div');
- diagnosticHeading.textContent='🔎 Overpass手動接続（松戸入場時はAPI通信なし）';
- diagnosticHeading.style.cssText='font-size:12px;font-weight:700;margin:10px 0 5px;';
- const serverLabel=document.createElement('label');
- serverLabel.textContent='接続先：';
- serverLabel.style.cssText='display:block;font-size:12px;margin-bottom:6px;';
- const serverSelect=document.createElement('select');
- for(const [value,name] of [['coffee','Private Coffee'],['official','Overpass API (overpass-api.de)']]){
-  const option=document.createElement('option');option.value=value;option.textContent=name;serverSelect.appendChild(option);
- }
- serverLabel.appendChild(serverSelect);
- const fetchLive=document.createElement('button');fetchLive.type='button';fetchLive.textContent='最新250m地図を手動取得';
- fetchLive.style.cssText='font-size:12px;margin:0 6px 6px 0;padding:5px 8px;';
- const checkConnection=document.createElement('button');
- checkConnection.type='button';checkConnection.textContent='接続確認';
- const checkBuildings=document.createElement('button');
- checkBuildings.type='button';checkBuildings.textContent='建物のみ取得';
- for(const button of [checkConnection,checkBuildings])button.style.cssText='font-size:12px;margin:0 6px 6px 0;padding:5px 8px;';
- const diagnosticCopy=document.createElement('button');diagnosticCopy.type='button';diagnosticCopy.textContent='診断ログをコピー';
- diagnosticCopy.style.cssText='font-size:12px;margin:0 6px 6px 0;padding:5px 8px;';
- const diagnosticOutput=document.createElement('pre');
- diagnosticOutput.id='overpass-diagnostic';
- diagnosticOutput.textContent='ボタンを押したときだけ軽い問い合わせを行います';
- diagnosticOutput.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.5;margin:0;';
- diagnostic.append(title,copy,toggle,summaryLabel,summary,recentLabel,pre,diagnosticHeading,serverLabel,checkConnection,checkBuildings,fetchLive,diagnosticCopy,diagnosticOutput);
+ // Live 500m and Overpass controls are retired; only saved 2km maps are compared.
+ diagnostic.append(title,copy,toggle,summaryLabel,summary,recentLabel,pre);
  (root.querySelector('#map-source-status')||root.querySelector('#label-status')||root).after(diagnostic);
  let fullLog='',recentLog=pre.textContent,showFull=false;
  const refreshLog=()=>{pre.textContent=showFull?fullLog:recentLog;};
@@ -169,37 +146,8 @@ export function mountRuntimeStatusPanel(root,api){
  catch(_){copy.textContent='テキストを長押ししてコピー';onToggle();}};
  copy.addEventListener('click',onCopy);
  toggle.addEventListener('click',onToggle);
- let diagnosticRunning=false;
- const runDiagnostic=async kind=>{
-  if(diagnosticRunning||typeof api.runMapDiagnostic!=='function')return;
-  diagnosticRunning=true;
-  checkConnection.disabled=checkBuildings.disabled=fetchLive.disabled=serverSelect.disabled=true;
-  try{await api.runMapDiagnostic(kind,serverSelect.value);}
-  catch(error){if(!diagnosticOutput.textContent.includes('失敗'))diagnosticOutput.textContent+='\n診断失敗: '+String(error.message||error);}
-  finally{diagnosticRunning=false;checkConnection.disabled=checkBuildings.disabled=fetchLive.disabled=serverSelect.disabled=false;}
- };
- const onFetchLive=async()=>{
-  if(diagnosticRunning||typeof api.fetchManualOsmMap!=='function')return;
-  diagnosticRunning=true;
-  checkConnection.disabled=checkBuildings.disabled=fetchLive.disabled=serverSelect.disabled=true;
-  try{
-   diagnosticOutput.textContent='手動OSM 250m 取得開始 / '+serverSelect.options[serverSelect.selectedIndex].text+' / 上限120秒\n詳細は📌取得結果・重要ログに表示';
-   await api.fetchManualOsmMap(serverSelect.value);
-   diagnosticOutput.textContent+='\n処理終了。📌取得結果・重要ログを確認してください';
-  }catch(error){diagnosticOutput.textContent+='\n手動取得失敗: '+String(error.message||error);}
-  finally{diagnosticRunning=false;checkConnection.disabled=checkBuildings.disabled=fetchLive.disabled=serverSelect.disabled=false;}
- };
- const onFetch=()=>void onFetchLive();
- fetchLive.addEventListener('click',onFetch);
- const onPing=()=>void runDiagnostic('ping');
- const onBuildings=()=>void runDiagnostic('buildings');
- const onDiagnosticCopy=async()=>{try{await navigator.clipboard.writeText(diagnosticOutput.textContent||'');diagnosticCopy.textContent='コピーしました';}catch(_){diagnosticCopy.textContent='ログを長押ししてコピー';}};
- diagnosticCopy.addEventListener('click',onDiagnosticCopy);
- checkConnection.addEventListener('click',onPing);
- checkBuildings.addEventListener('click',onBuildings);
  const fields=new Map(Array.from(root.querySelectorAll('[id]'),node=>[node.id,node]));
  fields.set('map-debug-summary',summary);
- fields.set('overpass-diagnostic',diagnosticOutput);
  const render=event=>{
   if(event.type!=='status')return;
   if(event.id==='map-debug-full-log'){fullLog=event.value; if(showFull)refreshLog(); return;}
@@ -209,7 +157,7 @@ export function mountRuntimeStatusPanel(root,api){
  };
  for(const [id,value] of Object.entries(api.getState().status ?? {}))render({type:'status',id,value});
  const unsubscribe=api.subscribe(render);
- return ()=>{unsubscribe();copy.removeEventListener('click',onCopy);toggle.removeEventListener('click',onToggle);checkConnection.removeEventListener('click',onPing);checkBuildings.removeEventListener('click',onBuildings);fetchLive.removeEventListener('click',onFetch);diagnosticCopy.removeEventListener('click',onDiagnosticCopy);diagnostic.remove();};
+ return ()=>{unsubscribe();copy.removeEventListener('click',onCopy);toggle.removeEventListener('click',onToggle);diagnostic.remove();};
 }
 
 export function mountTestControlsPanel(root,api){
@@ -226,7 +174,7 @@ export function mountTestControlsPanel(root,api){
   npcRenderDistance:Number(find('npc-render-distance')?.defaultValue ?? 70),
   renderMode:find('mode-a')?.getAttribute('aria-pressed')==='true'?'A':
    find('mode-compare')?.getAttribute('aria-pressed')==='true'?'compare':'B',
-  screens:{A:{map:'old',engine:'B'},B:{map:'old',engine:'B'}},
+  screens:{A:{map:'old',engine:'B'},B:{map:'new',engine:'B'}},
   mapVisible:find('map-toggle')?.getAttribute('aria-pressed')==='true',
   labelDebugVisible:false
  });
