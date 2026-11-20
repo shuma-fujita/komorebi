@@ -196,6 +196,14 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   copyAuth.style.cssText=copyBtnStyle;
   copyExecute.style.cssText=copyBtnStyle+'background:#236c56;color:white;';
   copyExecute.disabled=false;
+  // Show actionable OAuth failures directly below the copy action, using
+  // the same red feedback treatment as a failed test-OSM submission.
+  const copyActionError=document.createElement('p');
+  copyActionError.className='komo-osm-feedback';
+  copyActionError.dataset.statusKind='error';
+  copyActionError.hidden=true;
+  copyActionError.setAttribute('role','alert');
+  const clearCopyActionError=()=>{copyActionError.hidden=true;copyActionError.textContent='';};
   const copyLink=document.createElement('a');
   copyLink.href=OSM_TEST_ORIGIN+'/oauth2/applications/new';copyLink.target='_blank';copyLink.rel='noopener noreferrer';
   copyLink.textContent='テスト環境のOAuthアプリ登録';
@@ -209,7 +217,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   const copyResult=document.createElement('div');
   copyResult.style.cssText='margin-top:7px;font-size:12px;';
   copySuccess.append(copySuccessText,copyResult);
-  copyPane.append(copyInfo,copyPreview,copyStatus,copyClientLabel,copyAuth,copyLink,copyConsentLabel,copyExecute,copySuccess);
+  copyPane.append(copyInfo,copyPreview,copyStatus,copyClientLabel,copyAuth,copyLink,copyConsentLabel,copyExecute,copyActionError,copySuccess);
   const savedTestLink=getOsmTestLink(item.osmType,String(item.osmId));
   let linkedTestTarget=savedTestLink;
   let copySource=null,copyBusy=false,copyCreated=Boolean(savedTestLink);
@@ -244,13 +252,19 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    finally{copyBusy=false;refreshCopyButtons();if(copySource&&!copyCreated&&!hasOsmTestToken())copyStatus.textContent+='\n※ テストサイトにログイン済みでも、KomorebiからのOAuth認証は別途必要です。';}
   });
   copyAuth.addEventListener('click',async()=>{
+   clearCopyActionError();
    try{await startOsmTestLogin(copyClient.value);}catch(e){copyStatus.textContent='認証開始エラー: '+e.message;}
   });
   copyConsent.addEventListener('change',refreshCopyButtons);
   copyExecute.addEventListener('click',async()=>{
    if(copyBusy||copyCreated)return;
+   clearCopyActionError();
    if(!copySource){copyStatus.textContent='まだコピー元を取得できていません。上の「テスト環境へコピー」を開き直して、コピー元データが表示されるか確認してください。';return;}
-   if(!hasOsmTestToken()){copyStatus.textContent='Komorebi側のOAuth認証が未完了です。テストサイトでログインするだけでなく、開発用OAuthアプリを登録し、Client IDを入力して「テスト環境へログイン」を押してください。';return;}
+   if(!hasOsmTestToken()){
+    copyActionError.textContent='Komorebi側のOAuth認証が未完了です。テストサイトでログインするだけでなく、開発用OAuthアプリを登録し、Client IDを入力して「テスト環境へログイン」を押してください。';
+    copyActionError.hidden=false;
+    return;
+   }
    if(!copyConsent.checked){copyStatus.textContent='コピー元の内容を確認して、実際にテスト環境へ複製するチェックを入れてください。';return;}
    copyBusy=true;copyStatus.textContent='テストサーバーへコピー作成中…';refreshCopyButtons();
    try{
