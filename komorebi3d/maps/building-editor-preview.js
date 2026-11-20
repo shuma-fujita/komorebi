@@ -44,11 +44,14 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry){
 // The editor sheet covers the lower 50% of each full-height 3D viewport.
 // Keep the building centered at x=50%, y=25% of the entire canvas,
 // i.e. the visual center of the uncovered upper half.
-export function buildingEditorCamera(preview,aspect){
+export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={}){
  const {centerX:x,centerZ:z,width,depth,height}=preview;
  const safeAspect=Math.max(.24,Math.min(2,Number.isFinite(aspect)?aspect:1));
  const center=[x,height*.5,z];
- const direction=[.65,.48,.75],directionLength=Math.hypot(...direction);
+ // Rotate the camera around the vertical axis only. Pitch stays unchanged.
+ const angle=Math.atan2(.65,.75)+(Number.isFinite(yaw)?yaw:0);
+ const direction=[Math.sin(angle)*Math.hypot(.65,.75),.48,Math.cos(angle)*Math.hypot(.65,.75)];
+ const directionLength=Math.hypot(...direction);
  const backward=direction.map(v=>v/directionLength);
  const forward=backward.map(v=>-v);
  const right=[-forward[2],0,forward[0]];
@@ -80,6 +83,8 @@ export function buildingEditorCamera(preview,aspect){
   return true;
  }
  for(let i=0;i<30&&!fits(distance);i++)distance*=1.2;
+ // Default distance fits all corners; pinch modifies only distance.
+ distance/=Math.max(.55,Math.min(3,Number.isFinite(zoom)?zoom:1));
  const offset=distance*tanHalf*.5;
  const eye=center.map((v,i)=>v+backward[i]*distance-up[i]*offset);
  const target=center.map((v,i)=>v-up[i]*offset);
