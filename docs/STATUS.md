@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-20 編集ボトムシート50:50・グリップ下スワイプ（main反映／Safari実機未確認）：** `map-labels.js` の編集フォームをゲーム領域の下半分 `height/max-height:50%` に固定し、ゲーム画面を上半分に残す。ボトムシート上端の36pxグリップ領域だけがPointer Eventsドラッグを受け、下方向90pxまたはシート高さ25%の小さい方以上で閉じる。満たさない操作は位置を戻し、本文スクロールと分離。背景マスクを薄くし、編集中のヘリ入力停止・閉じた後の解除は既存処理を維持。`dev.template.html`／`dev.html` のSafariキャッシュキー更新。**静的配線確認のみ。GitHub Actions／iPhone Safari実機で高さ・タッチ・スクロール・閉じ操作のPASSは未確認。**
+
 > **2026-11-20 OSM編集比較機能・第一工程（main反映／実機未確認）：** テナント編集画面を画面下端のスクロール可能なボトムシートに変更。`maps/osm-test-links.js` を追加し、本番OSMのnode/way IDと実際に作成成功したテストOSM IDの対応をブラウザ内localStorageへ保存、次回編集時にコピー済み表示・テスト対象ID自動入力する。コピー／本番書込の安全条件や認証手順は変更なし。`map-labels.js` のSafariキャッシュキーを開発テンプレート・生成HTMLとも更新。**A/B比較モードの追加、テストlevelを使った3Dメッシュ差分反映、「3Dに反映」ボタンは未実装。** 静的配線確認のみ、Actions・Safari実機未確認。テストID対応は端末・ブラウザごとで、削除すると消える。
 
 > **2026-11-19 Overpass手動通信診断ワークフロー追加（未実行）：** `.github/workflows/overpass-network-diagnostic.yml` に `workflow_dispatch` のみ、`contents: read` の診断を追加。GitHubホストランナー送信元IPv4（AWS checkip）、OSM 2ホストのDNS A/AAAA、IPv4/IPv6別の GET `/api/status` および軽量 POST `/api/interpreter` のHTTPコード・リモートIP・接続時間・curl終了コードをログ出力。最大5分・`matsudo.json` 不変更・既存の地図取得Actionsと独立。診断ワークフローが緑色でもAPI成功を意味しない。手動実行リンク `https://github.com/shuma-fujita/komorebi/actions/workflows/overpass-network-diagnostic.yml`。結果のIP帯制限はこの診断のみでは確定できず、必要なら運営確認。
