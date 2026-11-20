@@ -24,24 +24,39 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   surfaceWidth:surface.style.width,surfaceHeight:surface.style.height,
   surfaceMaxWidth:surface.style.maxWidth,surfaceFlex:surface.style.flex};
  let focused=false,active=false,frame=0,anchorFrame=0,gameHeight=0,previewHeight=0,retainedHeight=false;
+ let anchorTop=0,anchorScroll=0,anchorUntil=0;
  let sheetAtFocus=null;
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
+ // Relative positioning keeps the editor visually in place after
+ // releasing fixed positioning, even if Safari reverses the page scroll.
+ function reanchor(){
+  if(!retainedHeight||!mask.isConnected)return;
+  const rect=game.getBoundingClientRect();
+  const offset=anchorTop-rect.top;
+  if(Math.abs(offset)>.5)game.style.top=((parseFloat(game.style.top)||0)+offset)+'px';
+  sheet.scrollTop=anchorScroll;
+ }
  function restore(preserveViewport=true){
+  if(anchorFrame){cancelAnimationFrame(anchorFrame);anchorFrame=0;}
   if(!active){
    if(!preserveViewport&&retainedHeight){
-    game.style.height=originals.height;
     retainedHeight=false;
+    anchorUntil=0;
+    game.style.position=originals.position;
+    game.style.top=originals.top;
+    game.style.height=originals.height;
    }
    return;
   }
   active=false;
+  anchorTop=game.getBoundingClientRect().top;
+  anchorScroll=sheet.scrollTop;
   retainedHeight=preserveViewport;
-  // The Done key should dismiss the keyboard, not jump the page or resize
-  // the game. Keep the game height measured before the keyboard opened.
-  const topBefore=game.getBoundingClientRect().top;
-  const tagScroll=sheet.scrollTop;
-  Object.assign(game.style,{position:originals.position,top:originals.top,left:originals.left,
-   width:originals.width,height:preserveViewport?gameHeight+'px':originals.height,zIndex:originals.zIndex});
+  anchorUntil=preserveViewport?performance.now()+700:0;
+  Object.assign(game.style,{position:preserveViewport?'relative':originals.position,
+   top:preserveViewport?'0px':originals.top,left:originals.left,
+   width:originals.width,height:preserveViewport?gameHeight+'px':originals.height,
+   zIndex:originals.zIndex});
   Object.assign(surface.style,{position:originals.surfacePosition,inset:originals.surfaceInset,
    width:originals.surfaceWidth,height:originals.surfaceHeight,
    maxWidth:originals.surfaceMaxWidth,flex:originals.surfaceFlex});
@@ -50,21 +65,21 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   sheet.style.maxHeight=getSheetMode?.()==='full'?'100%':(BUILDING_SHEET_RATIO*100)+'%';
   sheetAtFocus=null;
   previewTouch.style.height=originals.previewHeight;
-  // Undo the viewport scroll introduced by swapping fixed -> in-flow.
-  // Do not reset sheet.scrollTop: preserve the edited tag's position.
-  function keepViewportAnchor(){
-   if(!mask.isConnected)return;
-   const delta=game.getBoundingClientRect().top-topBefore;
-   if(Math.abs(delta)>1)window.scrollBy(0,delta);
-   sheet.scrollTop=tagScroll;
-  }
   if(preserveViewport){
-   keepViewportAnchor();
+   reanchor();
    anchorFrame=requestAnimationFrame(()=>{
     anchorFrame=0;
-    if(!active)keepViewportAnchor();
+    reanchor();
    });
   }
+ }
+ function onViewportChange(){
+  if(!active&&retainedHeight&&performance.now()<anchorUntil){
+   if(!anchorFrame)anchorFrame=requestAnimationFrame(()=>{
+    anchorFrame=0;
+    reanchor();
+   });
+  }else schedule();
  }
  function update(){
   frame=0;
@@ -126,6 +141,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   if(!isField(event.target)||!sheet.contains(event.target))return;
   focused=true;
   if(anchorFrame){cancelAnimationFrame(anchorFrame);anchorFrame=0;}
+  anchorUntil=0;
   schedule();
  }
  function onFocusOut(){
@@ -139,15 +155,17 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  }
  sheet.addEventListener('focusin',onFocusIn);
  sheet.addEventListener('focusout',onFocusOut);
- vv.addEventListener('resize',schedule);
- vv.addEventListener('scroll',schedule);
- window.addEventListener('resize',schedule);
+ vv.addEventListener('resize',onViewportChange);
+ vv.addEventListener('scroll',onViewportChange);
+ window.addEventListener('resize',onViewportChange);
+ window.addEventListener('scroll',onViewportChange,{passive:true});
  return {refresh:schedule,destroy(){
   sheet.removeEventListener('focusin',onFocusIn);
   sheet.removeEventListener('focusout',onFocusOut);
-  vv.removeEventListener('resize',schedule);
-  vv.removeEventListener('scroll',schedule);
-  window.removeEventListener('resize',schedule);
+  vv.removeEventListener('resize',onViewportChange);
+  vv.removeEventListener('scroll',onViewportChange);
+  window.removeEventListener('resize',onViewportChange);
+  window.removeEventListener('scroll',onViewportChange);
   if(frame)cancelAnimationFrame(frame);
   if(anchorFrame)cancelAnimationFrame(anchorFrame);
   restore(false);
