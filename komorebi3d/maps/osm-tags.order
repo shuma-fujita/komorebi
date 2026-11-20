@@ -1,0 +1,11 @@
+# OSM editor tag display priority (first matching rule wins).
+# One key pattern per line. * matches any number of characters.
+# Unmatched tags keep their original source order and follow matched tags.
+# Tags within the same rule also keep their original order.
+# This file controls display order only; it never hides or changes tags.
+
+name
+name:ja
+name:en
+name:*
+level
