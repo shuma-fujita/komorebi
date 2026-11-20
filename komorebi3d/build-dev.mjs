@@ -1,65 +1,61 @@
 #!/usr/bin/env node
-// The game source of truth is dev.html. This script builds ONLY the UI mock.
-// It must never generate or overwrite dev.html.
+// Generate ONLY mock.html from the checked-in, canonical dev.html UI.
+// Never write dev.html or run any game engine in the mock.
 import {readFileSync,writeFileSync} from 'node:fs';
 import {dirname,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
+
 const dir=dirname(fileURLToPath(import.meta.url));
-const modeArgs=process.argv.filter(arg=>arg.startsWith('--mode='));
-if(modeArgs.length>1)throw Error('Specify --mode only once');
-const mode=modeArgs[0]?.slice('--mode='.length)??'mock';
-if(mode!=='mock')throw Error('Only --mode=mock is supported; dev.html is edited and published directly');
-const panelIds=['build','game','test','runtime'];
-const variant=id=>id==='game'?'game.mock':id;
-const names=['common',...panelIds.map(variant),'layout'];
 const read=path=>readFileSync(join(dir,path),'utf8');
-const split=css=>{
- const pos=css.indexOf('@media ');
- return pos<0?[css.trim(),'']:[css.slice(0,pos).trim(),css.slice(pos).trim()];
-};
-const cssPath=name=>name==='common'?'common.css':name==='layout'?'layout.css':'panels/'+name+'.css';
-const commonCSS=read('common.css');
-const pieces=names.map(name=>split(name==='common'?commonCSS:read(cssPath(name))));
-const css=[...pieces.map(x=>x[0]),...pieces.map(x=>x[1]),read('theme.css').trim()].filter(Boolean).join('\n\n');
-let html=read('mock.template.html');
-if(!html.includes('<!-- @page-shell -->'))throw Error('Missing shared page shell marker');
-let shell=read('page-shell.html').trimEnd();
-shell=shell.replace('/* @heading-attrs */','');
-if(shell.includes('/* @heading-attrs */'))throw Error('Unresolved shared page shell marker');
-html=html.replace('<!-- @page-shell -->',shell);
-if(!html.includes('/* @component-styles */'))throw Error('Missing CSS placeholder');
-html=html.replace('/* @component-styles */',css);
-for(const id of panelIds){
- const marker='<!-- @panel:'+id+' -->';
- if(!html.includes(marker))throw Error('Missing panel '+id);
- let panelHtml=read('panels/'+variant(id)+'.html').trimEnd();
- if(id==='runtime'){
-  if(!panelHtml.includes('<!-- @launch-diagnostic -->'))throw Error('Missing runtime diagnostic marker');
-  panelHtml=panelHtml.replace('<!-- @launch-diagnostic -->','');
- }
- if(id==='game'){
-  const gameFrame=read('panels/game.frame.html').trimEnd();
-  if(!gameFrame.includes('<!-- @game-view -->'))throw Error('Missing shared game view marker');
-  panelHtml=gameFrame.replace('<!-- @game-view -->',panelHtml);
-  const touchMarker='<!-- @game-touch -->';
-  if(!panelHtml.includes(touchMarker))throw Error('Missing shared touch layer marker');
-  panelHtml=panelHtml.replace(touchMarker,read('panels/game.touch.html').trimEnd());
- }
- if(id==='build'){
-  const real='id="dev-engine">56bb2bc</code>';
-  if(!panelHtml.includes(real))throw Error('Missing mock Engine label');
-  panelHtml=panelHtml.replace(real,'id="dev-engine">000000</code>');
- }
- html=html.replace(marker,panelHtml);
-}
-if(html.includes('<!-- @page-shell -->'))throw Error('Unresolved shared page shell');
-if(html.includes('<!-- @game-view -->'))throw Error('Unresolved shared game view');
-if(html.includes('<!-- @game-touch -->'))throw Error('Unresolved shared touch layer');
-if(html.includes('<!-- @panel:')||html.includes('/* @component-styles */'))throw Error('Unresolved placeholder');
+const modeArgs=process.argv.filter(x=>x.startsWith('--mode='));
+if(modeArgs.length>1)throw Error('Specify --mode only once');
+if(modeArgs[0]&&modeArgs[0]!=='--mode=mock')
+ throw Error('Only --mode=mock is supported; dev.html is never generated');
+if(process.argv.some(x=>!['--mode=mock','--check'].includes(x)&&!x.endsWith('/build-dev.mjs')))
+ throw Error('Unknown build option');
+
+const source=read('dev.html');
+const title='<title>Komorebi 3D DEV｜NPC表示限界テスト</title>';
+const bodyStart=source.indexOf('<body>');
+const scriptStart=source.indexOf('<script',bodyStart);
+if(bodyStart<0||scriptStart<bodyStart||!source.includes(title))
+ throw Error('Canonical dev.html layout changed: cannot safely derive mock');
+
+const mockStyle=read('panels/game.mock.css').trim();
+let head=source.slice(0,bodyStart).replace(title,'<title>Komorebi 3D｜4パネルモック</title>');
+if(!head.includes('</style>'))throw Error('Canonical dev.html lacks inline CSS');
+head=head.replace('</style>', '\n\n/* Mock-only viewport: replace 3D rendering with a black dummy. */\n'+mockStyle+'\n'+
+ '.mock-root .landscape-game .play-surface,.mock-root .play-surface .screen-view{background:#000}\n</style>');
+
+let body=source.slice(bodyStart,scriptStart);
+const gameStart=body.indexOf('<div class="landscape-game" data-panel-id="game">');
+const helpStart=body.indexOf('<button type="button" id="game-help-button"',gameStart);
+if(gameStart<0||helpStart<=gameStart||body.indexOf('<div class="landscape-game" data-panel-id="game">',gameStart+1)!==-1)
+ throw Error('Cannot uniquely identify real game viewport');
+const mockViewport='<div class="landscape-game" data-panel-id="game">'+
+ '<div class="play-surface" id="play-surface" aria-label="ゲーム画面（描画なし）"></div>'+
+ read('panels/game.touch.html').trimEnd();
+body=body.slice(0,gameStart)+mockViewport+body.slice(helpStart);
+const diagnostic=read('dev-launch-diagnostic.html').trimEnd();
+if(!body.includes(diagnostic))throw Error('Missing dev-only launch diagnostic');
+body=body.replace(diagnostic,'');
+const engineLabel='id="dev-engine">56bb2bc</code>';
+if(!body.includes(engineLabel))throw Error('Missing fixed Engine label');
+body=body.replace(engineLabel,'id="dev-engine">000000</code>');
+const heading='<div class="site-heading" style="display:flex;justify-content:space-between">';
+if(!body.includes(heading))throw Error('Missing dev-only heading layout');
+body=body.replace(heading,'<div class="site-heading">');
+if(body.includes('<canvas')||body.includes('<script')||body.includes('id="views"'))
+ throw Error('Mock must contain no game canvases, viewports or game scripts');
+if((body.match(/id="play-surface"/g)||[]).length!==1)
+ throw Error('Mock must have exactly one dummy game surface');
+
+const result=head+body+'<script type="module" src="./mock-ui.js"></script></body></html>\n';
 const output=join(dir,'mock.html');
 if(process.argv.includes('--check')){
- let actual='';
- try{actual=readFileSync(output,'utf8')}catch{}
- if(actual!==html){console.error('mock.html out of sync; run node komorebi3d/build-dev.mjs --mode=mock');process.exitCode=1;}
- else console.log('mock.html sync: OK');
-}else{writeFileSync(output,html,'utf8');console.log('Updated mock.html');}
+ if(read('mock.html')!==result){console.error('mock.html is out of sync: run node komorebi3d/build-dev.mjs');process.exitCode=1;}
+ else console.log('mock.html matches dev.html shared UI: OK (no game canvas)');
+}else{
+ writeFileSync(output,result,'utf8');
+ console.log('Updated mock.html from canonical dev.html UI (black non-rendering game surface)');
+}
