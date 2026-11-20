@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 OSMコピーOAuth未認証警告の表示位置修正（main反映／実機未確認）：** 「Komorebi側のOAuth認証が未完了です…」を従来のコピー途中ステータス表示から切り離し、「確認してコピーを作成」の直下に独立したエラー枠で表示。タグ追加後のテストOSM送信失敗と同じ `komo-osm-feedback[data-status-kind=error]` を使用。表示中だけ赤枠とし、認証再試行・コピー再試行で解除。認証・送信ロジックは変更なし。`building-tag-editor-theme.js` に非表示時のスタイルを追加、`map-labels.js` / `dev.template.html` / `dev.html` のキャッシュキー更新。**実機Safari・Actions・実OAuth未確認。**
+
+
 > **2026-11-21 ビルタグ編集30:70へ変更（main反映／Safari実機未確認）：** A/Bビルプレビュー30%、タグ編集70%へ変更。`map-labels.js` のプレビュー操作面とフォーム初期高さ、`sheet-motion.js` のドラッグ／スナップ基準、`editor-keyboard-layout.js` のキーボード時の30%プレビュー維持と70%シート上限を一貫して更新。キーボードが表示されたら残余領域にタグ編集を収める（不足時にプレビュー比率を変える別の計算は追加しない）。`dev.template.html`・生成済み`dev.html`・テスト・開発情報の参照更新。OSM保存・A/Bビルモデル・固定Engineは不変。**GitHub反映済み、実機表示・キーボード補助バー重なりの解消は未確認。**
 
 
