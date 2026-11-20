@@ -1,7 +1,7 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-auto-comment-20261113';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
-import {attachSheetMotion} from './sheet-motion.js?v=sheet-fling-20261120';
+import {attachSheetMotion} from './sheet-motion.js?v=sheet-three-stops-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=slow-auto-orbit-20261120';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=ios-keyboard-16px-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
@@ -117,14 +117,14 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   form.style.cssText='box-sizing:border-box;width:100%;height:50%;max-height:50%;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
   const handle=document.createElement('div');
   handle.setAttribute('role','button');
-  handle.setAttribute('aria-label','下にスワイプして編集画面を閉じる');
+  handle.setAttribute('aria-label','上にスワイプで全画面、下にスワイプで半画面または閉じる');
   handle.setAttribute('tabindex','0');
   handle.style.cssText='position:sticky;top:0;z-index:5;box-sizing:border-box;height:36px;margin:0 -16px 6px;padding:0 16px;display:flex;align-items:center;justify-content:center;background:#152c26;border-radius:18px 18px 0 0;touch-action:none;overscroll-behavior:none;cursor:grab;user-select:none;-webkit-user-select:none;';
   const grip=document.createElement('span');
   grip.className='komo-grip';
   grip.style.cssText='display:block;width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
   handle.appendChild(grip);
-  handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();closeEditor();}});
+  handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();editorMotion?.toggle();}else if(event.key==='Escape'){event.preventDefault();closeEditor();}});
   // Motion controller owns grip dragging, fling velocity and sheet transitions.
   editorMotion=attachSheetMotion(form,handle,closeEditor);
   form.appendChild(handle);
