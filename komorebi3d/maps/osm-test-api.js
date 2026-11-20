@@ -1,6 +1,5 @@
 // Development OSM server ONLY. Never use live OSM endpoints here.
 // OAuth 2.0 Authorization Code + PKCE for a public browser application.
-import {OSM_TEST_CLIENT_ID} from './osm-test-client-config.js?v=pages-oauth-secret-20261121';
 export const OSM_TEST_ORIGIN='https://master.apis.dev.openstreetmap.org';
 const API=OSM_TEST_ORIGIN+'/api/0.6';
 const TOKEN_KEY='komorebi:osm-test:token';
@@ -30,9 +29,14 @@ export function consumeOsmTestAuthError(){
  const msg=scopedStorageGet(ERROR_KEY)||'';scopedStorageRemove(ERROR_KEY);return msg;
 }
 function readToken(){const token=scopedStorageGet(TOKEN_KEY);if(!token)throw Error('先にテストサーバーでOAuth認証してください。');return token;}
-export function isOsmTestLoginConfigured(){return Boolean(OSM_TEST_CLIENT_ID);}
 export async function startOsmTestLogin(){
- const id=String(OSM_TEST_CLIENT_ID||'').trim();
+ // OAuth configuration is deliberately loaded only when login is requested.
+ // A missing/stale configuration must never prevent the 3D game from booting.
+ let id='';
+ try{
+  const config=await import('./osm-test-client-config.js?v=lazy-oauth-config-20261121');
+  id=String(config.OSM_TEST_CLIENT_ID||'').trim();
+ }catch(_){throw Error('OAuth設定ファイルを取得できません。公開設定を確認し、ページを再読み込みしてください。');}
  if(!id||id.length>512)throw Error('KomorebiのOAuth設定が未完了です。管理者がGitHub Actions Secret「OSM_TEST_CLIENT_ID」を設定し、Pagesの公開元をGitHub Actionsへ切り替えてください。');
  if(location.origin!==new URL(OSM_TEST_REDIRECT_URI).origin)throw Error('OAuth認証は公開ゲーム画面 '+OSM_TEST_REDIRECT_URI+' から開始してください。別のドメインでは認証情報を引き継げません。');
  if(!crypto?.subtle||!crypto?.getRandomValues)throw Error('このブラウザでは安全なPKCE認証を利用できません。');
