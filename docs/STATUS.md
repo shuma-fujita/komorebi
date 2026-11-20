@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 OAuth／OSMテスト送信エラー表示の可読性修正（main反映／実機未確認）：** iPhoneのビルタグ編集シートで「認証開始エラー: 開発用OSM OAuthアプリのClient IDを入力してください。」が薄桃色背景と淡い文字になり読めない件を修正。原因は `map-labels.js` のインライン色指定がダークテーマの `.komo-copy-pane p` / `.komo-review p` の `!important` カラーに負けること。`decorateStatus` は `data-status-kind=error/normal` を更新するだけにし、`building-tag-editor-theme.js` に暗赤背景・明るい文字・赤系枠線のエラー専用CSS（`!important`）を追加。コピー作成・認証・テスト送信エラーに共通適用、通常メッセージはテーマ色に。`map-labels.js` と `dev.html` / `dev.template.html` のモジュールキャッシュキー更新。OAuth認証・コピー・level送信のロジックは変更なし。**JS構文・参照・CSSの静的チェックPASS／実機SafariとActions未確認。**
+
+
 > **2026-11-21 テストOSM OAuthリダイレクト先固定（main反映／OAuth実認証・実機未確認）：** `maps/osm-test-api.js` の `redirectUri()` は従来 `location.origin+location.pathname` でアクセスした画面パスに依存していた。開発用OAuthアプリに登録するコールバックURLを **`https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html`** に固定（`OSM_TEST_REDIRECT_URI`）。PKCE `state` と `code_verifier` のセッション保持、認可リクエストの `redirect_uri`、トークン交換の `redirect_uri`、コールバックURL照合の各処理で同じ固定URLを使用。別ドメインから開始した場合はsessionStorageが引き継げないため説明付きエラーにする。OAuth認証後の `code/state` は従来どおり履歴から除去。`maps/map-labels.js` と `dev.html`/`dev.template.html` のキャッシュキー更新。テストOSM以外への送信・書込仕様は変更なし。**JS構文・静的連携確認PASS／実際の外部OAuth認証・テスト環境コピー・Safari実機・Actionsは未確認。**
 
 
