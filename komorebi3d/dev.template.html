@@ -102,8 +102,8 @@ import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=manual-overpass-20261
 import {runOverpassDiagnostic} from "./maps/map-overpass-diagnostic.js?v=manual-overpass-20261119";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=building-preview-source-20261120";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=building-isolated-preview-20261120";
-import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=upper-half-center-20261120";
+import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=building-preview-gesture-20261120";
+import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=preview-orbit-camera-20261120";
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
 const $=id=>document.getElementById(id);
@@ -487,12 +487,19 @@ const LABEL_TAP_TOLERANCE_PX=8;
 const labelTapPointers=new Map();
 const activeGamePointers=new Set();
 let activeOsmEditors=0,modeBeforeOsmEditor=null,editorBuildingPreview=null;
+let editorPreviewView={yaw:0,zoom:1};
+function setEditorPreviewGesture({yaw,zoom}){
+ if(activeOsmEditors===0||!editorBuildingPreview)return;
+ if(Number.isFinite(yaw))editorPreviewView.yaw=yaw;
+ if(Number.isFinite(zoom))editorPreviewView.zoom=zoom;
+}
 function setOsmEditorOpen(open,details=null){
  const wasOpen=activeOsmEditors>0;
  activeOsmEditors=Math.max(0,activeOsmEditors+(open?1:-1));
  if(open){
   labelTapPointers.clear();inputManager.pause();
   if(!wasOpen){
+   editorPreviewView={yaw:0,zoom:1};
    editorBuildingPreview=null;
    try{
     editorBuildingPreview=createBuildingEditorPreview(details?.building,details?.shops,createMeshGeometry);
@@ -504,6 +511,7 @@ function setOsmEditorOpen(open,details=null){
   }
  }else if(activeOsmEditors===0){
   editorBuildingPreview=null;
+  editorPreviewView={yaw:0,zoom:1};
   for(const screen of ['A','B'])matsudoLabels[screen]?.setPreviewActive(false);
   if(modeBeforeOsmEditor!==null){
    const restoreMode=modeBeforeOsmEditor;
@@ -831,7 +839,7 @@ function productRenderSnapshot(screen,frameId){
  if(activeWorld==='matsudo'&&activeOsmEditors>0&&editorBuildingPreview){
   const canvas=screen==='A'?gameView?.canvasA:gameView?.canvasB;
   const aspect=(canvas?.clientWidth||1)/Math.max(1,canvas?.clientHeight||1);
-  const camera=buildingEditorCamera(editorBuildingPreview,aspect);
+  const camera=buildingEditorCamera(editorBuildingPreview,aspect,editorPreviewView);
   const objects=editorBuildingPreview.geometry.map((geometry,i)=>({
    id:'editor-building:'+i,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true
   }));
@@ -1208,7 +1216,7 @@ function applyMatsudoScreenLabels(screen,ignoreRules){
  matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;
  const data=matsudoMaps[screenConfigs[screen].map];
  if(data&&gameView?.surface){
-  matsudoLabels[screen]=createMapLabels(gameView.surface,ignoreRules,{screen,onEditorStateChange:setOsmEditorOpen});
+  matsudoLabels[screen]=createMapLabels(gameView.surface,ignoreRules,{screen,onEditorStateChange:setOsmEditorOpen,onEditorPreviewGesture:setEditorPreviewGesture});
   matsudoLabels[screen].setLabels(data.labels);
   matsudoLabels[screen].setBuildingFeatures(data.mapFeatures);
   matsudoLabels[screen].setDebugAnchors(labelDebugVisible);
