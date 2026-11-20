@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 OSMテストOAuth未認証エラーの案内精緻化（main反映／実機未確認）：** `map-labels.js` の「確認してコピーを作成」直下の赤いエラー枠について、先頭「Komorebi側のOAuth認証が未完了です。」を維持し、Client ID入力・既存登録アプリからのID再取得・未登録の場合のみアプリ新規登録・アカウントがない場合の作成・Komorebi側ログインボタンの操作順に変更。リンク文言を「テスト環境のOAuthアプリを確認・登録」に変更し、従来の `/oauth2/applications/new`（新規登録直行）から `/oauth2/applications`（登録済みアプリ一覧）へ変更。`dev.template.html` と生成済み `dev.html` のモジュールキャッシュキー更新。OAuthトークン／実送信処理、3D描画、エラー枠デザインは変更なし。**GitHub反映済み、実機Safariと実OAuthでの動線は未確認。**
+
+
 > **2026-11-21 iPhoneキーボード表示時のA/Bプレビュー上端の間欠的な空白対策（main反映／Safari再確認待ち）：** 実機PASS報告と画像で、ゲーム枠内の右上ヘルプアイコンよりA/Bキャンバス上端が下がり隙間が出る症状を確認。`editor-keyboard-layout.js` はキーボードフォーカス時に外側 `.landscape-game` をfixed化する一方、子 `#play-surface` はflexの高さ・中央揃えに依存していた。iOS VisualViewportの非同期リサイズ時に親子の高さが不一致になり上端がずれる仮説に基づき、**入力フォーカス中だけ** `#play-surface` を `position:absolute; inset:0; width/height:100%` で枠上端に固定。元のinline styleを保存しフォーカス解除・editor終了で復元。外側キャンバスの形状、A/B比率30:70、3Dカメラ、OSM認証／送信処理は不変。`map-labels.js`・`dev.template.html`・生成済み`dev.html` のキャッシュキー更新。**コード反映済み、発生条件の完全な再現・iPhone実機の改善確認は未完了。**
 
 
