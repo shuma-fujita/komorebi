@@ -142,9 +142,9 @@ def export(pbf: Path, destination: Path):
         assert result["tile"]["gridX"] == result["tile"]["gridY"] == 0
         assert tile_grid.LAT == 35.78444 and tile_grid.LON == 139.90061
         elements = result["elements"]
-        buildings = sum(e["type"] == "way" and e["tags"].get("building")
+        buildings = sum(e["type"] == "way" and bool(e["tags"].get("building"))
                         and len(e.get("geometry", [])) >= 4 for e in elements)
-        roads = sum(e["type"] == "way" and e["tags"].get("highway")
+        roads = sum(e["type"] == "way" and bool(e["tags"].get("highway"))
                     and len(e.get("geometry", [])) >= 2 for e in elements)
         facilities = sum(any(e["tags"].get(k) for k in FACILITY_KEYS) for e in elements)
         if buildings < 10 or roads < 10 or facilities < 1:
