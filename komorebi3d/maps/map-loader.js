@@ -1,9 +1,8 @@
-import {fetchLiveMatsudoMap} from './map-overpass.js?v=manual-overpass-20261119';
-// Default is local 500m JSON only. Live 250m is fetched exclusively on explicit user action.
-const MAP_URL='./maps/data/matsudo.json';
-const TILE_INDEX_URL='./maps/data/tiles-2km/index.json';
-const TILE_ROOT='./maps/data/tiles-2km/';
-// Future regional tests change this one ID only. JSON files remain untouched.
+// Two independent 2km Matsudo snapshots. No 500m or live Overpass fetch.
+const TILE_ROOTS=Object.freeze({
+ old:'./maps/data/tiles-2km/',
+ new:'./maps/data/tiles-2km-geofabrik/'
+});
 export const TEST_TILE_ID='0_0';
 const facilityKeys=['shop','amenity','tourism','office','leisure','healthcare'];
 function verify(map){
@@ -14,39 +13,25 @@ function verify(map){
  if(buildings<10||roads<10||facilities<1)throw Error('地図JSONデータ不足');
  return map;
 }
-export async function loadMap({onLog=()=>{},signal,source='old',live=false,server='coffee'}={}){
- if(source!=='old'&&source!=='new')throw Error('不明な地図ソース: '+source);
+export async function loadMap({onLog=()=>{},signal,source='old'}={}){
+ if(!Object.prototype.hasOwnProperty.call(TILE_ROOTS,source))throw Error('不明な地図ソース: '+source);
  const start=performance.now();
- if(source==='old'&&live){
-  try{
-   const live=verify(await fetchLiveMatsudoMap({onLog,signal,server}));
-   onLog('OSM最新250m: 検証PASS / 要素 '+live.elements.length+'件 / '+Math.round(performance.now()-start)+'ms');
-   return live;
-  }catch(error){
-   if(signal?.aborted)throw error;
-   onLog('OSM最新250m: 取得失敗 ('+String(error.message||error)+') / 保存済みmatsudo.jsonへ切替');
-  }
- }
- let url=MAP_URL,label='matsudo.json';
- if(source==='new'){
-  onLog('JSON: 2km索引 index.json 読み込み開始');
-  const indexResponse=await fetch(TILE_INDEX_URL,{cache:'no-cache',signal});
-  onLog('JSON: 索引 HTTP '+indexResponse.status+' / '+Math.round(performance.now()-start)+'ms');
-  if(!indexResponse.ok)throw Error('索引 HTTP '+indexResponse.status);
-  const index=await indexResponse.json();
-  if(!/^-?\d+_-?\d+$/.test(TEST_TILE_ID))throw Error('テストタイルIDが不正');
-  const filename=index?.tiles?.[TEST_TILE_ID];
-  const expected=new RegExp('^tile_'+TEST_TILE_ID+'_\\d{14}\\.json$');
-  if(typeof filename!=='string'||!expected.test(filename))throw Error('2km索引のタイル指定が不正: '+TEST_TILE_ID);
-  label=filename;url=TILE_ROOT+filename;
-  onLog('JSON: タイル '+TEST_TILE_ID+' / '+filename+' / 索引タイル '+Object.keys(index.tiles).length+'件');
- }
- onLog('JSON: '+label+' 読み込み開始');
- const response=await fetch(url,{cache:'no-cache',signal});
- onLog('JSON: '+label+' HTTP '+response.status+' / '+Math.round(performance.now()-start)+'ms');
- if(!response.ok)throw Error('JSON HTTP '+response.status);
+ const root=TILE_ROOTS[source];
+ const label=source==='old'?'旧2km (OSM)':'新2km (Geofabrik)';
+ onLog('JSON: '+label+' 索引読み込み開始');
+ const indexResponse=await fetch(root+'index.json',{cache:'no-cache',signal});
+ onLog('JSON: '+label+' 索引 HTTP '+indexResponse.status+' / '+Math.round(performance.now()-start)+'ms');
+ if(!indexResponse.ok)throw Error(label+' 索引 HTTP '+indexResponse.status);
+ const index=await indexResponse.json();
+ const filename=index?.tiles?.[TEST_TILE_ID];
+ const expected=new RegExp('^tile_'+TEST_TILE_ID+'_\\d{14}\\.json$');
+ if(typeof filename!=='string'||!expected.test(filename))throw Error(label+' タイル指定が不正: '+TEST_TILE_ID);
+ const response=await fetch(root+filename,{cache:'no-cache',signal});
+ onLog('JSON: '+label+' '+filename+' HTTP '+response.status+' / '+Math.round(performance.now()-start)+'ms');
+ if(!response.ok)throw Error(label+' JSON HTTP '+response.status);
  const map=verify(await response.json());
- if(source==='new'&&(map.tile?.id!==TEST_TILE_ID||map.tile?.sizeM!==2000))throw Error('タイルのID/サイズが不正: '+TEST_TILE_ID);
+ if(map.tile?.id!==TEST_TILE_ID||map.tile?.sizeM!==2000||map.tile?.gridX!==0||map.tile?.gridY!==0)
+  throw Error(label+' タイルID/サイズ/原点が不正: '+TEST_TILE_ID);
  onLog('JSON: '+label+' 検証PASS / 要素 '+map.elements.length+'件 / '+Math.round(performance.now()-start)+'ms');
  return map;
 }
