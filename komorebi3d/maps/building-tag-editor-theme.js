@@ -92,6 +92,20 @@ export function applyBuildingTagEditorTheme(form){
  .komo-tags-sheet .komo-copy-pane p,.komo-tags-sheet .komo-copy-pane label{color:#e2faec!important;}
  .komo-tags-sheet .komo-copy-pane pre{color:#143323!important;}
  .komo-tags-sheet .komo-copy-pane a{color:#a6efff!important;}
+ /* Error feedback must win over the light-text !important rules in copy/review panels. */
+ .komo-tags-sheet .komo-osm-feedback{
+  box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere;
+  font:13px/1.6 system-ui!important;
+ }
+ .komo-tags-sheet .komo-osm-feedback[data-status-kind="normal"]{
+  color:#c6e0d2!important;
+ }
+ .komo-tags-sheet .komo-osm-feedback[data-status-kind="error"]{
+  display:block;padding:12px!important;
+  border:1.5px solid #ff9d94!important;border-radius:10px!important;
+  background:#472724!important;color:#ffe9e5!important;
+  font-weight:600!important;
+ }
  .komo-tags-sheet button:focus-visible,.komo-tags-sheet input:focus-visible{outline:2px solid #a2f29e;outline-offset:2px;}
  `;
  form.prepend(style);
