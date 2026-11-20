@@ -67,12 +67,12 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={}){
  // The rectangular footprint's corners rotate on a circle of this radius.
  // Solve the horizontal and upper/lower projection inequalities analytically,
  // instead of adding conservative depth and width limits independently.
- // 0.5% clear margin around the visible upper-half viewport; no extra zoom-out margin.
+ // 0% viewport margin: maximize the angle-invariant fit without intentional padding.
  const radius=Math.hypot(width,depth)/2;
  const elevation=Math.abs(backward[1]);
  const horizontal=Math.sqrt(1-elevation*elevation);
  const halfHeight=height*.5;
- const maxX=.995,upperY=.995,lowerY=.005;
+ const maxX=1,upperY=1,lowerY=0;
  const horizontalSlope=maxX*tanHalf*safeAspect;
  const verticalSlope=(upperY-.5)*tanHalf;
  const minDepth=radius*horizontal+halfHeight*elevation+1;
