@@ -71,26 +71,25 @@ button.panel-trash-target.panel-trash-hot{background:#bf584d;box-shadow:0 0 0 6p
 .build-help-overlay{padding:14px}
 .build-help-label{padding:14px 20px}
 
-/* Faux black game rendering only; layout and panel chrome are shared. */
-.landscape-game .play-surface{height:100%;max-width:100%;aspect-ratio:3/4;background:#000;border-radius:9px}
+/* Real WebGL/Canvas presentation, touch controls and debug map only. */
+.views{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.views.single{grid-template-columns:minmax(0,1fr)}
+.view-panel{position:relative}
+.view-panel.off{display:none}
+#panel-a,#panel-b{min-width:0}
+.view-panel > canvas{display:block;width:100%;aspect-ratio:3/4;border-radius:9px;background:#a7d9e9}
+.play-surface{position:relative}
+.debug-map{position:absolute;top:8px;left:8px;z-index:3;width:min(47%,210px);padding:6px;border-radius:9px;background:rgba(17,35,29,.65);box-shadow:0 2px 12px #2133247a;pointer-events:none;color:#fff;user-select:none}
+.debug-map[hidden]{display:none}
+.debug-map canvas{width:100%;height:auto;aspect-ratio:1;background:transparent;border-radius:3px}
+.debug-map-title{font-size:10px;font-weight:700;margin-bottom:3px}
+.debug-map-legend{font-size:9px;display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
 
-/* Only the mock replaces rendered canvases with faux black screen views. */
-/* PC: single A / B mode uses the whole game panel. */
-@container (min-width:1000px){
- .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:9px}
-}
-
-/* Mock-only faux game surface: shows each screen's label and settings. */
-.play-surface{position:relative;overflow:hidden;display:flex}
-.play-surface .screen-view{flex:1 1 0;min-width:0;position:relative;display:grid;place-items:center;color:#cfe0c8;font:700 11px/1.5 system-ui;text-align:center;
- background:radial-gradient(circle at 50% 38%,#1f3a26 0,#0b150e 62%,#000 100%)}
-.play-surface .screen-view+.screen-view{border-left:1px solid #2c4a33}
-.play-surface .screen-view small{display:block;font-weight:500;color:#8fae93;font-size:10px}
-/* A/B compare (below PC width): each screen keeps the same 3:4 size as in single A / B mode. */
-.landscape-game .play-surface.ab-compare{aspect-ratio:auto;width:auto;max-width:100%;gap:6px;background:transparent;justify-content:center}
-.play-surface.ab-compare .screen-view{flex:0 1 auto;height:100%;aspect-ratio:3/4;min-width:0;border:1px solid #2c4a33;border-radius:9px}
-.play-surface.ab-compare .screen-view+.screen-view{border-left:1px solid #2c4a33}
-.play-surface .screen-tag{position:absolute;top:6px;left:8px;font-size:10px;color:#a6c4aa}
+#play-surface{width:100%;max-width:none;min-width:0;overflow:hidden;border-radius:var(--ui-ab-outer-radius);background:var(--ui-ab-seam-bg)}
+#play-surface>#views{width:100%;gap:var(--ui-ab-gap)}
+#play-surface .view-panel{min-width:0;overflow:hidden}
+#play-surface .views:not(.single) #panel-a>canvas{border-radius:var(--ui-ab-outer-radius) var(--ui-ab-inner-radius) var(--ui-ab-inner-radius) var(--ui-ab-outer-radius)}
+#play-surface .views:not(.single) #panel-b>canvas{border-radius:var(--ui-ab-inner-radius) var(--ui-ab-outer-radius) var(--ui-ab-outer-radius) var(--ui-ab-inner-radius)}
 
 /* Styles for test panel from canonical dev.html. */
 .mode-buttons button{min-width:0;padding:11px 3px}
@@ -235,6 +234,25 @@ body{padding:6px}
 .touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 
 /* iPhone-sized portrait view: grow only the slot holding the game at initial layout. */
+
+@media (orientation:landscape) and (min-width:900px) and (min-height:600px){
+ .landscape-game .play-surface{height:100%;width:auto;max-width:100%;min-width:0;min-height:0;aspect-ratio:3/4;flex:0 1 auto}
+ .landscape-game .play-surface.ab-compare{width:100%;height:100%;aspect-ratio:auto;flex:1 1 auto}
+ .landscape-game .views{width:100%;height:100%;min-height:0}
+ .landscape-game .view-panel:not(.off){min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}
+ .landscape-game .views.single .view-panel > canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:3/4}
+ .landscape-game .views:not(.single) .view-panel > canvas{display:block;width:100%;height:auto;max-height:100%;aspect-ratio:3/4}
+ #play-surface{width:100%;height:100%;max-width:none;aspect-ratio:auto;flex:1 1 auto}
+ #play-surface>#views{height:100%;gap:var(--ui-ab-gap)}
+ #play-surface .view-panel:not(.off){display:block;min-width:0;min-height:0}
+ #play-surface .view-panel>canvas{width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:auto}
+}
+
+/* Product-only renderer: fit real WebGL canvases inside the shared game frame. */
+#play-surface{height:100%;max-width:100%;flex:1 1 auto}
+#play-surface>#views{height:100%;min-height:0}
+#play-surface .view-panel:not(.off){min-width:0;min-height:0;display:block}
+#play-surface .view-panel>canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;aspect-ratio:auto}
 
 @media (orientation:landscape) and (min-width:900px) and (min-height:600px){
  .runtime-status{margin-top:12px;padding:12px;background:#eff2ec;border:1px solid #c6d0c3;border-radius:9px;color:#455a49}
@@ -453,7 +471,31 @@ button.panel-add-button{color:var(--g-accent)}
 .runtime-status #sync-status,.runtime-status #map-source-status,.runtime-status #label-status{font-size:11px}
 .mock-root .panel-slot .runtime-status>.stats,.runtime-status .stats{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:6px 0}
 .runtime-status .stats span{padding:10px 12px;border-radius:var(--m-r-sm);background:var(--m-well);border:1px solid var(--m-hair);font-size:12px;color:#e4eee5;min-width:0;overflow-wrap:anywhere}
-.runtime-status #status{font-size:11px;color:#86a98f}</style></head><body><div class="mock-root"><div class="mock-frame"><div class="shell"><div class="landscape-hero"><div class="site-heading"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">000000</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface" aria-label="ゲーム画面（描画なし）"></div><div class="touch-layer"><div class="touch-zone" id="pad" aria-label="左半分：キャラクター移動"></div><div class="touch-zone" id="camera-pad" aria-label="右半分：カメラ操作"></div></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
+.runtime-status #status{font-size:11px;color:#86a98f}
+
+/* Mock-only viewport: replace 3D rendering with a black dummy. */
+/* Faux black game rendering only; layout and panel chrome are shared. */
+.landscape-game .play-surface{height:100%;max-width:100%;aspect-ratio:3/4;background:#000;border-radius:9px}
+
+/* Only the mock replaces rendered canvases with faux black screen views. */
+/* PC: single A / B mode uses the whole game panel. */
+@container (min-width:1000px){
+ .mock-root .landscape-game .play-surface.ab-compare .screen-view{flex:1 1 0;height:100%;aspect-ratio:auto;min-width:0;border:0;border-radius:9px}
+}
+
+/* Mock-only faux game surface: shows each screen's label and settings. */
+.play-surface{position:relative;overflow:hidden;display:flex}
+.play-surface .screen-view{flex:1 1 0;min-width:0;position:relative;display:grid;place-items:center;color:#cfe0c8;font:700 11px/1.5 system-ui;text-align:center;
+ background:radial-gradient(circle at 50% 38%,#1f3a26 0,#0b150e 62%,#000 100%)}
+.play-surface .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-view small{display:block;font-weight:500;color:#8fae93;font-size:10px}
+/* A/B compare (below PC width): each screen keeps the same 3:4 size as in single A / B mode. */
+.landscape-game .play-surface.ab-compare{aspect-ratio:auto;width:auto;max-width:100%;gap:6px;background:transparent;justify-content:center}
+.play-surface.ab-compare .screen-view{flex:0 1 auto;height:100%;aspect-ratio:3/4;min-width:0;border:1px solid #2c4a33;border-radius:9px}
+.play-surface.ab-compare .screen-view+.screen-view{border-left:1px solid #2c4a33}
+.play-surface .screen-tag{position:absolute;top:6px;left:8px;font-size:10px;color:#a6c4aa}
+.mock-root .landscape-game .play-surface,.mock-root .play-surface .screen-view{background:#000}
+</style></head><body><div class="mock-root"><div class="mock-frame"><div class="shell"><div class="landscape-hero"><div class="site-heading"><strong>🌳 Komorebi 3D — こもれびの森</strong></div><div class="panel-slot panel-slot-top" data-panel-slot="top"><div id="build-info" data-panel-id="build" class="build-info" role="region" aria-label="開発情報パネル" aria-live="polite"><strong>🧪 開発情報｜Komorebi 3D</strong><span class="build-line">Engine固定：<code id="dev-engine">000000</code></span><span id="github-commit" class="build-line">GitHub main最新：確認中…</span><span id="github-commit-time" class="build-line">最終コミット：確認中…</span><span class="build-line">🌳 森：<span id="dev-forest-new" hidden>🆕</span><span id="dev-forest">確認中…</span></span><span class="build-line">🏙️ 松戸：<span id="dev-matsudo-new" hidden>🆕</span><span id="dev-matsudo">確認中…</span></span><span class="build-line">⚙️ 共通：<span id="dev-common-new" hidden>🆕</span><span id="dev-common">確認中…</span></span><button id="build-help-button" class="panel-help-button build-help-button" type="button" aria-label="このエリアの名前：開発情報パネル" aria-describedby="build-help-overlay"><span>ⓘ</span></button><div id="build-help-overlay" class="panel-help-overlay build-help-overlay" role="tooltip" hidden><div class="panel-help-label build-help-label">🧪 開発情報パネル</div></div></div></div><div class="landscape-main"><div class="panel-slot panel-slot-main" data-panel-slot="left"><div class="landscape-game" data-panel-id="game"><div class="play-surface" id="play-surface" aria-label="ゲーム画面（描画なし）"></div><div class="touch-layer"><div class="touch-zone" id="pad" aria-label="左半分：キャラクター移動"></div><div class="touch-zone" id="camera-pad" aria-label="右半分：カメラ操作"></div></div><button type="button" id="game-help-button" class="panel-help-button game-help-button" aria-label="このエリアの名前：ゲーム画面" aria-describedby="game-help-overlay"><span>ⓘ</span></button><div id="game-help-overlay" class="panel-help-overlay game-help-overlay" role="tooltip" hidden><div class="panel-help-label game-help-label">🎮 ゲーム画面</div></div></div></div><div class="panel-slot panel-slot-main" data-panel-slot="right"><section id="test-ops-panel" data-panel-id="test" class="test-panel" role="region" aria-label="テスト操作パネル">
 <div class="test-panel-header">
 <strong class="test-panel-heading">🧪 テスト操作</strong>
 <button type="button" class="panel-help-button test-help-button" id="test-help-button" aria-label="このエリアの名前：テスト操作パネル" aria-describedby="test-help-overlay"><span>ⓘ</span></button>
@@ -470,12 +512,12 @@ button.panel-add-button{color:var(--g-accent)}
 <div class="screen-settings" data-visible="compare">
 <div class="screen-card" data-screen="A">
 <div class="screen-title">画面A</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>OSM 250m</label><label><input type="radio" name="screen-map-A" value="new">新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>旧2km</label><label><input type="radio" name="screen-map-A" value="new">新2km（Geofabrik）</label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old" checked>OSM 250m</label><label><input type="radio" name="screen-map-B" value="new">新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧2km</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km（Geofabrik）</label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
 </div>
 </div>
@@ -492,49 +534,4 @@ button.panel-add-button{color:var(--g-accent)}
 <div class="test-separator"></div><div class="test-section-title">📍 テスト位置へ移動</div>
 <div class="test-locations"><button type="button" data-spot="front">🏡 家の前</button><button type="button" data-spot="tree">🌳 木の近く</button><button type="button" data-spot="side">↔ 壁沿い</button><button type="button" data-spot="cafe">☕ カフェ前</button><button type="button" data-spot="west">西端</button><button type="button" data-spot="east">東端</button><button type="button" data-spot="north">奥端</button><button type="button" data-spot="south">手前端</button></div>
 </div>
-<div id="test-help-overlay" class="panel-help-overlay test-help-overlay" role="tooltip" hidden><div class="panel-help-label test-help-label">🧪 テスト操作パネル</div></div></section></div></div></div><div class="panel-slot panel-slot-bottom" data-panel-slot="bottom"><section data-panel-id="runtime" class="runtime-status" aria-label="実行ステータス"><h2 class="runtime-status-heading">📊 実行ステータス</h2><button type="button" id="runtime-help-button" class="panel-help-button runtime-help-button" aria-label="このエリアの名前：実行ステータス" aria-describedby="runtime-help-overlay"><span>ⓘ</span></button><div id="ea" aria-live="polite"></div><div id="eb" aria-live="polite"></div><div id="collision-status" style="margin-top:6px;font-weight:700">衝突判定：待機中</div><div id="sync-status">A/B：共通game座標</div><div id="map-source-status" aria-live="polite">🗺️ 地図：未読込</div><div id="label-status" style="font-size:11px;color:#436d73;margin-top:4px">🏙️ 屋上名：松戸ワープ後に診断表示</div><div class="stats"><span id="pos">X 0.0 / Z 4.5</span><span id="fps">FPS --</span><span id="edge">境界内</span><span id="npc-status">🐹 お散歩AI準備中</span></div><p id="status">描画準備中…</p><p id="input-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎮 Engine Input読み込み中…</p><p id="camera-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">📷 Engine Camera読み込み中…</p><p id="renderer-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎨 Engine Renderer読み込み中…</p><p id="core-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🧩 Engine Core・Collision読み込み中…</p><p style="font-size:10px;color:#8a765b">描画方式はAのみ・Bのみ・比較から変更できます。Bの初回起動にはThree.jsの読み込みが必要です。</p><div id="runtime-help-overlay" class="panel-help-overlay runtime-help-overlay" role="tooltip" hidden><div class="panel-help-label runtime-help-label">📊 実行ステータス</div></div></section></div></div></div></div><script type="module">
-import {mountTestControlsPanel,mountMockTouchInput} from './dev-panel-components.js?v=tenant-list-only-20261119';
-/* Mock-only: reflect the display mode in the black game surface. */
-function renderFauxGame(state){
- const surface=document.getElementById('play-surface');
- if(!surface)return;
- const mode=state.renderMode;
- const names={map:{old:'OSM 250m',new:'新2km'},engine:{A:'WebGL',B:'Three.js'}};
- const shown=mode==='compare'?['A','B']:[mode];
- surface.classList.toggle('ab-compare',mode==='compare');
- surface.replaceChildren();
- for(const s of shown){
-  const v=document.createElement('div');v.className='screen-view';
-  const tag=document.createElement('span');tag.className='screen-tag';tag.textContent='画面'+s;
-  const body=document.createElement('div');
-  body.textContent='🌳 描画なし';
-  const sm=document.createElement('small');
-  sm.textContent=names.engine[state.screens[s].engine]+' / '+names.map[state.screens[s].map];
-  body.appendChild(sm);v.append(tag,body);surface.appendChild(v);
- }
-}
-(function(){
- const panel=document.querySelector('#test-ops-panel');
- if(!panel)return;
- // The same controls run locally without a Game API; only the game image is fake.
- mountTestControlsPanel(panel,null);
- const readState=()=>{
-  const renderMode=panel.querySelector('[data-mode][aria-pressed="true"]')?.dataset.mode||'compare';
-  const screens={};
-  for(const screen of ['A','B']){
-   screens[screen]={};
-   for(const kind of ['map','engine']){
-    screens[screen][kind]=panel.querySelector('[data-screen="'+screen+'"] [data-setting="'+kind+'"] input:checked')?.value||(kind==='map'?'new':'B');
-   }
-  }
-  return {renderMode,screens};
- };
- const update=()=>renderFauxGame(readState());
- panel.addEventListener('click',event=>{if(event.target.closest('[data-mode]'))update();});
- panel.addEventListener('change',event=>{if(event.target.closest('.screen-settings input'))update();});
- update();
-})();
-import {mountDefaultPanelLayoutEditor} from './dev-panel-layout.js?v=shared-initializer-20261117';
-mountDefaultPanelLayoutEditor(document);
-mountMockTouchInput(document.querySelector('.landscape-game'));
-</script></body></html>
+<div id="test-help-overlay" class="panel-help-overlay test-help-overlay" role="tooltip" hidden><div class="panel-help-label test-help-label">🧪 テスト操作パネル</div></div></section></div></div></div><div class="panel-slot panel-slot-bottom" data-panel-slot="bottom"><section data-panel-id="runtime" class="runtime-status" aria-label="実行ステータス"><h2 class="runtime-status-heading">📊 実行ステータス</h2><button type="button" id="runtime-help-button" class="panel-help-button runtime-help-button" aria-label="このエリアの名前：実行ステータス" aria-describedby="runtime-help-overlay"><span>ⓘ</span></button><div id="ea" aria-live="polite"></div><div id="eb" aria-live="polite"></div><div id="collision-status" style="margin-top:6px;font-weight:700">衝突判定：待機中</div><div id="sync-status">A/B：共通game座標</div><div id="map-source-status" aria-live="polite">🗺️ 地図：未読込</div><div id="label-status" style="font-size:11px;color:#436d73;margin-top:4px">🏙️ 屋上名：松戸ワープ後に診断表示</div><div class="stats"><span id="pos">X 0.0 / Z 4.5</span><span id="fps">FPS --</span><span id="edge">境界内</span><span id="npc-status">🐹 お散歩AI準備中</span></div><p id="status">描画準備中…</p><p id="input-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎮 Engine Input読み込み中…</p><p id="camera-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">📷 Engine Camera読み込み中…</p><p id="renderer-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎨 Engine Renderer読み込み中…</p><p id="core-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🧩 Engine Core・Collision読み込み中…</p><p style="font-size:10px;color:#8a765b">描画方式はAのみ・Bのみ・比較から変更できます。Bの初回起動にはThree.jsの読み込みが必要です。</p><div id="runtime-help-overlay" class="panel-help-overlay runtime-help-overlay" role="tooltip" hidden><div class="panel-help-label runtime-help-label">📊 実行ステータス</div></div></section></div></div></div></div><script type="module" src="./mock-ui.js"></script></body></html>
