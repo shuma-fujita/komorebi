@@ -1,0 +1,77 @@
+name: Generate Matsudo 2km JSON from Geofabrik (manual only)
+
+# Staging-only workflow. Never changes deployed map JSON or tile index.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: geofabrik-matsudo-2km-manual
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    name: Generate and validate Matsudo tile 0_0
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Komorebi
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PBF and tile projection dependencies
+        run: python -m pip install --disable-pip-version-check osmium pyproj shapely ijson
+
+      - name: Verify fixed origin, tile, and local helicopter spawn
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile komorebi3d/maps/export-geofabrik-matsudo-2km.py
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          path = Path("komorebi3d/maps/split-map-tiles.py")
+          spec = importlib.util.spec_from_file_location("tile", path)
+          grid = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(grid)
+          assert (grid.LAT, grid.LON, grid.TILE_M) == (35.78444, 139.90061, 2000)
+          origin = {"type": "node", "lat": grid.LAT, "lon": grid.LON}
+          assert grid.assigned_tiles(origin) == [(0, 0)]
+          print("PASS: tile 0_0 is exactly centered on the existing Matsudo origin")
+          PY
+
+      - name: Download Geofabrik Kanto snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/geofabrik"
+          curl --fail --location --show-error --silent \
+            --retry 4 --retry-all-errors --retry-delay 8 \
+            --connect-timeout 20 --max-time 1500 \
+            --output "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf.part" \
+            https://download.geofabrik.de/asia/japan/kanto-latest.osm.pbf
+          mv "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf.part" \
+             "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf"
+          ls -lh "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf"
+
+      - name: Export only Matsudo 2km x 2km JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python komorebi3d/maps/export-geofabrik-matsudo-2km.py \
+            --pbf "${RUNNER_TEMP}/geofabrik/kanto-latest.osm.pbf" \
+            --output-dir "${RUNNER_TEMP}/matsudo-2km"
+
+      - name: Upload verified Matsudo JSON and index (no commit)
+        uses: actions/upload-artifact@v4
+        with:
+          name: matsudo-2km-geofabrik-json
+          path: ${{ runner.temp }}/matsudo-2km/
+          if-no-files-found: error
+          retention-days: 7
