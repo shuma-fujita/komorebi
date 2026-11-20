@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 水色画面の404原因に対応（2km A/B正本へのテンプレート整合／実機未確認）：** Safari実機診断で `maps/map-overpass-diagnostic.js` HTTP404 が判明。原因は削除済みOverpass診断ファイルを `dev.template.html` が静的importし、Pagesビルド時に正常なGit管理版 `dev.html` を古い内容で上書きしていたこと。ユーザーの合意に従い、`dev.template.html` から旧250m/500mライブOverpass／手動診断のimport・呼び出し・Game API公開を撤去し、現行 `dev.html` の**旧OSM 2km(A)／新Geofabrik 2km(B)** 読み込み・初期設定・地図ログ表示へ整合。`dev.html` は既に2km正本なので変更せず。固定Engine、森林、地図JSON原本、OSMテストOAuth・PKCE、GitHub Pagesワークフローは変更なし。**GitHub反映済み、静的整合チェックPASS。Actions／Pages配信／iPhone Safari起動は未確認。** 次は最新Actionsのデプロイ成否を確認し、成功後にiPhone Safariで水色画面・404が消えたか検証する。Actionsアップロード後の成果物取得失敗は独立問題として継続調査。
+
 > **2026-11-21 iPhone Safariの水色画面／JavaScriptリソース読み込み失敗の診断改善（main反映／実機確認待ち）：** ユーザー実機で `診断：JavaScript読み込みエラー：リソースを読み込めませんでした` が表示されゲーム未起動。原因ファイルは未特定。許可を得て `dev.template.html` と生成版 `dev.html` の**診断スクリプトのみ**を更新。ゲームモジュール開始フラグ、読み込み失敗URL・イベントエラーの記録、未開始9秒後の直接import一覧取得・HTTP/CORS/タイムアウト/Content-Type確認を追加。画像など無関係な読み込みエラーは起動停止原因と見なさない。固定Engine参照・レンダリング本体・OAuth/PKCE・地図原本は不変。**GitHub反映／静的参照整合性確認済み。Actions、Pages反映、iPhone Safariでの実際の診断表示・起動は未確認。** 次はデプロイSuccess後にSafariの診断メッセージ全文を確認し失敗先を絞る。
 
 
