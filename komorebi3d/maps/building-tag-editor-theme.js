@@ -5,6 +5,10 @@ export function applyBuildingTagEditorTheme(form){
  const style=document.createElement('style');
  style.textContent=`
  .komo-tags-sheet [hidden]{display:none!important;}
+ /* iOS Safari zooms focused controls with computed fonts below 16px. */
+ .komo-tags-sheet input,.komo-tags-sheet select,.komo-tags-sheet textarea{
+  font-size:16px!important;
+ }
  .komo-tags-sheet{
   background:linear-gradient(160deg,#152c26 0%,#091a17 82%)!important;
   color:#f4fff9!important;
@@ -56,7 +60,7 @@ export function applyBuildingTagEditorTheme(form){
  .komo-tags-sheet .komo-tag-row input{
   box-sizing:border-box;width:100%;min-width:0;border:1px solid #ffffff2b!important;
   background:#ffffff10!important;color:#f7fff9!important;border-radius:8px!important;
-  padding:8px!important;font:13px/1.45 system-ui!important;outline-offset:2px;
+  padding:8px!important;font:16px/1.45 system-ui!important;outline-offset:2px;
  }
  .komo-tags-sheet .komo-tag-row input:first-child{color:#ffb6e6!important;font-weight:700!important;}
  .komo-tags-sheet .komo-tag-row:nth-child(3n+2) input:first-child{color:#8aeeed!important;}
