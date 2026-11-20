@@ -1,5 +1,6 @@
 // Keep the A/B building preview visible when iOS scrolls an OSM tag input
 // above its software keyboard. Only active while an editor field has focus.
+import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
 export function keyboardSheetHeight(viewHeight,previewHeight,normalSheetHeight){
  return Math.max(0,Math.min(normalSheetHeight,viewHeight-previewHeight));
 }
@@ -22,8 +23,8 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   Object.assign(game.style,{position:originals.position,top:originals.top,left:originals.left,
    width:originals.width,height:originals.height,zIndex:originals.zIndex});
   if(sheetAtFocus)Object.assign(sheet.style,sheetAtFocus);
-  sheet.style.height=getSheetMode?.()==='full'?'100%':'70%';
-  sheet.style.maxHeight=getSheetMode?.()==='full'?'100%':'70%';
+  sheet.style.height=getSheetMode?.()==='full'?'100%':(BUILDING_SHEET_RATIO*100)+'%';
+  sheet.style.maxHeight=getSheetMode?.()==='full'?'100%':(BUILDING_SHEET_RATIO*100)+'%';
   sheetAtFocus=null;
   previewTouch.style.height=originals.previewHeight;
  }
@@ -37,7 +38,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
     bottom:sheet.style.bottom,height:sheet.style.height,maxHeight:sheet.style.maxHeight};
    const rect=game.getBoundingClientRect();
    gameHeight=rect.height;
-   previewHeight=host.getBoundingClientRect().height*.3;
+   previewHeight=host.getBoundingClientRect().height*BUILDING_PREVIEW_RATIO;
    game.style.position='fixed';
    game.style.left=rect.left+'px';
    game.style.width=rect.width+'px';
@@ -55,7 +56,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
    sheet.style.maxHeight='100%';
    return;
   }
-  const visible=keyboardSheetHeight(vv.height,previewHeight,gameHeight*.7);
+  const visible=keyboardSheetHeight(vv.height,previewHeight,gameHeight*BUILDING_SHEET_RATIO);
   sheet.style.position='absolute';
   sheet.style.top=previewHeight+'px';
   sheet.style.bottom='auto';
