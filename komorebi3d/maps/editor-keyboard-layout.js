@@ -53,6 +53,14 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   sheet.style.bottom='auto';
   sheet.style.maxHeight=visible+'px';
   sheet.style.height=visible+'px';
+  // Scroll only the tag list: never ask Safari to scroll the whole page.
+  const input=document.activeElement;
+  if(isField(input)&&sheet.contains(input)&&visible>0){
+   const bounds=sheet.getBoundingClientRect();
+   const field=input.getBoundingClientRect();
+   if(field.bottom>bounds.bottom-10)sheet.scrollTop+=field.bottom-bounds.bottom+10;
+   else if(field.top<bounds.top+10)sheet.scrollTop-=bounds.top+10-field.top;
+  }
  }
  function schedule(){
   if(!frame)frame=requestAnimationFrame(update);
