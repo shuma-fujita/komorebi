@@ -14,6 +14,11 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/publish-matsudo-geofabrik-2km.yml'
+  workflow_run:
+    workflows:
+      - Generate Matsudo 2km JSON from saved Geofabrik PBF
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -25,6 +30,7 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -39,9 +45,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_B_RUN_ID: ${{ inputs.b_run_id }}
+          TRIGGERED_B_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
-          run_id="${REQUESTED_B_RUN_ID:-44661761547}"
+          run_id="${TRIGGERED_B_RUN_ID:-${REQUESTED_B_RUN_ID:-44661761547}}"
           mkdir -p "$RUNNER_TEMP/matsudo-new"
           gh run download "$run_id" --repo "$GITHUB_REPOSITORY" \
             --name matsudo-2km-geofabrik-json --dir "$RUNNER_TEMP/matsudo-new"
