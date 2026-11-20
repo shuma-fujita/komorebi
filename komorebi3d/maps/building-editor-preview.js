@@ -3,6 +3,7 @@
 // the original map meshes. No animation dependencies.
 import {buildMap} from './map-builder.js?v=building-preview-source-20261120';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
+let previewRevision=0;
 
 // Optional draft tags affect only this isolated preview, never OSM or the map.
 export function createBuildingEditorPreview(feature,shops,createMeshGeometry,draft=null){
@@ -54,6 +55,7 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry,dra
  const result=buildMap(map,{halfSize:Math.max(1000,Math.abs(minX)+30,Math.abs(maxX)+30,Math.abs(minZ)+30,Math.abs(maxZ)+30),
   priorityX:(minX+maxX)/2,priorityZ:(minZ+maxZ)/2});
  const geometry=[];
+ const revision=++previewRevision;
  for(const mesh of result.meshes){
   if(!mesh.positions?.length)continue;
   // Exclude the full-map grassy floor: this preview contains only building geometry.
@@ -61,7 +63,7 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry,dra
   for(let i=1;i<mesh.positions.length;i+=3)if(mesh.positions[i]>.15){raised=true;break;}
   if(!raised)continue;
   geometry.push(createMeshGeometry({
-   id:'matsudo:editor-building:'+feature.osmType+':'+feature.osmId+':'+geometry.length,
+   id:'matsudo:editor-building:'+feature.osmType+':'+feature.osmId+':'+revision+':'+geometry.length,
    positions:mesh.positions,normals:mesh.normals,colors:mesh.colors
   }));
  }
