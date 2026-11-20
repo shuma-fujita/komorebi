@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 未使用OSMタグignore機能の完全撤去（main反映／実機未確認）：** `komorebi3d/maps/osm-tags.ignore` を削除し、`maps/map-labels.js` の `parseOsmTagIgnore`・`loadOsmTagIgnore`・`visibleOsmTags`・`ignoreRules` 受け渡しを撤去。タグチップは現在の通常ゲームの建物＋店舗一覧で非表示になっていたため、生成ループ・`visibleTags` 保存・ヘッダーDOMも削除（建物名・店舗名・編集ボタンの動作は維持）。`dev.html`／`dev.template.html` の初期地図読込とA/Bソース切替からignoreファイルのフェッチを撤去し、A/B切替では直接ラベル再構築を呼ぶ。ネオンOSMタグ編集シートは元々 `baseTags` の全タグを直接表示するため影響なし。本番／テスト切替、保存安全策、ビル自動回転・表示抑制フラグ等は維持。**JS構文とignore参照0件・編集全タグ経路の静的確認PASS／Actionsと実機Safari未確認。**
+
+
 > **2026-11-21 ビルタグ表示フラグの処理簡素化（main反映／実機未確認）：** この機能は既存不具合の修正ではなくユーザー指定の要件追加。通常マップで「空白または表示中の同じビルをタップ→非表示ON」「ビルをタップ→非表示OFF＋表示」「非表示中はカメラ角度で自動復帰しない」という条件のみ。`maps/map-labels.js` の `tagHidden` は真偽値だけを描画更新時に確認し、ビル識別子は既存の「同じビルの再タップ判別」に必要な比較のみ使用。非表示設定時に `viewport.items` を全件走査して非表示化していた冗長処理を削除し、現在表示中の `summary` のみ即座に隠す。A/B状態同期と遅延生成時のフラグ継承は維持。`dev.html` と `dev.template.html` キャッシュ更新。**構文・静的確認PASS／実機・Actions未確認。**
 
 
