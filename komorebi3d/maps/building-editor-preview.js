@@ -63,26 +63,19 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={}){
   right[0]*forward[1]-right[1]*forward[0]
  ];
  const tanHalf=Math.tan(45*Math.PI/360);
- const corners=[];
- for(const dx of [-width/2,width/2])
-  for(const dz of [-depth/2,depth/2])
-   for(const dy of [-height/2,height/2])corners.push([dx,dy,dz]);
- const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
- // Use the actual A/B canvas aspect, including narrow phone viewports.
- // Fit the entire building INSIDE the uncovered top half with 12% margins.
- let distance=Math.max(18,height*2.25,Math.hypot(width,depth)*1.45/Math.min(1,safeAspect));
- function fits(d){
-  const offset=d*tanHalf*.5;
-  for(const corner of corners){
-   const projectedDepth=d-dot(corner,backward);
-   if(projectedDepth<=.1)return false;
-   const ndcX=dot(corner,right)/(projectedDepth*tanHalf*safeAspect);
-   const ndcY=(dot(corner,up)+offset)/(projectedDepth*tanHalf);
-   if(Math.abs(ndcX)>.84||ndcY<.12||ndcY>.88)return false;
-  }
-  return true;
- }
- for(let i=0;i<30&&!fits(distance);i++)distance*=1.2;
+ // Fit against a yaw-independent bounding cylinder. Its projected envelope
+ // remains the same through all 360 degrees, so orbiting never changes zoom.
+ // The visible top half corresponds to vertical NDC 0..1 (with margins).
+ const radius=Math.hypot(width,depth)/2;
+ const elevation=Math.abs(backward[1]);
+ const horizontal=Math.sqrt(1-elevation*elevation);
+ const depthExtent=radius*horizontal+height*.5*elevation;
+ const upExtent=radius*elevation+height*.5*horizontal;
+ let distance=Math.max(
+  18,
+  depthExtent+radius/(.84*tanHalf*safeAspect),
+  (upExtent/tanHalf+.88*depthExtent)/.38
+ )*1.02;
  // Default distance fits all corners; pinch modifies only distance.
  distance/=Math.max(.55,Math.min(3,Number.isFinite(zoom)?zoom:1));
  const offset=distance*tanHalf*.5;
