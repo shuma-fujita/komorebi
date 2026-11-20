@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-20 タグ編集ボトムシート3段階ドラッグ（main反映／実機未確認）：** `maps/sheet-motion.js` をつまみの half(50:50) / full(0:100) / dismiss のステートマシンへ変更。50%状態からつまみを上へ56px程度引くと100%へ、100%から下へ65px程度引くと50%へスナップ、50%をさらに下へ90px以上（またはフリック）引くと閉じる。100%から1回の連続ドラッグで50%より下へ90px以上通り越した場合も閉じる。ドラッグ中は高さと位置を指へ追従、Web Animations APIでスナップ、reduce-motion設定では即座に切替。つまみのEnter/Spaceは50/100トグル、Escapeで閉じる。`maps/map-labels.js` で接続し `dev.template.html`/`dev.html` キャッシュキー更新。既存のOSMタグ入力・キーボード対策、A/Bビルプレビュー・自動回転・ピンチ、閉じた際のヘリ視点復帰は変更なし。**純JS構文チェック・模擬イベントでhalf→full→half→dismissと破棄をPASS、ActionsとiPhone Safari/ChatGPT内ブラウザの実機PASSは未確認。**
+
+
 > **2026-11-20 iPhoneのタグ入力時ズーム＆キーボード対応（main反映／実機未確認）：** `maps/building-tag-editor-theme.js` で編集シート中のinput/select/textareaを16px以上に固定しiOS Safariのフォーカス自動ズームを回避。`maps/map-labels.js` のタグ入力も16pxへ変更。読み取り専用だった本番OSMのタグ値を一時的なローカル下書きとして入力可能にし、既存タグのキーをタップしたときは値欄へフォーカス、本番への送信／保存は引き続き禁止。テストOSM取得後のタグ値入力・追加・level限定送信、削除ボタンなし、50%シート、A/B自動回転は維持。`dev.html`／`dev.template.html` のモジュールキャッシュキー更新。**構文・静的参照チェックPASS、iPhone Safari／ChatGPT内ブラウザとActions実機未確認。**
 
 
