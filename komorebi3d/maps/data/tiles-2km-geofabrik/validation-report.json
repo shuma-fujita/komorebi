@@ -1,0 +1,25 @@
+{
+  "pbf_source": "https://download.geofabrik.de/asia/japan/kanto-latest.osm.pbf",
+  "center_wgs84_lat_lon": [
+    35.78444,
+    139.90061
+  ],
+  "tile_id": "0_0",
+  "tile_size_m": 2000,
+  "komorebi_spawn_local_x_z_m": [
+    -42,
+    28
+  ],
+  "elements": 7691,
+  "buildings": 4136,
+  "roads": 2049,
+  "facilities": 1485,
+  "counts": {
+    "node": 1342,
+    "way": 6348,
+    "relations_not_locatable": 5903,
+    "relation": 1
+  },
+  "json_bytes": 2796371,
+  "elapsed_seconds": 1682.96
+}
