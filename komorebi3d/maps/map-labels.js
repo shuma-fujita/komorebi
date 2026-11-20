@@ -2,6 +2,7 @@
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-auto-comment-20261113';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=sheet-fling-20261120';
+import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=pinch-orbit-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
 export function parseOsmTagIgnore(source){
@@ -20,7 +21,7 @@ export function visibleOsmTags(tags={},rules=[]){
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
-export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null}={}){
+export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null,onEditorPreviewGesture=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
@@ -82,7 +83,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  }
 
  // JSON edit/confirm, with strictly isolated OSM development-server level test.
- let editor=null,editorMotion=null,previewActive=false;
+ let editor=null,editorMotion=null,editorPreviewGestures=null,previewActive=false;
  function setPreviewActive(value){
   previewActive=Boolean(value);
   if(previewActive){
@@ -93,6 +94,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  function closeEditor(){
   if(!editor)return;
   editorMotion?.destroy();editorMotion=null;
+  editorPreviewGestures?.destroy();editorPreviewGestures=null;
   editor.remove();editor=null;
   onEditorStateChange?.(false);
  }
@@ -103,6 +105,13 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const initial={...baseTags};
   const mask=document.createElement('div');
   mask.style.cssText='position:absolute;inset:0;z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(8,18,25,.18);pointer-events:auto;';
+  // Gesture surface covers only the visible upper-half building preview.
+  // The bottom sheet retains its native scroll and separate dismissal grip.
+  const previewTouch=document.createElement('div');
+  previewTouch.setAttribute('role','group');
+  previewTouch.setAttribute('aria-label','ビルの3Dプレビュー：左右スワイプで水平回転、2本指ピンチで拡大縮小');
+  previewTouch.style.cssText='position:absolute;top:0;left:0;right:0;height:50%;z-index:1;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;pointer-events:auto;';
+  editorPreviewGestures=attachBuildingPreviewGestures(previewTouch,state=>onEditorPreviewGesture?.(state));
   const form=document.createElement('form');
   form.style.cssText='box-sizing:border-box;width:100%;height:50%;max-height:50%;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
   const handle=document.createElement('div');
@@ -400,7 +409,8 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   mask.addEventListener('click',event=>{event.stopPropagation();if(event.target===mask)dismiss();});
   controls.append(close,confirm);
   form.append(header,copyPane,note,metadata,tagsHeader,rows,add,review,error,controls);
-  mask.appendChild(form);host.appendChild(mask);editor=mask;
+  form.style.position='relative';form.style.zIndex='2';
+  mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
   const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
   const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
   onEditorStateChange?.(true,{building:selectedFeature,shops:selectedFeature?shopsForFocus(selectedKey):[],screen});
