@@ -23,8 +23,7 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: Build development page from canonical template
-        run: node komorebi3d/build-dev.mjs
+      # dev.html is the checked-in source of truth; never regenerate it during deployment.
       - name: Prepare Pages artifact without writing Client ID to git
         env:
           OSM_TEST_CLIENT_ID: ${{ secrets.OSM_TEST_CLIENT_ID }}
