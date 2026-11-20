@@ -3,6 +3,7 @@
 // the original map meshes. No animation dependencies.
 import {buildMap} from './map-builder.js?v=building-preview-source-20261120';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
+import {BUILDING_PREVIEW_RATIO,buildingPreviewCenterY} from './building-editor-layout.js?v=ratio-centered-20261121';
 let previewRevision=0;
 
 // Optional draft tags affect only this isolated preview, never OSM or the map.
@@ -85,11 +86,12 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry,dra
   width:Math.max(3,maxX-minX),depth:Math.max(3,maxZ-minZ),height:Math.max(3,previewHeight)};
 }
 
-// The editor sheet covers the lower 50% of each full-height 3D viewport.
-// Keep the building centered at x=50%, y=25% of the entire canvas,
-// i.e. the visual center of the uncovered upper half.
-export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={}){
+// The 3D canvas remains full height under the editor sheet.
+// Center the building in the uncovered upper preview at y=ratio/2.
+export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={},previewRatio=BUILDING_PREVIEW_RATIO){
  const {centerX:x,centerZ:z,width,depth,height}=preview;
+ const centerY=buildingPreviewCenterY(previewRatio);
+ const visibleRatio=centerY*2;
  const safeAspect=Math.max(.24,Math.min(2,Number.isFinite(aspect)?aspect:1));
  const center=[x,height*.5,z];
  // Rotate the camera around the vertical axis only. Pitch stays unchanged.
@@ -116,9 +118,8 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={}){
  const elevation=Math.abs(backward[1]);
  const horizontal=Math.sqrt(1-elevation*elevation);
  const halfHeight=height*.5;
- const maxX=1,upperY=1,lowerY=0;
- const horizontalSlope=maxX*tanHalf*safeAspect;
- const verticalSlope=(upperY-.5)*tanHalf;
+ const horizontalSlope=tanHalf*safeAspect;
+ const verticalSlope=visibleRatio*tanHalf;
  const minDepth=radius*horizontal+halfHeight*elevation+1;
  const horizontalDistance=radius*Math.hypot(1,horizontalSlope*horizontal)/horizontalSlope+
   halfHeight*elevation;
@@ -129,7 +130,9 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={}){
  let distance=Math.max(5,minDepth,horizontalDistance,upperDistance,lowerDistance);
  // Default distance fits all corners; pinch modifies only distance.
  distance/=Math.max(.55,Math.min(3,Number.isFinite(zoom)?zoom:1));
- const offset=distance*tanHalf*.5;
+ // Shift the camera's center ray down so the building appears at
+ // y=visibleRatio/2 measured from the top of the full canvas.
+ const offset=distance*tanHalf*(1-visibleRatio);
  const eye=center.map((v,i)=>v+backward[i]*distance-up[i]*offset);
  const target=center.map((v,i)=>v-up[i]*offset);
  return {eye,target};
