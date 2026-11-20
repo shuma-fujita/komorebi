@@ -10,6 +10,11 @@ export function focusedTagRowScrollDelta(sheetTop,sheetBottom,rowTop,rowBottom){
  return (rowTop+rowBottom)/2-(sheetTop+grip+sheetBottom)/2;
 }
 
+// CSS-relative offset: keep the same viewport top without scrolling the page.
+export function relativeEditorTop(currentOffset,targetTop,currentViewportTop){
+ return currentOffset+targetTop-currentViewportTop;
+}
+
 export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode}){
  const game=host.closest('.landscape-game');
  const vv=window.visualViewport;
@@ -35,7 +40,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   if(!retainedHeight||!mask.isConnected)return;
   const rect=game.getBoundingClientRect();
   const offset=anchorTop-rect.top;
-  if(Math.abs(offset)>.5)game.style.top=((parseFloat(game.style.top)||0)+offset)+'px';
+  if(Math.abs(offset)>.5)game.style.top=relativeEditorTop(parseFloat(game.style.top)||0,anchorTop,rect.top)+'px';
   sheet.scrollTop=anchorScroll;
  }
  function restore(preserveViewport=true){
