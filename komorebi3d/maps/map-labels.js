@@ -104,14 +104,6 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const grip=document.createElement('span');
   grip.style.cssText='display:block;width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
   handle.appendChild(grip);
-  const gripClose=document.createElement('button');
-  gripClose.type='button';
-  gripClose.textContent='× 閉じる';
-  gripClose.setAttribute('aria-label','編集ボトムシートを閉じる');
-  gripClose.style.cssText='position:absolute;right:12px;top:3px;height:30px;padding:0 9px;border:1px solid #b8cbc0;border-radius:8px;background:#fff;color:#315749;font:700 12px system-ui;cursor:pointer;touch-action:manipulation;';
-  gripClose.addEventListener('pointerdown',event=>event.stopPropagation());
-  gripClose.addEventListener('click',event=>{event.stopPropagation();closeEditor();});
-  handle.appendChild(gripClose);
   handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();closeEditor();}});
   // Prevent the page's own touch scrolling on the grip when the embedding browser permits it.
   // Host/OS pull-to-dismiss gestures may still take precedence outside the webpage.
