@@ -1,8 +1,8 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=fixed-oauth-redirect-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
-import {attachSheetMotion} from './sheet-motion.js?v=sheet-three-stops-20261120';
-import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=keyboard-half-20261121';
+import {attachSheetMotion} from './sheet-motion.js?v=keyboard-mode-20261121';
+import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=keyboard-mode-20261121';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=readable-osm-errors-20261121';
@@ -136,7 +136,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   handle.appendChild(grip);
   handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();editorMotion?.toggle();}else if(event.key==='Escape'){event.preventDefault();closeEditor();}});
   // Motion controller owns grip dragging, fling velocity and sheet transitions.
-  editorMotion=attachSheetMotion(form,handle,closeEditor);
+  editorMotion=attachSheetMotion(form,handle,closeEditor,()=>editorKeyboardLayout?.refresh());
   form.appendChild(handle);
   const title=document.createElement('h3');
   title.textContent=item.name||'OSMの建物';
