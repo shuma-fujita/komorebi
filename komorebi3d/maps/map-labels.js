@@ -82,7 +82,14 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  }
 
  // JSON edit/confirm, with strictly isolated OSM development-server level test.
- let editor=null,editorMotion=null;
+ let editor=null,editorMotion=null,previewActive=false;
+ function setPreviewActive(value){
+  previewActive=Boolean(value);
+  if(previewActive){
+   for(const viewport of viewports)if(viewport.summary?.el)viewport.summary.el.style.display='none';
+   debugSvg.replaceChildren();
+  }
+ }
  function closeEditor(){
   if(!editor)return;
   editorMotion?.destroy();editorMotion=null;
@@ -649,7 +656,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   function update(camera,player){
   const empty={total:entries.length,inRange:0,inView:0,shown:0};
   if(!camera||!layer.isConnected)return empty;
-  if(editor){
+  if(editor||previewActive){
    for(const viewport of viewports){if(viewport.summary?.el)viewport.summary.el.style.display='none';}
    debugSvg.replaceChildren();
    return empty;
@@ -785,5 +792,5 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   return false;
  }
  function clearTappedBuilding(){tappedBuilding=null;}
- return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,setPreviewActive,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }
