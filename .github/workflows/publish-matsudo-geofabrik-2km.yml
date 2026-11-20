@@ -1,0 +1,110 @@
+name: Publish Matsudo Geofabrik 2km comparison JSON
+
+# Publish the validated 2km artifact independently of the costly PBF conversion.
+# Never overwrite the legacy 2km tile directory.
+on:
+  workflow_dispatch:
+    inputs:
+      b_run_id:
+        description: 'Successful Matsudo B JSON workflow run ID'
+        required: false
+        default: '44661761547'
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-matsudo-geofabrik-2km.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: matsudo-geofabrik-comparison-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Download already-generated Matsudo 2km artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_B_RUN_ID: ${{ inputs.b_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="${REQUESTED_B_RUN_ID:-44661761547}"
+          mkdir -p "$RUNNER_TEMP/matsudo-new"
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" \
+            --name matsudo-2km-geofabrik-json --dir "$RUNNER_TEMP/matsudo-new"
+
+      - name: Verify artifact and copy into separate comparison directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import shutil
+          source=Path(os.environ["RUNNER_TEMP"])/"matsudo-new"
+          target=Path("komorebi3d/maps/data/tiles-2km-geofabrik")
+          idx=json.loads((source/"index.json").read_text())
+          assert sorted(idx["tiles"]) == ["0_0"], idx
+          tile_name=idx["tiles"]["0_0"]
+          assert tile_name.startswith("tile_0_0_") and tile_name.endswith(".json")
+          doc=json.loads((source/tile_name).read_text())
+          assert doc["source"]=="OpenStreetMap contributors"
+          assert doc["tile"]["id"]=="0_0"
+          assert doc["tile"]["gridX"]==doc["tile"]["gridY"]==0
+          assert doc["tile"]["sizeM"]==2000
+          assert len(doc["elements"])>=1000
+          buildings=sum(bool(e.get("tags",{}).get("building")) and e.get("type")=="way" for e in doc["elements"])
+          roads=sum(bool(e.get("tags",{}).get("highway")) and e.get("type")=="way" for e in doc["elements"])
+          assert buildings>=10 and roads>=10,(buildings,roads)
+          target.mkdir(parents=True,exist_ok=True)
+          for old in target.glob("tile_0_0_*.json"):
+              old.unlink()
+          shutil.copy2(source/tile_name,target/tile_name)
+          shutil.copy2(source/"index.json",target/"index.json")
+          shutil.copy2(source/"validation-report.json",target/"validation-report.json")
+          print("Verified and staged",tile_name,len(doc["elements"]),"elements")
+          PY
+
+      - name: Publish only Geofabrik comparison map (preserve legacy map)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          temp="$(mktemp -d)"
+          trap 'rm -rf "$temp"' EXIT
+          cp -a komorebi3d/maps/data/tiles-2km-geofabrik/. "$temp/"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p komorebi3d/maps/data/tiles-2km-geofabrik
+            find komorebi3d/maps/data/tiles-2km-geofabrik -maxdepth 1 -type f -name 'tile_0_0_*.json' -delete
+            cp -a "$temp/." komorebi3d/maps/data/tiles-2km-geofabrik/
+            git add -A -- komorebi3d/maps/data/tiles-2km-geofabrik
+            if git diff --cached --quiet; then
+              echo "Geofabrik comparison JSON already published."
+              exit 0
+            fi
+            git commit -m "Publish validated Matsudo Geofabrik 2km comparison map"
+            if git push origin HEAD:main; then
+              echo "Published new Matsudo 2km JSON to comparison directory."
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Failed to push Geofabrik comparison map" >&2
+          exit 1
