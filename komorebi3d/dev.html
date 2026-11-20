@@ -1651,7 +1651,7 @@ function addMapDebug(line){
  mapDebugLog.push(entry);
  if(mapDebugLog.length>MAP_DEBUG_HISTORY_LIMIT)mapDebugLog.shift();
  // Preserve acquisition status even after many geometry diagnostics arrive.
- if(/^(開始 \/|OSM最新250m: (.*?(取得開始|HTTP |失敗 \(|取得・変換 |検証PASS|取得失敗)|.*全体時間上限)|JSON: .*?(HTTP |検証PASS)|地図生成: 完了|失敗:)/.test(line)){
+ if(/^(開始 \/|JSON: .*?(HTTP |検証PASS)|地図生成: 完了|失敗:)/.test(line)){
   mapDebugSummary.push(entry);
   if(mapDebugSummary.length>24)mapDebugSummary.shift();
  }
@@ -2025,7 +2025,7 @@ function setScreenConfig({screen,setting,value}={}){
  if(setting==='engine')void reconfigureScreenRenderer(screen);
  if(setting==='map'&&activeWorld==='matsudo'){
    if(matsudoMaps[value])loadOsmTagIgnore().then(rules=>applyMatsudoScreenLabels(screen,rules)).catch(error=>addMapDebug('ラベル切替失敗: '+error.message));
-   else{matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;if(value==='new')void loadMatsudoMapInBackground();}
+   else{matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;void loadMatsudoMapInBackground();}
    if(miniMapVisible)paintDebugMap();
   }
  publishGameState();return true;
