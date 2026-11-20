@@ -4,7 +4,9 @@
 import {buildMap} from './map-builder.js?v=building-preview-source-20261120';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 
-export function createBuildingEditorPreview(feature,shops,createMeshGeometry){
+// Optional draft tags affect only this isolated preview, never OSM or the map.
+export function createBuildingEditorPreview(feature,shops,createMeshGeometry,draft=null){
+
  if(!feature||!feature.previewSource||!Array.isArray(feature.bounds))return null;
  const [minX,maxX,minZ,maxZ]=feature.bounds;
  if(![minX,maxX,minZ,maxZ,feature.height].every(Number.isFinite))return null;
@@ -19,8 +21,35 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry){
    lon:origin.longitude+s.x/(111320*cos),
    tags:{...(s.tags||{})}
  }));
+ // Match by original OSM ID, never by a copied development-server ID.
+ if(draft?.tags){
+  const target=tenantNodes.find(n=>draft.osmType==='node'&&String(n.id)===String(draft.osmId));
+  if(target)target.tags={...draft.tags};
+ }
  const e=feature.previewSource;
- const building={...e,tags:{...(e.tags||{}),height:String(feature.height)}};
+ const buildingTags={...(e.tags||{}),height:String(feature.height)};
+ let previewHeight=feature.height;
+ // A level is zero-based: level=10 requires an 11th floor. For an
+ // editor-only draft, grow the isolated building if needed; do not mutate
+ // authoritative source geometry or write inferred levels back to OSM.
+ if(draft?.tags){
+  const numericLevels=tenantNodes.filter(n=>n.tags?.shop==='convenience')
+   .flatMap(n=>String(n.tags.level??'').split(';').map(v=>v.trim()))
+   .filter(v=>/^\\d+$/.test(v)).map(Number)
+   .filter(v=>Number.isSafeInteger(v)&&v>=0&&v<45);
+  const maxLevel=numericLevels.length?Math.max(...numericLevels):-1;
+  if(maxLevel>=0){
+   const explicitLevels=Number(e.tags?.['building:levels']);
+   const explicitCount=Number.isSafeInteger(explicitLevels)&&explicitLevels>0?explicitLevels:null;
+   const baseCount=explicitCount??Math.max(1,Math.round(feature.height/4));
+   const floorHeight=explicitCount?feature.height/explicitCount:4;
+   const count=Math.max(baseCount,maxLevel+1);
+   previewHeight=Math.max(feature.height,count*floorHeight);
+   buildingTags.height=String(previewHeight);
+   buildingTags['building:levels']=String(count);
+  }
+ }
+ const building={...e,tags:buildingTags};
  const map={tile,elements:[building,...tenantNodes]};
  const result=buildMap(map,{halfSize:Math.max(1000,Math.abs(minX)+30,Math.abs(maxX)+30,Math.abs(minZ)+30,Math.abs(maxZ)+30),
   priorityX:(minX+maxX)/2,priorityZ:(minZ+maxZ)/2});
@@ -38,7 +67,7 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry){
  }
  if(!geometry.length)return null;
  return {geometry,centerX:(minX+maxX)/2,centerZ:(minZ+maxZ)/2,
-  width:Math.max(3,maxX-minX),depth:Math.max(3,maxZ-minZ),height:Math.max(3,feature.height)};
+  width:Math.max(3,maxX-minX),depth:Math.max(3,maxZ-minZ),height:Math.max(3,previewHeight)};
 }
 
 // The editor sheet covers the lower 50% of each full-height 3D viewport.
