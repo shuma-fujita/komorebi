@@ -2,6 +2,7 @@
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-auto-comment-20261113';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=sheet-three-stops-20261120';
+import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=slow-auto-orbit-20261120';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=ios-keyboard-16px-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
@@ -84,7 +85,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  }
 
  // JSON edit/confirm, with strictly isolated OSM development-server level test.
- let editor=null,editorMotion=null,editorPreviewGestures=null,previewActive=false;
+ let editor=null,editorMotion=null,editorScrollGuard=null,editorPreviewGestures=null,previewActive=false;
  function setPreviewActive(value){
   previewActive=Boolean(value);
   if(previewActive){
@@ -95,6 +96,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  function closeEditor(){
   if(!editor)return;
   editorMotion?.destroy();editorMotion=null;
+  editorScrollGuard?.destroy();editorScrollGuard=null;
   editorPreviewGestures?.destroy();editorPreviewGestures=null;
   editor.remove();editor=null;
   onEditorStateChange?.(false);
@@ -114,7 +116,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   previewTouch.style.cssText='position:absolute;top:0;left:0;right:0;height:50%;z-index:1;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;pointer-events:auto;';
   editorPreviewGestures=attachBuildingPreviewGestures(previewTouch,state=>onEditorPreviewGesture?.(state));
   const form=document.createElement('form');
-  form.style.cssText='box-sizing:border-box;width:100%;height:50%;max-height:50%;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
+  form.style.cssText='box-sizing:border-box;width:100%;height:50%;max-height:50%;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
   const handle=document.createElement('div');
   handle.setAttribute('role','button');
   handle.setAttribute('aria-label','上にスワイプで全画面、下にスワイプで半画面または閉じる');
@@ -516,6 +518,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   setSource(linkedTestTarget?'test':'production');
   form.style.position='relative';form.style.zIndex='2';
   mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
+  editorScrollGuard=guardSheetScroll(mask,form);
   const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
   const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
   onEditorStateChange?.(true,{building:selectedFeature,shops:selectedFeature?shopsForFocus(selectedKey):[],screen});
