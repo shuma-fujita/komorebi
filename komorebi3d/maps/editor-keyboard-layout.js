@@ -21,7 +21,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  let focused=false,active=false,frame=0,gameHeight=0,previewHeight=0;
  let sheetAtFocus=null;
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
- function restore(){
+ function restore(preserveViewport=true){
   if(!active)return;
   active=false;
   // The Done key should dismiss the keyboard, not jump the page or resize
@@ -29,7 +29,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   const topBefore=game.getBoundingClientRect().top;
   const tagScroll=sheet.scrollTop;
   Object.assign(game.style,{position:originals.position,top:originals.top,left:originals.left,
-   width:originals.width,height:gameHeight+'px',zIndex:originals.zIndex});
+   width:originals.width,height:preserveViewport?gameHeight+'px':originals.height,zIndex:originals.zIndex});
   Object.assign(surface.style,{position:originals.surfacePosition,inset:originals.surfaceInset,
    width:originals.surfaceWidth,height:originals.surfaceHeight,
    maxWidth:originals.surfaceMaxWidth,flex:originals.surfaceFlex});
@@ -46,8 +46,10 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
    if(Math.abs(delta)>1)window.scrollBy(0,delta);
    sheet.scrollTop=tagScroll;
   }
-  keepViewportAnchor();
-  requestAnimationFrame(keepViewportAnchor);
+  if(preserveViewport){
+   keepViewportAnchor();
+   requestAnimationFrame(keepViewportAnchor);
+  }
  }
  function update(){
   frame=0;
@@ -133,6 +135,6 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   vv.removeEventListener('scroll',schedule);
   window.removeEventListener('resize',schedule);
   if(frame)cancelAnimationFrame(frame);
-  restore();
+  restore(false);
  }};
 }
