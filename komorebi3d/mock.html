@@ -141,6 +141,8 @@ button.slider-step:active{background:#c4dec1}
 .setting-group legend+label{clear:both}
 .setting-group label{display:flex;align-items:center;gap:4px;min-height:31px;font-size:11px;white-space:nowrap;cursor:pointer}
 .setting-group input{margin:0;flex:0 0 auto;accent-color:#64956c}
+.setting-group[data-setting="map"] .map-source-label{display:block;min-width:0;line-height:1.3;white-space:normal}
+.setting-group[data-setting="map"] .map-source-origin{display:block;font-size:10px;white-space:nowrap}
 .setting-group.is-different{background:#fff0d5;border-color:#e5b86f}
 .setting-group.is-different legend{color:#995a1e}
 /* @screen-settings:end */
@@ -512,12 +514,12 @@ button.panel-add-button{color:var(--g-accent)}
 <div class="screen-settings" data-visible="compare">
 <div class="screen-card" data-screen="A">
 <div class="screen-title">画面A</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>旧2km</label><label><input type="radio" name="screen-map-A" value="new">新2km（Geofabrik）</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>旧2km</label><label><input type="radio" name="screen-map-A" value="new"><span class="map-source-label">新2km<span class="map-source-origin">（Geofabrik）</span></span></label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧2km</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km（Geofabrik）</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧2km</label><label><input type="radio" name="screen-map-B" value="new" checked><span class="map-source-label">新2km<span class="map-source-origin">（Geofabrik）</span></span></label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
 </div>
 </div>
