@@ -1,7 +1,7 @@
 // Keep the A/B building preview visible when iOS scrolls an OSM tag input
 // above its software keyboard. Only active while an editor field has focus.
 export function keyboardSheetHeight(viewHeight,previewHeight){
- return Math.max(0,Math.min(viewHeight-previewHeight,viewHeight));
+ return Math.max(0,Math.min(previewHeight,viewHeight-previewHeight));
 }
 
 export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode}){
@@ -14,14 +14,15 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   sheetBottom:sheet.style.bottom,sheetHeight:sheet.style.height,
   sheetMaxHeight:sheet.style.maxHeight,previewHeight:previewTouch.style.height};
  let focused=false,active=false,frame=0,gameHeight=0,previewHeight=0;
+ let sheetAtFocus=null;
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
  function restore(){
   if(!active)return;
   active=false;
   Object.assign(game.style,{position:originals.position,top:originals.top,left:originals.left,
    width:originals.width,height:originals.height,zIndex:originals.zIndex});
-  Object.assign(sheet.style,{position:originals.sheetPosition,top:originals.sheetTop,
-   bottom:originals.sheetBottom,height:originals.sheetHeight,maxHeight:originals.sheetMaxHeight});
+  if(sheetAtFocus)Object.assign(sheet.style,sheetAtFocus);
+  sheetAtFocus=null;
   previewTouch.style.height=originals.previewHeight;
  }
  function update(){
@@ -30,6 +31,8 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   // A hardware keyboard on a desktop must not change the game geometry.
   if(!window.matchMedia?.('(pointer:coarse)')?.matches)return;
   if(!active){
+   sheetAtFocus={position:sheet.style.position,top:sheet.style.top,
+    bottom:sheet.style.bottom,height:sheet.style.height,maxHeight:sheet.style.maxHeight};
    const rect=game.getBoundingClientRect();
    gameHeight=rect.height;
    previewHeight=host.getBoundingClientRect().height*.5;
