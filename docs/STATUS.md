@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 A/B地図選択の高さ・中央揃えを統一（GitHub反映／実機未確認）：** ユーザー指摘の「新2km（Geofabrik）」だけ高さが違って見える問題に対し、`dev.html` と共通断片 `panels/test.css` の地図ソース選択用radioラベル（旧2km／新2km双方）を `height/min-height:52px`、縦横中央揃えにした。既存2行の「新2km」「（Geofabrik）」は維持して文字を中央揃え。mockを正本から再生成して同期。地図ソース値、3D、OAuth、mock黒画面・非描画を変更なし。**Actions・実機での最終見た目確認は別途必要。**
+
 > **2026-11-21 A/B地図選択ラベルのはみ出し対策（GitHub反映／Safari実機未確認）：** iPhone実機スクショでA/B比較の「新2km（Geofabrik）」が横にはみ出すことを確認。`dev.html` の地図データ選択A/B双方で「新2km」と「（Geofabrik）」を2行に分けるspanと限定CSSを追加。旧／新ソースのradio値、地図読み込み処理、3D、OAuthは変更なし。共通UI断片 `panels/test.html` と `panels/test.css` にも同表示を同期し、`mock.html` を正本 `dev.html` から再生成。mockゲーム領域は黒・Canvasなし・エンジン実行なしを維持。静的HTML確認済み。**GitHub Actionsによる公開チェック・Safari実機での表示は別途確認**。
 
 > **2026-11-21 mock／ゲームUI二重管理解消（GitHub反映／Safari実機確認待ち）：** `komorebi3d/dev.html` を唯一のゲーム・共有UI正本として維持（ゲーム本体の変更なし）。`build-dev.mjs` をmock専用で再設計し、`dev.html` の共通レイアウト・全パネルのHTML・CSSから `mock.html` を生成する方式へ変更。ゲーム表示部分のみ黒いダミー領域＋`panels/game.touch.html`へ置換し、dev専用起動診断を除外。mock固有のUI操作コードを `mock-ui.js` に分離し、旧 `mock.template.html` を削除。生成結果のmockにはゲームCanvas 0個・ゲーム実行スクリプト0個・黒い画面用CSSあり。Pagesワークフローに `node --check` と `node komorebi3d/build-dev.mjs --check` を追加し、mockがdevのUI正本とズレていたら公開前に停止する（**ゲームdev.htmlは再生成しない**）。Secretsから公開用OAuth設定ファイルを生成する仕組みは維持。ゲーム固定Engine・森林・2km地図原本・PKCE・OSMタグ送信コードは不変。従前のユーザー報告iPhone Safariゲーム起動＋テストOAuthログイン実機PASSは保持。**新mock画面の実機動作・今回のPages公開版とActionsのPASSは、別途確認が必要。**
