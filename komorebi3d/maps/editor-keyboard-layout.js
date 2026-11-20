@@ -24,8 +24,12 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  function restore(){
   if(!active)return;
   active=false;
+  // The Done key should dismiss the keyboard, not jump the page or resize
+  // the game. Keep the game height measured before the keyboard opened.
+  const topBefore=game.getBoundingClientRect().top;
+  const tagScroll=sheet.scrollTop;
   Object.assign(game.style,{position:originals.position,top:originals.top,left:originals.left,
-   width:originals.width,height:originals.height,zIndex:originals.zIndex});
+   width:originals.width,height:gameHeight+'px',zIndex:originals.zIndex});
   Object.assign(surface.style,{position:originals.surfacePosition,inset:originals.surfaceInset,
    width:originals.surfaceWidth,height:originals.surfaceHeight,
    maxWidth:originals.surfaceMaxWidth,flex:originals.surfaceFlex});
@@ -34,6 +38,16 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   sheet.style.maxHeight=getSheetMode?.()==='full'?'100%':(BUILDING_SHEET_RATIO*100)+'%';
   sheetAtFocus=null;
   previewTouch.style.height=originals.previewHeight;
+  // Undo the viewport scroll introduced by swapping fixed -> in-flow.
+  // Do not reset sheet.scrollTop: preserve the edited tag's position.
+  function keepViewportAnchor(){
+   if(!mask.isConnected)return;
+   const delta=game.getBoundingClientRect().top-topBefore;
+   if(Math.abs(delta)>1)window.scrollBy(0,delta);
+   sheet.scrollTop=tagScroll;
+  }
+  keepViewportAnchor();
+  requestAnimationFrame(keepViewportAnchor);
  }
  function update(){
   frame=0;
@@ -78,13 +92,16 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   sheet.style.bottom='auto';
   sheet.style.maxHeight=visible+'px';
   sheet.style.height=visible+'px';
-  // Scroll only the tag list: never ask Safari to scroll the whole page.
+  // Center the focused tag ROW in the visible strip above the keyboard,
+  // below the 36px sticky grip; scrolling belongs to the sheet only.
   const input=document.activeElement;
   if(isField(input)&&sheet.contains(input)&&visible>0){
    const bounds=sheet.getBoundingClientRect();
-   const field=input.getBoundingClientRect();
-   if(field.bottom>bounds.bottom-10)sheet.scrollTop+=field.bottom-bounds.bottom+10;
-   else if(field.top<bounds.top+10)sheet.scrollTop-=bounds.top+10-field.top;
+   const row=(input.closest('.komo-tag-row')||input).getBoundingClientRect();
+   const grip= Math.min(36,bounds.height/3);
+   const targetY=(bounds.top+grip+bounds.bottom)/2;
+   const delta=(row.top+row.bottom)/2-targetY;
+   if(Math.abs(delta)>2)sheet.scrollTop+=delta;
   }
  }
  function schedule(){
