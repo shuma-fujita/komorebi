@@ -88,19 +88,64 @@ applyPanelLayout(PANEL_LAYOUT);
 
 // Live panel help/gestures are initialized after the Game API mounts.
 </script><script>
-// Runs before ES modules, so an import failure is visible instead of leaving a stale "JavaScript未実行" hint.
+// Runs before ES modules. Report module failures without treating unrelated image failures as fatal.
 (function(){
- const diagnostic=()=>document.getElementById('launch-diagnostic');
- const report=message=>{const el=diagnostic();if(el)el.textContent='診断：JavaScript読み込みエラー：'+message;};
  const original='診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。';
- const update=()=>{const el=diagnostic();if(el&&el.textContent===original)el.textContent='診断：JavaScript実行開始。モジュールを読み込み中…';};
+ const diagnostic=()=>document.getElementById('launch-diagnostic');
+ let lastError='',probeStarted=false;
+ window.__komorebiModuleStarted=false;
+ const show=message=>{
+  if(window.__komorebiModuleStarted)return;
+  const el=diagnostic();
+  if(el){el.textContent='診断：'+message;el.style.whiteSpace='pre-wrap';el.style.overflowWrap='anywhere';}
+ };
+ const check=()=>{
+  if(window.__komorebiModuleStarted||probeStarted)return;
+  probeStarted=true;
+  const source=document.querySelector('script[type="module"]')?.textContent||'';
+  const urls=[];
+  const regex=/\bimport\s+[^;\n]+?\s+from\s+["']([^"']+)["']/g;
+  let match;
+  while((match=regex.exec(source)))urls.push(new URL(match[1],location.href).href);
+  if(!urls.length){show('ゲームモジュールが開始しませんでした。import一覧を取得できません。'+(lastError?'\n'+lastError:''));return;}
+  show('ゲームモジュール未開始。直接importの取得状況を確認中…'+(lastError?'\n'+lastError:''));
+  Promise.all(urls.map(async url=>{
+   const controller=new AbortController();
+   const timer=setTimeout(()=>controller.abort(),7000);
+   try{
+    const response=await fetch(url,{mode:'cors',cache:'no-store',signal:controller.signal});
+    if(!response.ok)return url+' → HTTP '+response.status;
+    const type=response.headers.get('content-type')||'';
+    if(type&&!/javascript|ecmascript/i.test(type))return url+' → Content-Type: '+type;
+    return null;
+   }catch(error){return url+' → '+String(error?.name==='AbortError'?'タイムアウト':error?.message||error);}
+   finally{clearTimeout(timer);}
+  })).then(results=>{
+   if(window.__komorebiModuleStarted)return;
+   const failures=results.filter(Boolean);
+   if(failures.length)show('ゲームモジュール未開始。読み込みに失敗した直接import（'+failures.length+'件）：\n'+failures.slice(0,4).join('\n'));
+   else show('ゲームモジュール未開始。直接import '+urls.length+'件はHTTP取得OK。依存モジュール・構文エラー・Safari互換性などを追加調査してください。'+(lastError?'\n'+lastError:''));
+  }).catch(e=>show('読み込み診断自体でエラー：'+String(e)));
+ };
+ const update=()=>{
+  const el=diagnostic();
+  if(el&&el.textContent===original)show('JavaScript実行開始。ゲームモジュールを読み込み中…');
+ };
  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',update,{once:true}):update();
  window.addEventListener('error',event=>{
   const target=event.target;
-  const message=event.message||(target&&target.src?'読み込み失敗: '+target.src:'リソースを読み込めませんでした');
-  report(message);
+  const tag=target?.tagName?.toLowerCase();
+  if(tag&&tag!=='script'&&tag!=='link')return;
+  const path=target?.src||target?.href||event.filename||'';
+  lastError=event.message||('読み込み失敗'+(path?'：'+path:'（ファイル名はブラウザから取得できません）'));
+  show('JavaScriptエラー：'+lastError);
+  if(!window.__komorebiModuleStarted)setTimeout(check,0);
  },true);
- window.addEventListener('unhandledrejection',event=>report(String(event.reason)));
+ window.addEventListener('unhandledrejection',event=>{
+  lastError=String(event.reason?.stack||event.reason);
+  show('JavaScript Promiseエラー：'+lastError);
+ });
+ setTimeout(check,9000);
 })();
 </script><script type="module">
 import { InputManager } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/input/InputManager.js";
@@ -119,6 +164,7 @@ import {createMapBuildSteps} from "./maps/map-builder.js?v=building-preview-sour
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
 import {createMapLabels} from "./maps/map-labels.js?v=lazy-oauth-repair-20261121";
 import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=ratio-tight-fit-20261121";
+window.__komorebiModuleStarted=true;
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
 const $=id=>document.getElementById(id);
