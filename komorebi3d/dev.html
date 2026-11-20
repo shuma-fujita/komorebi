@@ -488,12 +488,12 @@ button.panel-add-button{color:var(--g-accent)}
 <div class="screen-settings" data-visible="compare">
 <div class="screen-card" data-screen="A">
 <div class="screen-title">画面A</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>OSM 250m</label><label><input type="radio" name="screen-map-A" value="new">新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-A" value="old" checked>旧2km</label><label><input type="radio" name="screen-map-A" value="new">新2km（Geofabrik）</label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-A" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-A" value="B">Three.js</label></fieldset>
 </div>
 <div class="screen-card" data-screen="B">
 <div class="screen-title">画面B</div>
-<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old" checked>OSM 250m</label><label><input type="radio" name="screen-map-B" value="new">新2km</label></fieldset>
+<fieldset class="setting-group" data-setting="map"><legend>🗺️ 地図データ</legend><label><input type="radio" name="screen-map-B" value="old">旧2km</label><label><input type="radio" name="screen-map-B" value="new" checked>新2km（Geofabrik）</label></fieldset>
 <fieldset class="setting-group" data-setting="engine"><legend>🎨 Engine</legend><label><input type="radio" name="screen-engine-B" value="A" checked>WebGL</label><label><input type="radio" name="screen-engine-B" value="B">Three.js</label></fieldset>
 </div>
 </div>
@@ -608,10 +608,9 @@ import { createMeshGeometry, createMeshRenderSnapshot } from "https://cdn.jsdeli
 import { GroundBounds } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/GroundBounds.js";
 import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/collision/CollisionWorld2D.js";
 import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/core/CharacterMotionCore2D.js";
-import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=manual-overpass-20261119";
+import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=matsudo-2km-ab-20261120";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-initializer-20261117";
-import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=manual-overpass-20261119";
-import {runOverpassDiagnostic} from "./maps/map-overpass-diagnostic.js?v=manual-overpass-20261119";
+import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=matsudo-2km-ab-20261120";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=food-storefront-20261119";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
 import {createMapLabels,loadOsmTagIgnore} from "./maps/map-labels.js?v=tap-unlimited-20261119";
@@ -1241,7 +1240,7 @@ function paintDebugMap(){
   gameView.paintMap({screen,worldId:activeWorld,playerX:game.x,playerZ:game.z,
    agents:activeWorld==='forest'?npcManager.agents:[],cafeX:CAFE_X,cafeZ:CAFE_Z,
    features:activeWorld==='matsudo'?(matsudoMaps[source]?.mapFeatures??null):null,
-   mapSpan:activeWorld==='matsudo'?(matsudoMaps[source]?.mapSpan??(source==='new'?2000:500)):500});
+   mapSpan:activeWorld==='matsudo'?(matsudoMaps[source]?.mapSpan??2000):500});
  }
 }
 function setMiniMapVisible(value){
@@ -1620,7 +1619,7 @@ function productRenderSnapshot(screen,frameId){
   objects
  });
 }
-// Matsudo 250m attempts live Overpass; failure preserves the old 500m JSON as fallback.
+// Matsudo A/B comparison uses two saved 2km snapshots (no Overpass).
 const MAP_BUILD_BUDGET_MS=6; // Tune after real-device performance measurements.
 // Step 5: aggregate only, keeping the 32-line map log limit unchanged.
 function createMapBuildProfiler(){
@@ -1670,29 +1669,29 @@ function cancelMatsudoMapRequest(){
 function isCurrentMatsudoMapRequest(token,controller){
  return token===mapLoadToken&&mapLoadController===controller&&!controller.signal.aborted;
 }
-async function loadMatsudoMapInBackground({live=false,server='coffee'}={}){
+async function loadMatsudoMapInBackground(){
  cancelMatsudoMapRequest();
  const controller=new AbortController();mapLoadController=controller;
  const token=++mapLoadToken;
- mapDebugLog.length=0;mapDebugSummary.length=0;addMapDebug('開始 / '+(live?'手動API 250m → 保存JSON予備':'保存済み500m JSON（自動API通信なし）')+' / 2kmタイル '+TEST_TILE_ID);
+ mapDebugLog.length=0;mapDebugSummary.length=0;addMapDebug('開始 / 旧2km(A)・新2km Geofabrik(B) / タイル '+TEST_TILE_ID);
  const onLog=line=>{if(isCurrentMatsudoMapRequest(token,controller))addMapDebug(line);};
  publishRuntimeStatus('map-source-status','🗺️ A/B地図 読み込み中');
  try{
   const ignoreRules=await loadOsmTagIgnore();
   if(!isCurrentMatsudoMapRequest(token,controller))return;
-  for(const source of ['old',...(screenConfigs.A.map==='new'||screenConfigs.B.map==='new'?['new']:[])]){
+  for(const source of ['old','new']){
    if(!isCurrentMatsudoMapRequest(token,controller))return;
-   const name=source==='old'?(live?'手動OSM最新250m（失敗時は保存500m JSON）':'保存済み500m JSON'):'2kmタイル '+TEST_TILE_ID;
+   const name=source==='old'?'旧2kmタイル '+TEST_TILE_ID:'Geofabrik新2kmタイル '+TEST_TILE_ID;
    try{
     onLog('取得開始 / '+name);
-    const map=await loadMap({source,onLog,signal:controller.signal,live:live&&source==='old',server});
+    const map=await loadMap({source,onLog,signal:controller.signal});
     if(!isCurrentMatsudoMapRequest(token,controller))return;
     onLog('地図生成: 開始 / '+name+' / 生成予算 '+MAP_BUILD_BUDGET_MS+'ms');
     const profile=createMapBuildProfiler();
     const builder=createMapBuildSteps(map,{
-     halfSize:source==='old'?(map.areaSizeM===250?125:250):1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
+     halfSize:1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
     });
-    const displayed={meshes:[],mapFeatures:[],labels:[],mapSpan:source==='new'?2000:(map.areaSizeM===250?250:500)};
+    const displayed={meshes:[],mapFeatures:[],labels:[],mapSpan:2000};
     matsudoMaps[source]=displayed;
     const workStart=performance.now();
     let result=builder.next(),batchIndex=0,processedInSlice=0;
@@ -1999,7 +1998,7 @@ async function setWorld(name){
    cameraRig.state.pitch=0;
    cameraRig.state.yaw=Math.PI/2;
    publishRuntimeStatus('status','🏙️ 松戸：地図読み込み中（飛行できます）');
-    publishRuntimeStatus('map-source-status','🗺️ matsudo.json 読み込み待ち');
+    publishRuntimeStatus('map-source-status','🗺️ 松戸2km A/B地図 読み込み待ち');
    publishRuntimeStatus('label-status','🏙️ 屋上名：地図読み込み中');
    // Give the renderer an opportunity to show the helicopter before map work begins.
    requestAnimationFrame(()=>setTimeout(()=>{
@@ -2017,7 +2016,7 @@ async function setWorld(name){
 let rendererA=null,rendererB=null,loadingA=null,loadingB=null;
 let okA=false,okB=false,renderMode='B';
 let rendererGenerationA=0,rendererGenerationB=0;
-let screenConfigs={A:{map:'old',engine:'A'},B:{map:'old',engine:'A'}};
+let screenConfigs={A:{map:'old',engine:'A'},B:{map:'new',engine:'A'}};
 function setScreenConfig({screen,setting,value}={}){
  if(!['A','B'].includes(screen)||!['map','engine'].includes(setting)||
     !(setting==='map'?['old','new']:['A','B']).includes(value))return false;
@@ -2100,26 +2099,6 @@ function setRenderMode(mode){
 let initialMode='B';
 try{initialMode=localStorage.getItem('komorebi3d-render-mode-dev')||'B'}catch(e){}
 setRenderMode(initialMode);
- let diagnosticController=null;
- async function runMapDiagnostic(kind,server='coffee'){ 
-  if(!['ping','buildings'].includes(kind))throw Error('不明な診断');
-  diagnosticController?.abort();
-  const controller=new AbortController();
-  diagnosticController=controller;
-  const lines=[];
-  const log=line=>{
-   if(diagnosticController!==controller)return;
-   lines.push(new Date().toLocaleTimeString('ja-JP',{hour12:false})+' '+line);
-   publishRuntimeStatus('overpass-diagnostic',lines.join('\n'));
-  };
-  try{return await runOverpassDiagnostic(kind,{signal:controller.signal,onLog:log,server});}
-  catch(error){if(!controller.signal.aborted)log('診断終了：'+String(error.message||error));throw error;}
-  finally{if(diagnosticController===controller)diagnosticController=null;}
- }
-async function fetchManualOsmMap(server='coffee'){
-  if(activeWorld!=='matsudo')throw Error('最新地図取得は松戸ワールドで実行してください');
-  return loadMatsudoMapInBackground({live:true,server});
- }
  // Early Game API boundary: future controllers depend on this object, not panel DOM.
 const gameApi=Object.freeze({
  getState(){
@@ -2137,7 +2116,7 @@ const gameApi=Object.freeze({
   return ()=>gameStateListeners.delete(listener);
  },
  reset:resetGameForTest,setRenderMode,setScreenConfig,setNpcCount,setNpcRenderLimit,setNpcRenderDistance,
- setMapVisible:setMiniMapVisible,setLabelDebugVisible,teleport:teleportToTestSpot,setWorld,runMapDiagnostic,fetchManualOsmMap
+ setMapVisible:setMiniMapVisible,setLabelDebugVisible,teleport:teleportToTestSpot,setWorld
 });
 // Panel views subscribe to Game API without controlling each other.
 const unmountRuntimeStatusPanel=mountRuntimeStatusPanel(document.querySelector('.runtime-status'),gameApi);
