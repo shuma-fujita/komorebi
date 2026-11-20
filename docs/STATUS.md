@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 編集ビルのA/Bプレビュー中に通常マップのネオンタグが混入する問題（main反映／実機未確認）：** `maps/map-labels.js` の `setPreviewActive` が従来 `viewport.summary` だけを非表示にし、事前に生成した `viewport.items` が残る可能性を解消。プレビュー開始時にタグ専用 `layer.style.display='none'` で通常マップのラベル・ネオンタグ全体を不可視にし、終了時は `display=''` に復帰。編集ボトムシートは `host` 直下の別要素なので隠さない。A/Bどちらも既存の `setPreviewActive(true/false)` を利用。ビル自動水平回転、ピンチ、0:100ボトムシート、編集タグ、ヘリ復帰は変更なし。`dev.html`／`dev.template.html` のキャッシュキー更新。JS構文、A/Bでのタグ非表示と復帰の模擬試験PASS。**ActionsとiPhone Safari／ChatGPT内ブラウザ実機未確認。**
+
+
 > **2026-11-20 0:100編集シートのスクロールが背後テスト操作画面へ伝わる問題を修正（main反映／実機未確認）：** `maps/sheet-scroll-guard.js` を新設し、編集中のマスク上でタッチ・ホイールのスクロール可否を判定。編集シート内部がスクロール可能な方向はネイティブ動作を許可し、上端・下端またはシート外では `preventDefault` で背後のテスト操作画面／ページへのスクロールチェーンを防ぐ。フォームに `-webkit-overflow-scrolling:touch` を追加。シート終了時にイベントを解除。`maps/map-labels.js` のみへ接続、`dev.template.html`／`dev.html` キャッシュキー更新。50:50→0:100→50:50→閉じる、ネオンタグ入力・iOSキーボード、A/B自動回転・ピンチには手を加えていない。**JS構文・境界スクロールの模擬テストPASS／iPhone Safari・ChatGPT内ブラウザとActions実機未確認。**
 
 
