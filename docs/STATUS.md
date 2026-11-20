@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 公開Actions初回確認：** ワークフロー初回は `dev.html --check` の既存生成差分で失敗したため、`node komorebi3d/build-dev.mjs` で公開ワークスペースに生成する処理に変更（commit `6c331d9`）。再実行では**Build development page が成功**し、次の **Prepare Pages artifact** で停止。現時点で `OSM_TEST_CLIENT_ID` Secretが未設定である可能性が高く、実際のIDが注入されるまで公開は保留。**GitHub PagesのSourceはまだブランチ公開のままで、ユーザーがActionsへ変更する必要がある。**
+
+
 > **2026-11-21 OSMテストOAuthの共通Client ID方式（main反映／設定待ち）：** 利用者によるClient ID入力とOAuthアプリ登録リンクをコピー画面・タグ送信画面の両方から撤去。`osm-test-api.js` はコミットされる空プレースホルダー `maps/osm-test-client-config.js` から共通Client IDを読む方式に変更し、既存OAuth 2.0 + PKCE/S256・state・固定redirect・sessionStorageトークン・OSMテスト専用APIは維持。`scripts/write-osm-test-oauth-config.mjs` と `.github/workflows/deploy-komorebi-pages.yml` を追加し、GitHub Actions Secret `OSM_TEST_CLIENT_ID` をGitHub Pages **公開用アーティファクト内のみ**へ反映（ソース・コミット履歴へ埋め込まない）。Secret不足時はActionsをエラー終了。通常の赤いOAuth未認証エラーは「テスト環境へログイン」案内に簡略化。`dev.template.html` と生成済み`dev.html`のキャッシュキー更新。セットアップ手順は `docs/OSM_TEST_OAUTH_SETUP.md`。**管理者による①Actions Secret登録、②Settings→PagesのSourceをGitHub Actionsへ切り替え、③ワークフロー再実行が必須。これらが完了するまで公開ページのOAuthログインは利用できない。現時点で実OAuth・Safari実機未確認。**
 
 
