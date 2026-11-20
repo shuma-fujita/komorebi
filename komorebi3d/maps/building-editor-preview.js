@@ -109,25 +109,32 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={},previewRat
   right[0]*forward[1]-right[1]*forward[0]
  ];
  const tanHalf=Math.tan(45*Math.PI/360);
- // Exact perspective bounds for every horizontal orbit angle.
- // The rectangular footprint's corners rotate on a circle of this radius.
- // Solve the horizontal and upper/lower projection inequalities analytically,
- // instead of adding conservative depth and width limits independently.
- // 0% viewport margin: maximize the angle-invariant fit without intentional padding.
+ // Fit the full box into the visible top strip for *every* yaw without
+ // changing zoom during orbit. The box corners sweep a radius around its
+ // vertical center, so their extrema can be solved analytically (no sampling).
+ // The shifted camera aims the box center at NDC y=(1-previewRatio).
+ // For a corner with forward-depth term b, vertical term u and horizontal r:
+ //   horizontal: distance >= b + abs(r)/(aspect*tanHalf)
+ //   upper:      distance >= (u + tanHalf*b)/(previewRatio*tanHalf)
+ //   lower:      distance >= (-u -(1-2*previewRatio)*tanHalf*b)/
+ //                          (previewRatio*tanHalf)
+ // Maximize these expressions over all yaw angles and all eight box corners.
  const radius=Math.hypot(width,depth)/2;
  const elevation=Math.abs(backward[1]);
  const horizontal=Math.sqrt(1-elevation*elevation);
  const halfHeight=height*.5;
  const horizontalSlope=tanHalf*safeAspect;
  const verticalSlope=visibleRatio*tanHalf;
- const minDepth=radius*horizontal+halfHeight*elevation+1;
- const horizontalDistance=radius*Math.hypot(1,horizontalSlope*horizontal)/horizontalSlope+
+ // Only the near-plane check uses a small depth guard; no visual padding.
+ const minDepth=radius*horizontal+halfHeight*elevation+.2;
+ const horizontalDistance=radius*Math.hypot(horizontal,1/horizontalSlope)+
   halfHeight*elevation;
- const upperDistance=(radius*Math.abs(verticalSlope*horizontal-elevation)+
-  halfHeight*Math.abs(horizontal+verticalSlope*elevation))/verticalSlope;
- const lowerDistance=(radius*Math.abs(verticalSlope*horizontal+elevation)+
-  halfHeight*Math.abs(-horizontal+verticalSlope*elevation))/verticalSlope;
- let distance=Math.max(5,minDepth,horizontalDistance,upperDistance,lowerDistance);
+ const upperDistance=(radius*Math.hypot(elevation,tanHalf*horizontal)+
+  halfHeight*(horizontal+tanHalf*elevation))/verticalSlope;
+ const bottomCoefficient=(1-2*visibleRatio)*tanHalf;
+ const lowerDistance=(radius*Math.hypot(elevation,bottomCoefficient*horizontal)+
+  halfHeight*Math.abs(horizontal+bottomCoefficient*elevation))/verticalSlope;
+ let distance=Math.max(minDepth,horizontalDistance,upperDistance,lowerDistance);
  // Default distance fits all corners; pinch modifies only distance.
  distance/=Math.max(.55,Math.min(3,Number.isFinite(zoom)?zoom:1));
  // Shift the camera's center ray down so the building appears at
