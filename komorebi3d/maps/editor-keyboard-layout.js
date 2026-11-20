@@ -5,6 +5,11 @@ export function keyboardSheetHeight(viewHeight,previewHeight,normalSheetHeight){
  return Math.max(0,Math.min(normalSheetHeight,viewHeight-previewHeight));
 }
 
+export function focusedTagRowScrollDelta(sheetTop,sheetBottom,rowTop,rowBottom){
+ const grip=Math.min(36,Math.max(0,sheetBottom-sheetTop)/3);
+ return (rowTop+rowBottom)/2-(sheetTop+grip+sheetBottom)/2;
+}
+
 export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode}){
  const game=host.closest('.landscape-game');
  const vv=window.visualViewport;
@@ -18,7 +23,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   surfacePosition:surface.style.position,surfaceInset:surface.style.inset,
   surfaceWidth:surface.style.width,surfaceHeight:surface.style.height,
   surfaceMaxWidth:surface.style.maxWidth,surfaceFlex:surface.style.flex};
- let focused=false,active=false,frame=0,gameHeight=0,previewHeight=0,retainedHeight=false;
+ let focused=false,active=false,frame=0,anchorFrame=0,gameHeight=0,previewHeight=0,retainedHeight=false;
  let sheetAtFocus=null;
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
  function restore(preserveViewport=true){
@@ -55,7 +60,10 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   }
   if(preserveViewport){
    keepViewportAnchor();
-   requestAnimationFrame(keepViewportAnchor);
+   anchorFrame=requestAnimationFrame(()=>{
+    anchorFrame=0;
+    if(!active)keepViewportAnchor();
+   });
   }
  }
  function update(){
@@ -107,9 +115,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   if(isField(input)&&sheet.contains(input)&&visible>0){
    const bounds=sheet.getBoundingClientRect();
    const row=(input.closest('.komo-tag-row')||input).getBoundingClientRect();
-   const grip= Math.min(36,bounds.height/3);
-   const targetY=(bounds.top+grip+bounds.bottom)/2;
-   const delta=(row.top+row.bottom)/2-targetY;
+   const delta=focusedTagRowScrollDelta(bounds.top,bounds.bottom,row.top,row.bottom);
    if(Math.abs(delta)>2)sheet.scrollTop+=delta;
   }
  }
@@ -119,6 +125,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  function onFocusIn(event){
   if(!isField(event.target)||!sheet.contains(event.target))return;
   focused=true;
+  if(anchorFrame){cancelAnimationFrame(anchorFrame);anchorFrame=0;}
   schedule();
  }
  function onFocusOut(){
@@ -142,6 +149,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   vv.removeEventListener('scroll',schedule);
   window.removeEventListener('resize',schedule);
   if(frame)cancelAnimationFrame(frame);
+  if(anchorFrame)cancelAnimationFrame(anchorFrame);
   restore(false);
  }};
 }
