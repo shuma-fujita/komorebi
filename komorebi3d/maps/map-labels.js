@@ -3,6 +3,7 @@ import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthErr
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=sheet-fling-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=slow-auto-orbit-20261120';
+import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=neon-tag-editor-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
 export function parseOsmTagIgnore(source){
@@ -120,6 +121,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   handle.setAttribute('tabindex','0');
   handle.style.cssText='position:sticky;top:0;z-index:5;box-sizing:border-box;height:36px;margin:0 -16px 6px;padding:0 16px;display:flex;align-items:center;justify-content:center;background:#f8fcfa;border-radius:18px 18px 0 0;touch-action:none;overscroll-behavior:none;cursor:grab;user-select:none;-webkit-user-select:none;';
   const grip=document.createElement('span');
+  grip.className='komo-grip';
   grip.style.cssText='display:block;width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
   handle.appendChild(grip);
   handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();closeEditor();}});
@@ -127,17 +129,26 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   editorMotion=attachSheetMotion(form,handle,closeEditor);
   form.appendChild(handle);
   const title=document.createElement('h3');
-  title.textContent=item.name+'｜OSMタグの編集';
-  title.style.cssText='font-size:17px;line-height:1.4;margin:0 0 7px;';
+  title.textContent=item.name||'OSMの建物';
+  const subtitle=document.createElement('p');
+  subtitle.className='komo-editor-subtitle';
+  subtitle.textContent=item.kind==='building'?'建物（OSMタグ）':'店舗・施設（OSMタグ）';
+  const titleWrap=document.createElement('div');
+  titleWrap.className='komo-editor-heading';
+  titleWrap.append(title,subtitle);
   const header=document.createElement('div');
-  header.style.cssText='display:flex;align-items:flex-start;gap:8px;justify-content:space-between;';
-  title.style.flex='1';
+  header.className='komo-editor-header';
   const copyButton=document.createElement('button');
   copyButton.type='button';copyButton.textContent='テスト環境へコピー';
-  copyButton.style.cssText='flex:none;max-width:145px;padding:7px 9px;border-radius:8px;border:1px solid #3b7c64;background:#ecf8f0;color:#176449;font:700 12px/1.35 system-ui;';
-  header.append(title,copyButton);
+  copyButton.className='komo-editor-copy';
+  const closeIcon=document.createElement('button');
+  closeIcon.type='button';closeIcon.className='komo-editor-close';
+  closeIcon.textContent='×';closeIcon.setAttribute('aria-label','編集画面を閉じる');
+  closeIcon.addEventListener('click',closeEditor);
+  header.append(titleWrap,copyButton,closeIcon);
   const copyPane=document.createElement('section');
   copyPane.hidden=true;
+  copyPane.className='komo-copy-pane';
   copyPane.style.cssText='padding:10px;margin:8px 0;background:#edf4ee;border:1px solid #9db7a9;border-radius:9px;';
   const copyInfo=document.createElement('p');
   copyInfo.style.cssText='font-size:12px;margin:2px 0 9px;';
@@ -189,6 +200,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   copySuccess.append(copySuccessText,copyResult);
   copyPane.append(copyInfo,copyPreview,copyStatus,copyClientLabel,copyAuth,copyLink,copyConsentLabel,copyExecute,copySuccess);
   const savedTestLink=getOsmTestLink(item.osmType,String(item.osmId));
+  let linkedTestTarget=savedTestLink;
   let copySource=null,copyBusy=false,copyCreated=Boolean(savedTestLink);
   if(savedTestLink){
    copyButton.textContent='コピー済み';
@@ -234,6 +246,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     const result=await createOsmTestCopy(copySource);
     copyCreated=true;
     const saved=saveOsmTestLink(item.osmType,String(item.osmId),result.type,result.id);
+    linkedTestTarget={type:result.type,id:String(result.id)};
     copyButton.textContent='コピー済み';
     copyStatus.textContent=saved?'':'※ IDの端末保存に失敗しました。今回のIDを控えてください。';
     copySuccessText.textContent='✅ コピー完了！\nテスト用 '+result.type+'/'+result.id+'\nchangeset '+result.changesetId;
@@ -243,38 +256,40 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     // The existing level edit panel can use this new ID immediately.
     targetType.value=result.type;targetId.value=result.id;
     loaded=null;testDetails.hidden=true;syncTestControls();
+    testTags=null;testDraft=null;
+    await setSource('test');
    }catch(e){copySuccess.hidden=true;copyStatus.textContent='コピー作成エラー: '+e.message;}
    finally{copyBusy=false;refreshCopyButtons();}
   });
   const note=document.createElement('p');
-  note.textContent='既存タグを編集して確認できます。本番OSMには送信しません。';
-  note.style.cssText='color:#4e655b;font-size:12px;margin:0 0 8px;';
+  note.className='komo-status';
+  note.textContent='本番OSMは読み取り専用です。テスト側ではタグを追加・確認できます。実際のテストOSMへの送信は、現在level追加のみ対応しています。';
   const metadata=document.createElement('p');
   metadata.textContent='OSM '+item.osmType+'/'+item.osmId+' ／ version: '+(item.osmVersion??'未取得');
   metadata.style.cssText='font-size:11px;color:#587166;margin:4px 0;';
   const rows=document.createElement('div');
+  rows.setAttribute('aria-label','OSMタグ一覧');
   const inputStyle='box-sizing:border-box;width:100%;min-width:0;padding:8px;border:1px solid #aabfb5;border-radius:7px;background:white;color:#152b25;font:13px/1.4 system-ui,-apple-system,sans-serif;';
-  function addRow(key='',value=''){
-   const row=document.createElement('div');
-   row.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 32px;gap:5px;margin:6px 0;';
-   const k=document.createElement('input');k.value=key;k.placeholder='タグ名';k.setAttribute('aria-label','タグ名');k.style.cssText=inputStyle;
-   const v=document.createElement('input');v.value=value;v.placeholder='値';v.setAttribute('aria-label','タグの値');v.style.cssText=inputStyle;
-   const remove=document.createElement('button');remove.type='button';remove.textContent='×';
-   remove.setAttribute('aria-label',key+' タグを削除');
-   remove.style.cssText='border:1px solid #aabfb5;border-radius:7px;background:white;color:#8b3535;font-size:18px;';
-   remove.addEventListener('click',()=>row.remove());
-   row.append(k,v,remove);rows.appendChild(row);
+  function addRow(key='',value='',editable=false){
+   const row=document.createElement('div');row.className='komo-tag-row';
+   const k=document.createElement('input');k.value=key;k.placeholder='タグ名';
+   k.setAttribute('aria-label','タグ名');k.style.cssText=inputStyle;
+   k.readOnly=!editable||Boolean(key);
+   const v=document.createElement('input');v.value=value;v.placeholder='値';
+   v.setAttribute('aria-label','タグの値');v.style.cssText=inputStyle;
+   v.readOnly=!editable;
+   row.append(k,v);rows.appendChild(row);
   }
   const tagsHeader=document.createElement('p');
-  tagsHeader.textContent='タグ名 / 値';
+  tagsHeader.textContent='タグ';
+  tagsHeader.className='komo-caption';
   tagsHeader.style.cssText='font-weight:700;margin:12px 0 4px;';
-  for(const [k,v] of Object.entries(initial))addRow(k,String(v));
   const add=document.createElement('button');add.type='button';add.textContent='＋ タグを追加';
-  add.style.cssText='padding:8px 11px;border:1px solid #aabfb5;border-radius:7px;background:#fff;color:#236c56;font-weight:700;';
-  add.addEventListener('click',()=>{addRow();rows.lastElementChild?.firstElementChild?.focus();});
+  add.className='komo-add-tag';
+  add.addEventListener('click',()=>{addRow('','',true);rows.lastElementChild?.firstElementChild?.focus();});
   const error=document.createElement('p');
   error.style.cssText='color:#a52f2f;font-size:12px;min-height:1em;';
-  const review=document.createElement('div');review.hidden=true;
+  const review=document.createElement('div');review.hidden=true;review.className='komo-review';
   const previewTitle=document.createElement('p');previewTitle.textContent='JSON変更内容の確認（OSM未送信）';previewTitle.style.fontWeight='700';
   const json=document.createElement('pre');json.style.cssText='max-height:40vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#e8f0eb;border-radius:8px;color:#19352f;font:12px/1.5 ui-monospace,monospace;';
   review.append(previewTitle,json);
