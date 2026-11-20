@@ -93,12 +93,46 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const baseTags={...(item.originalTags||item.tags||{})};
   const initial={...baseTags};
   const mask=document.createElement('div');
-  mask.style.cssText='position:absolute;inset:0;z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(8,18,25,.72);pointer-events:auto;';
+  mask.style.cssText='position:absolute;inset:0;z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(8,18,25,.18);pointer-events:auto;';
   const form=document.createElement('form');
-  form.style.cssText='box-sizing:border-box;width:100%;max-height:85%;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:12px 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
+  form.style.cssText='box-sizing:border-box;width:100%;height:50%;max-height:50%;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
   const handle=document.createElement('div');
-  handle.setAttribute('aria-hidden','true');
-  handle.style.cssText='width:44px;height:5px;border-radius:99px;background:#a9b8b0;margin:0 auto 12px;';
+  handle.setAttribute('role','button');
+  handle.setAttribute('aria-label','下にスワイプして編集画面を閉じる');
+  handle.style.cssText='height:36px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;';
+  const grip=document.createElement('span');
+  grip.style.cssText='display:block;width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
+  handle.appendChild(grip);
+  // Only the grip captures downward gestures; the editor body remains scrollable.
+  let drag=null;
+  handle.addEventListener('pointerdown',event=>{
+   if(!event.isPrimary||event.button!==0)return;
+   drag={pointerId:event.pointerId,startY:event.clientY,distance:0};
+   form.style.transition='none';
+   handle.setPointerCapture(event.pointerId);
+   event.preventDefault();event.stopPropagation();
+  });
+  handle.addEventListener('pointermove',event=>{
+   if(!drag||drag.pointerId!==event.pointerId)return;
+   drag.distance=Math.max(0,event.clientY-drag.startY);
+   form.style.transform='translateY('+drag.distance+'px)';
+   event.preventDefault();event.stopPropagation();
+  });
+  function finishGripDrag(event,cancelled=false){
+   if(!drag||drag.pointerId!==event.pointerId)return;
+   const distance=drag.distance;
+   drag=null;
+   if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId);
+   if(!cancelled&&distance>=Math.min(90,form.clientHeight*.25)){
+    closeEditor();
+   }else{
+    form.style.transition='transform 160ms ease-out';
+    form.style.transform='translateY(0)';
+   }
+   event.preventDefault();event.stopPropagation();
+  }
+  handle.addEventListener('pointerup',event=>finishGripDrag(event));
+  handle.addEventListener('pointercancel',event=>finishGripDrag(event,true));
   form.appendChild(handle);
   const title=document.createElement('h3');
   title.textContent=item.name+'｜OSMタグの編集';
