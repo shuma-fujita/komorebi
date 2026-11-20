@@ -5,8 +5,8 @@ import {attachSheetMotion} from './sheet-motion.js?v=sheet-three-stops-20261120'
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=ios-keyboard-16px-20261120';
+import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 const osmTestOAuthReturn=finishOsmTestLogin();
-// Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
@@ -109,6 +109,8 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   closeEditor();
   const baseTags={...(item.originalTags||item.tags||{})};
   const initial={...baseTags};
+  const tagOrderPromise=loadOsmTagOrder();
+  let tagOrderRules=[];
   const mask=document.createElement('div');
   mask.style.cssText='position:absolute;inset:0;z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(8,18,25,.18);pointer-events:auto;';
   // Gesture surface covers only the visible upper-half building preview.
@@ -427,7 +429,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   add.addEventListener('click',()=>{updateConfirm();});
   const renderTags=(tags,editable)=>{
    rows.replaceChildren();
-   for(const [key,value] of Object.entries(tags))addRow(key,String(value),editable);
+   for(const [key,value] of orderOsmTagEntries(tags,tagOrderRules))addRow(key,String(value),editable);
    tagsHeader.textContent='◇ タグ（'+Object.keys(tags).length+'件）';
    add.hidden=!editable;
    updateConfirm();
@@ -441,6 +443,9 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    const request=++sourceRequest;
    for(const [name,button] of Object.entries(sourceButtons))
     button.setAttribute('aria-pressed',String(name===source));
+   sourceStatus.textContent='タグ表示順を読み込み中…';
+   tagOrderRules=await tagOrderPromise;
+   if(request!==sourceRequest||!editor)return;
    if(source==='production'){
     testReady=false;
     renderTags(productionDraft??baseTags,true);
