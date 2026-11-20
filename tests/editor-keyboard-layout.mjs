@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import {keyboardSheetHeight} from '../komorebi3d/maps/editor-keyboard-layout.js';
 
-// The A/B preview keeps 40% of the original 600px game height (240px).
-assert.equal(keyboardSheetHeight(800,240),360,'normal: 40/60');
-assert.equal(keyboardSheetHeight(500,240),260,'keyboard: remaining space');
-assert.equal(keyboardSheetHeight(350,240),110,'keyboard: narrow tag strip');
-assert.equal(keyboardSheetHeight(200,240),0,'keyboard: no negative height');
-assert.equal(keyboardSheetHeight(600,240),360,'no keyboard: normal 60% sheet');
+// 600px game: preview=180px (30%) and tag editor=420px (70%).
+assert.equal(keyboardSheetHeight(800,180,420),420,'normal: 30/70');
+assert.equal(keyboardSheetHeight(500,180,420),320,'keyboard: remaining space');
+assert.equal(keyboardSheetHeight(350,180,420),170,'keyboard: narrow tag area');
+assert.equal(keyboardSheetHeight(150,180,420),0,'keyboard: no negative height');
+assert.equal(keyboardSheetHeight(600,180,420),420,'no keyboard: normal 70% sheet');
 console.log('editor keyboard sheet height: PASS');
