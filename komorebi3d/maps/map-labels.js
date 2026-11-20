@@ -394,7 +394,9 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   controls.append(close,confirm);
   form.append(header,copyPane,note,metadata,tagsHeader,rows,add,review,error,controls);
   mask.appendChild(form);host.appendChild(mask);editor=mask;
-  onEditorStateChange?.(true);
+  const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
+  const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
+  onEditorStateChange?.(true,{building:selectedFeature,shops:selectedFeature?shopsForFocus(selectedKey):[],screen});
  }
  // Add only newly completed feature labels; preserve the existing HTML
  // cards and their OSM editing callbacks between progressive display batches.
@@ -647,6 +649,11 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   function update(camera,player){
   const empty={total:entries.length,inRange:0,inView:0,shown:0};
   if(!camera||!layer.isConnected)return empty;
+  if(editor){
+   for(const viewport of viewports){if(viewport.summary?.el)viewport.summary.el.style.display='none';}
+   debugSvg.replaceChildren();
+   return empty;
+  }
   lastCamera=camera;
   const [ex,ey,ez]=camera.eye,[tx,ty,tz]=camera.target;
   const px=player?.x??tx,py=player?.y??ty,pz=player?.z??tz;
