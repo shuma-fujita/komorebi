@@ -14,5 +14,5 @@ assert.equal(keyboardSheetHeight(total,preview,sheet),sheet,'no keyboard: normal
 assert.equal(focusedTagRowScrollDelta(600,800,680,760),2,'focused row nearly centered');
 assert.equal(focusedTagRowScrollDelta(600,800,710,790),32,'move a low row upward');
 assert.equal(focusedTagRowScrollDelta(600,800,640,720),-38,'move a high row downward');
-assert.equal(focusedTagRowScrollDelta(600,620,600,620),-3.333333333333334,'narrow viewport'); 
+assert.ok(Math.abs(focusedTagRowScrollDelta(600,620,600,620)+10/3)<1e-9,'narrow viewport');
 console.log('editor keyboard sheet height and centered tag row: PASS');
