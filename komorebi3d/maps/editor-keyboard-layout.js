@@ -9,11 +9,15 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  const game=host.closest('.landscape-game');
  const vv=window.visualViewport;
  if(!game||!vv)return {destroy(){}};
+ const surface=host;
  const originals={position:game.style.position,top:game.style.top,left:game.style.left,
   width:game.style.width,height:game.style.height,zIndex:game.style.zIndex,
   sheetPosition:sheet.style.position,sheetTop:sheet.style.top,
   sheetBottom:sheet.style.bottom,sheetHeight:sheet.style.height,
-  sheetMaxHeight:sheet.style.maxHeight,previewHeight:previewTouch.style.height};
+  sheetMaxHeight:sheet.style.maxHeight,previewHeight:previewTouch.style.height,
+  surfacePosition:surface.style.position,surfaceInset:surface.style.inset,
+  surfaceWidth:surface.style.width,surfaceHeight:surface.style.height,
+  surfaceMaxWidth:surface.style.maxWidth,surfaceFlex:surface.style.flex};
  let focused=false,active=false,frame=0,gameHeight=0,previewHeight=0;
  let sheetAtFocus=null;
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
@@ -22,6 +26,9 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   active=false;
   Object.assign(game.style,{position:originals.position,top:originals.top,left:originals.left,
    width:originals.width,height:originals.height,zIndex:originals.zIndex});
+  Object.assign(surface.style,{position:originals.surfacePosition,inset:originals.surfaceInset,
+   width:originals.surfaceWidth,height:originals.surfaceHeight,
+   maxWidth:originals.surfaceMaxWidth,flex:originals.surfaceFlex});
   if(sheetAtFocus)Object.assign(sheet.style,sheetAtFocus);
   sheet.style.height=getSheetMode?.()==='full'?'100%':(BUILDING_SHEET_RATIO*100)+'%';
   sheet.style.maxHeight=getSheetMode?.()==='full'?'100%':(BUILDING_SHEET_RATIO*100)+'%';
@@ -44,6 +51,15 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
    game.style.width=rect.width+'px';
    game.style.height=gameHeight+'px';
    game.style.zIndex='1000';
+   // A flex child can be vertically centered when Safari resizes the visual
+   // viewport mid-keyboard animation, leaving a gap above both canvases.
+   // Pin the WebGL surface to the game frame's top edge while editing.
+   surface.style.position='absolute';
+   surface.style.inset='0';
+   surface.style.width='100%';
+   surface.style.height='100%';
+   surface.style.maxWidth='none';
+   surface.style.flex='none';
    active=true;
   }
   // Fixed elements use layout-viewport coordinates; keyboard visibility
