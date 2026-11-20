@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "テストOSMコピー用OAuthのリダイレクト先を https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html に固定。元のorigin+pathname依存を撤去し、認可・トークン取得・state検証に同一URLを使用。GitHub反映・構文/静的PASS、OAuth実認証・実機未確認。",
+  "matsudo": "OSMタグ編集画面のOAuth・テスト送信エラーの文字色がダークテーマの!importantに上書きされ読めない問題を修正。エラーは暗赤背景＋明るい文字で表示し、通常ステータスもテーマ適合。認証・level送信ロジックは不変（構文・静的PASS／実機未確認）。",
   "common": "地図ログを重要イベント固定＋直近12行＋全履歴最大512行に整理し、全ログ閲覧・コピー対応（構文確認PASS／実機待ち）"
 }
