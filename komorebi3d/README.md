@@ -2,6 +2,14 @@
 
 Komorebi Engineを利用するモバイル向け3Dゲームです。
 
+## ゲーム正本・ビルドの運用（2026-11-21）
+
+- **ゲームの唯一の編集元・公開対象は `komorebi3d/dev.html`。** GitHub Actionsはコミットされたファイルを再生成せず、そのままPagesの公開アーティファクトへコピーする。
+- **`dev.template.html` は廃止・削除済み。** ゲームをテンプレートから生成する作業は禁止。古いOverpass処理をデプロイで復活させないため、生成経路ごと撤去した。
+- **`build-dev.mjs` は名前を維持しているがモック専用。** `node komorebi3d/build-dev.mjs --mode=mock` で `mock.template.html` から `mock.html` を作る。引数なしでもmockだけを生成し、`--mode=dev` はエラーになる。
+- OAuthの共通Client IDは既存どおりGitHub Actions Secretsから**公開アーティファクトの設定ファイルにのみ挿入**する。GitHubの正本 `dev.html` やOSM本番・テスト認証処理へは挿入しない。
+- ゲーム動作とGitHub Actionsのデプロイ成功、iPhone Safari実機PASSは個別に確認し、`docs/STATUS.md` に記録する。
+
 ## 現在の安定基準：v0.7
 
 **Komorebi 3D v0.7**（v0.7のテストHTMLは整理済みで、このリポジトリにはありません。現在の開発版は **[dev.html](https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html)**）
