@@ -3,7 +3,7 @@ import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthErr
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=sheet-fling-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=slow-auto-orbit-20261120';
-import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=neon-tag-editor-20261120';
+import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=ios-keyboard-16px-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
 export function parseOsmTagIgnore(source){
