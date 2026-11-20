@@ -23,12 +23,12 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      # dev.html is the checked-in source of truth; never regenerate it during deployment.
-      - name: Verify mock UI is generated from canonical dev.html
+      # UI fragments are shared; deploy only checked-in pages, never rebuild game code here.
+      - name: Verify mock-first UI sources and both checked-in pages
         run: |
-          node --check komorebi3d/build-dev.mjs
+          node --check komorebi3d/build-ui.mjs
           node --check komorebi3d/mock-ui.js
-          node komorebi3d/build-dev.mjs --check
+          node komorebi3d/build-ui.mjs --check
       - name: Prepare Pages artifact without writing Client ID to git
         env:
           OSM_TEST_CLIENT_ID: ${{ secrets.OSM_TEST_CLIENT_ID }}
