@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "OSMビルタグ編集に表示順設定 maps/osm-tags.order を追加。name→name:ja→name:en→name:*→level→残り（元の登録順）で全タグを表示。*ワイルドカード対応、初回だけ読込、テストOSM／本番OSM共通で編集画面の表示順のみ変更（構文・模擬PASS／実機未確認）。",
+  "matsudo": "テストOSMコピー用OAuthのリダイレクト先を https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html に固定。元のorigin+pathname依存を撤去し、認可・トークン取得・state検証に同一URLを使用。GitHub反映・構文/静的PASS、OAuth実認証・実機未確認。",
   "common": "地図ログを重要イベント固定＋直近12行＋全履歴最大512行に整理し、全ログ閲覧・コピー対応（構文確認PASS／実機待ち）"
 }
