@@ -1,6 +1,6 @@
 // Three-stop native-feeling OSM bottom sheet: half, full, dismiss.
 // Only the grip owns vertical gestures. The form keeps native scrolling.
-export function attachSheetMotion(sheet,handle,onDismiss){
+export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
  const SAMPLE_WINDOW=110,DISMISS_DISTANCE=90,FLICK_VELOCITY=.55;
  const reducedMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
  let mode='half',drag=null,animation=null,disposed=false,dismissing=false;
@@ -26,7 +26,7 @@ export function attachSheetMotion(sheet,handle,onDismiss){
   // This prevents snapping a full-screen sheet back to half before the fade.
   if(reducedMotion()||typeof sheet.animate!=='function'){
    if(target==='dismiss'){if(!disposed)onDismiss();return;}
-   setSize(toHeight);mode=target;return;
+   setSize(toHeight);mode=target;onModeChange?.(mode);return;
   }
   setSize(fromHeight,fromOffset);
   const frames=target==='dismiss'
@@ -39,7 +39,7 @@ export function attachSheetMotion(sheet,handle,onDismiss){
    animation=null;
    current.cancel();
    if(target==='dismiss'){onDismiss();return;}
-   setSize(toHeight);mode=target;
+   setSize(toHeight);mode=target;onModeChange?.(mode);
   },()=>{});
  }
  function onPointerDown(event){
