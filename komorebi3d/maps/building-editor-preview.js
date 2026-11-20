@@ -41,13 +41,47 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry){
   width:Math.max(3,maxX-minX),depth:Math.max(3,maxZ-minZ),height:Math.max(3,feature.height)};
 }
 
+// The editor sheet covers the lower 50% of each full-height 3D viewport.
+// Keep the building centered at x=50%, y=25% of the entire canvas,
+// i.e. the visual center of the uncovered upper half.
 export function buildingEditorCamera(preview,aspect){
  const {centerX:x,centerZ:z,width,depth,height}=preview;
  const safeAspect=Math.max(.24,Math.min(2,Number.isFinite(aspect)?aspect:1));
- const span=Math.hypot(width,depth);
- // Narrow A/B viewports need additional distance so the full footprint fits.
- const distance=Math.max(18,height*2.25,span*1.45/Math.min(1,safeAspect));
- const target=[x,height*.48,z];
- const eye=[x+distance*.65,target[1]+distance*.48,z+distance*.75];
+ const center=[x,height*.5,z];
+ const direction=[.65,.48,.75],directionLength=Math.hypot(...direction);
+ const backward=direction.map(v=>v/directionLength);
+ const forward=backward.map(v=>-v);
+ const right=[-forward[2],0,forward[0]];
+ const rightLength=Math.hypot(...right);
+ for(let i=0;i<3;i++)right[i]/=rightLength;
+ const up=[
+  right[1]*forward[2]-right[2]*forward[1],
+  right[2]*forward[0]-right[0]*forward[2],
+  right[0]*forward[1]-right[1]*forward[0]
+ ];
+ const tanHalf=Math.tan(45*Math.PI/360);
+ const corners=[];
+ for(const dx of [-width/2,width/2])
+  for(const dz of [-depth/2,depth/2])
+   for(const dy of [-height/2,height/2])corners.push([dx,dy,dz]);
+ const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+ // Use the actual A/B canvas aspect, including narrow phone viewports.
+ // Fit the entire building INSIDE the uncovered top half with 12% margins.
+ let distance=Math.max(18,height*2.25,Math.hypot(width,depth)*1.45/Math.min(1,safeAspect));
+ function fits(d){
+  const offset=d*tanHalf*.5;
+  for(const corner of corners){
+   const projectedDepth=d-dot(corner,backward);
+   if(projectedDepth<=.1)return false;
+   const ndcX=dot(corner,right)/(projectedDepth*tanHalf*safeAspect);
+   const ndcY=(dot(corner,up)+offset)/(projectedDepth*tanHalf);
+   if(Math.abs(ndcX)>.84||ndcY<.12||ndcY>.88)return false;
+  }
+  return true;
+ }
+ for(let i=0;i<30&&!fits(distance);i++)distance*=1.2;
+ const offset=distance*tanHalf*.5;
+ const eye=center.map((v,i)=>v+backward[i]*distance-up[i]*offset);
+ const target=center.map((v,i)=>v-up[i]*offset);
  return {eye,target};
 }
