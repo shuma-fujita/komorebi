@@ -380,10 +380,87 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   testPane.append(testHeading,testHelp,testLink,oauth,logout,typeLabel,targetId.parentElement,loadTarget,testDetails,consentLabel,send,testStatus);
   review.appendChild(testPane);
 
-  const close=makeButton('閉じる'),confirm=makeButton('確認',true),back=makeButton('編集に戻る');
-  const dismiss=()=>closeEditor();
-  close.addEventListener('click',dismiss);
+  const confirm=makeButton('変更内容を確認',true),back=makeButton('編集に戻る');
+  confirm.className='komo-action';back.className='komo-action komo-action-secondary';
+  confirm.hidden=true;
+  let activeSource='production',testTags=null,testDraft=null,testReady=false,sourceRequest=0;
+  const sourceRow=document.createElement('div');
+  sourceRow.style.cssText='display:flex;align-items:center;gap:10px;margin:13px 0;';
+  const sourceHeading=document.createElement('strong');sourceHeading.textContent='表示データ';
+  sourceHeading.style.cssText='flex:none;font:700 13px system-ui;';
+  const sourceSwitch=document.createElement('div');sourceSwitch.className='komo-source-switch';
+  sourceSwitch.setAttribute('role','group');sourceSwitch.setAttribute('aria-label','表示するOSMデータ');
+  const sourceButtons={};
+  for(const [id,label] of [['production','本番OSM'],['test','テストOSM']]){
+   const button=document.createElement('button');button.type='button';
+   button.textContent=label;button.setAttribute('aria-pressed','false');
+   button.addEventListener('click',()=>setSource(id));
+   sourceButtons[id]=button;sourceSwitch.appendChild(button);
+  }
+  sourceRow.append(sourceHeading,sourceSwitch);
+  const sourceStatus=document.createElement('p');sourceStatus.className='komo-status';
+  sourceStatus.setAttribute('role','status');
+  const captureDraft=()=>{
+   const values={};
+   for(const row of rows.children){
+    const key=row.children[0]?.value.trim();
+    if(key)values[key]=row.children[1]?.value??'';
+   }
+   return values;
+  };
+  const isEdited=()=>{
+   if(activeSource!=='test'||!testReady||!testTags)return false;
+   const draft=captureDraft();
+   return Object.keys(draft).some(key=>draft[key]!==testTags[key])||
+    Object.keys(testTags).some(key=>!Object.prototype.hasOwnProperty.call(draft,key));
+  };
+  function updateConfirm(){confirm.hidden=!isEdited()||!review.hidden;}
+  rows.addEventListener('input',updateConfirm);
+  add.addEventListener('click',()=>{updateConfirm();});
+  const renderTags=(tags,editable)=>{
+   rows.replaceChildren();
+   for(const [key,value] of Object.entries(tags))addRow(key,String(value),editable);
+   tagsHeader.textContent='◇ タグ（'+Object.keys(tags).length+'件）';
+   add.hidden=!editable;
+   updateConfirm();
+  };
+  async function setSource(source){
+   if(source!=='production'&&source!=='test')return;
+   if(!review.hidden)back.click();
+   if(activeSource==='test'&&testReady)testDraft=captureDraft();
+   activeSource=source;
+   const request=++sourceRequest;
+   for(const [name,button] of Object.entries(sourceButtons))
+    button.setAttribute('aria-pressed',String(name===source));
+   if(source==='production'){
+    testReady=false;
+    renderTags(baseTags,false);
+    sourceStatus.textContent='本番OSM（読み取り専用）。本番には変更を送信しません。';
+    return;
+   }
+   if(!linkedTestTarget){
+    testReady=false;renderTags({},false);
+    sourceStatus.textContent='テストOSMにコピーがまだありません。右上の「テスト環境へコピー」で複製してください。';
+    return;
+   }
+   testReady=false;renderTags({},false);
+   sourceStatus.textContent='テストOSMから実際のタグを読み込み中…';
+   try{
+    await osmTestOAuthReturn;
+    const data=await getOsmTestElement(linkedTestTarget.type,linkedTestTarget.id);
+    if(request!==sourceRequest||!editor)return;
+    testTags={...data.tags};
+    testReady=true;
+    renderTags(testDraft??testTags,true);
+    sourceStatus.textContent='テストOSM '+data.type+'/'+data.id+' を表示中。変更の送信は現在levelタグの追加だけに対応しています。';
+   }catch(error){
+    if(request!==sourceRequest||!editor)return;
+    testReady=false;renderTags({},false);
+    sourceStatus.textContent='テストOSMの読み込み失敗：'+error.message+'。本番OSMのタグは代わりに表示しません。';
+   }
+  }
   function collect(){
+   if(activeSource!=='test'||!testReady||!testTags||!linkedTestTarget)throw Error('テストOSMのタグを読み込んでから編集してください。');
    const tags={};
    for(const row of rows.children){
     const k=row.children[0].value.trim(),v=row.children[1].value;
@@ -393,10 +470,11 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     tags[k]=v;
    }
    const changed={};
-   for(const key of new Set([...Object.keys(baseTags),...Object.keys(tags)])){
-    if(baseTags[key]!==tags[key])changed[key]=Object.prototype.hasOwnProperty.call(tags,key)?tags[key]:null;
+   for(const key of new Set([...Object.keys(testTags),...Object.keys(tags)])){
+    if(testTags[key]!==tags[key])changed[key]=Object.prototype.hasOwnProperty.call(tags,key)?tags[key]:null;
    }
-   return {osm:{type:item.osmType,id:String(item.osmId),version:item.osmVersion??null},tags,changes:changed};
+   if(Object.keys(changed).some(key=>changed[key]===null))throw Error('タグ削除には対応していません。');
+   return {osm:{type:linkedTestTarget.type,id:String(linkedTestTarget.id),version:null},tags,changes:changed};
   }
   let pending=null;
   confirm.addEventListener('click',()=>{
@@ -404,6 +482,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     pending=collect();error.textContent='';
     json.textContent=JSON.stringify({osm:pending.osm,changes:pending.changes,tags:pending.tags},null,2);
     rows.hidden=true;add.hidden=true;tagsHeader.hidden=true;review.hidden=false;
+    sourceRow.hidden=true;sourceStatus.hidden=true;note.hidden=true;
     testPane.hidden=!eligible;
     loaded=null;consent.checked=false;testDetails.hidden=true;
     levelValue=null;
@@ -415,15 +494,21 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     }
     osmTestOAuthReturn.then(()=>{const authError=consumeOsmTestAuthError();if(authError)testStatus.textContent='認証失敗: '+authError;syncTestControls();});
     syncTestControls();
-    controls.replaceChildren(back,close);
+    controls.replaceChildren(back);
    }catch(e){error.textContent=e.message;}
   });
-  back.addEventListener('click',()=>{pending=null;rows.hidden=false;add.hidden=false;tagsHeader.hidden=false;review.hidden=true;controls.replaceChildren(close,confirm);});
+  back.addEventListener('click',()=>{pending=null;rows.hidden=false;tagsHeader.hidden=false;review.hidden=true;sourceRow.hidden=false;sourceStatus.hidden=false;note.hidden=false;controls.replaceChildren(confirm);add.hidden=activeSource!=='test'||!testReady;updateConfirm();});
   form.addEventListener('submit',event=>event.preventDefault());
   mask.addEventListener('pointerdown',event=>event.stopPropagation());
   mask.addEventListener('click',event=>{event.stopPropagation();if(event.target===mask)dismiss();});
-  controls.append(close,confirm);
-  form.append(header,copyPane,note,metadata,tagsHeader,rows,add,review,error,controls);
+  controls.append(confirm);
+  metadata.style.color='#9bb5a8';
+  metadata.style.margin='5px 0 10px';
+  form.append(header,copyPane,sourceRow,sourceStatus,metadata,tagsHeader,rows,add,review,error,controls);
+  applyBuildingTagEditorTheme(form);
+  // Use actual test data when an element has already been copied; never
+  // mislabel local production tags as test data.
+  setSource(linkedTestTarget?'test':'production');
   form.style.position='relative';form.style.zIndex='2';
   mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
   const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
