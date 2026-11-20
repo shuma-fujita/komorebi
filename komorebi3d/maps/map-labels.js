@@ -3,6 +3,7 @@ import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthErr
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=editor-ratio-30-70-20261121';
 import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=editor-ratio-30-70-20261121';
+import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
@@ -121,10 +122,10 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   const previewTouch=document.createElement('div');
   previewTouch.setAttribute('role','group');
   previewTouch.setAttribute('aria-label','ビルの3Dプレビュー：タップで自動回転の停止・再開、左右スワイプで水平回転、2本指ピンチで拡大縮小');
-  previewTouch.style.cssText='position:absolute;top:0;left:0;right:0;height:30%;z-index:1;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;pointer-events:auto;';
+  previewTouch.style.cssText='position:absolute;top:0;left:0;right:0;height:'+(BUILDING_PREVIEW_RATIO*100)+'%;z-index:1;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;pointer-events:auto;';
   editorPreviewGestures=attachBuildingPreviewGestures(previewTouch,state=>onEditorPreviewGesture?.(state));
   const form=document.createElement('form');
-  form.style.cssText='box-sizing:border-box;width:100%;height:70%;max-height:70%;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
+  form.style.cssText='box-sizing:border-box;width:100%;height:'+(BUILDING_SHEET_RATIO*100)+'%;max-height:'+(BUILDING_SHEET_RATIO*100)+'%;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
   const handle=document.createElement('div');
   handle.setAttribute('role','button');
   handle.setAttribute('aria-label','上にスワイプで全画面、下にスワイプで半画面または閉じる');
