@@ -431,7 +431,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    if(source!=='production'&&source!=='test')return;
    if(!review.hidden)back.click();
    if(activeSource==='test'&&testReady)testDraft=captureDraft();
-   if(activeSource==='production')productionDraft=captureDraft();
+   if(activeSource==='production'&&rows.children.length)productionDraft=captureDraft();
    activeSource=source;
    const request=++sourceRequest;
    for(const [name,button] of Object.entries(sourceButtons))
