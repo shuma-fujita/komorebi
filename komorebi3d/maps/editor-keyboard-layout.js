@@ -15,6 +15,8 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  const vv=window.visualViewport;
  if(!game||!vv)return {destroy(){}};
  const surface=host;
+ const gameSlot=game.closest('.panel-slot-main');
+ const slotOverflow=gameSlot?.style.overflow??'';
  const originals={position:game.style.position,top:game.style.top,left:game.style.left,
   width:game.style.width,height:game.style.height,zIndex:game.style.zIndex,
   sheetPosition:sheet.style.position,sheetTop:sheet.style.top,
@@ -45,6 +47,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
     game.style.position=originals.position;
     game.style.top=originals.top;
     game.style.height=originals.height;
+    if(gameSlot)gameSlot.style.overflow=slotOverflow;
    }
    return;
   }
@@ -52,6 +55,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   anchorTop=game.getBoundingClientRect().top;
   anchorScroll=sheet.scrollTop;
   retainedHeight=preserveViewport;
+  if(gameSlot)gameSlot.style.overflow=preserveViewport?'visible':slotOverflow;
   anchorUntil=preserveViewport?performance.now()+700:0;
   Object.assign(game.style,{position:preserveViewport?'relative':originals.position,
    top:preserveViewport?'0px':originals.top,left:originals.left,
@@ -87,6 +91,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   // A hardware keyboard on a desktop must not change the game geometry.
   if(!window.matchMedia?.('(pointer:coarse)')?.matches)return;
   if(!active){
+   if(gameSlot)gameSlot.style.overflow=slotOverflow;
    sheetAtFocus={position:sheet.style.position,top:sheet.style.top,
     bottom:sheet.style.bottom,height:sheet.style.height,maxHeight:sheet.style.maxHeight};
    const rect=game.getBoundingClientRect();
