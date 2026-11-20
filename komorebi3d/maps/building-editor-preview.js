@@ -23,24 +23,37 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry,dra
    tags:{...(s.tags||{})}
  }));
  // Match by original OSM ID, never by a copied development-server ID.
+ let tenantLevelChanged=false;
  if(draft?.tags){
   const target=tenantNodes.find(n=>draft.osmType==='node'&&String(n.id)===String(draft.osmId));
-  if(target)target.tags={...draft.tags};
+  if(target){
+   tenantLevelChanged=String(target.tags.level??'')!==String(draft.tags.level??'');
+   target.tags={...draft.tags};
+  }
  }
  const e=feature.previewSource;
- const buildingTags={...(e.tags||{}),height:String(feature.height)};
+ const editingBuilding=!!draft?.tags&&draft.osmType===feature.osmType&&
+  String(draft.osmId)===String(feature.osmId);
+ const buildingTags={...(editingBuilding?draft.tags:e.tags||{})};
  let previewHeight=feature.height;
+ if(editingBuilding){
+  const h=Number(buildingTags.height);
+  const floors=Number(buildingTags['building:levels']);
+  if(Number.isFinite(h)&&h>=2&&h<=180)previewHeight=h;
+  else if(Number.isFinite(floors)&&floors>0)previewHeight=Math.min(180,floors*3);
+ }
+ buildingTags.height=String(previewHeight);
  // A level is zero-based: level=10 requires an 11th floor. For an
  // editor-only draft, grow the isolated building if needed; do not mutate
  // authoritative source geometry or write inferred levels back to OSM.
- if(draft?.tags){
+ if(tenantLevelChanged){
   const numericLevels=tenantNodes.filter(n=>n.tags?.shop==='convenience')
    .flatMap(n=>String(n.tags.level??'').split(';').map(v=>v.trim()))
    .filter(v=>/^\d+$/.test(v)).map(Number)
    .filter(v=>Number.isSafeInteger(v)&&v>=0&&v<45);
   const maxLevel=numericLevels.length?Math.max(...numericLevels):-1;
   if(maxLevel>=0){
-   const explicitLevels=Number(e.tags?.['building:levels']);
+   const explicitLevels=Number(buildingTags['building:levels']);
    const explicitCount=Number.isSafeInteger(explicitLevels)&&explicitLevels>0?explicitLevels:null;
    const baseCount=explicitCount??Math.max(1,Math.round(feature.height/4));
    const floorHeight=explicitCount?feature.height/explicitCount:4;
