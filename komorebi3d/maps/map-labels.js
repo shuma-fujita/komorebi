@@ -7,23 +7,10 @@ import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=ta
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=ios-keyboard-16px-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
-export function parseOsmTagIgnore(source){
- return String(source).split(/\r?\n/).map(line=>line.trim())
-  .filter(line=>line&&!line.startsWith('#'))
-  .map(line=>line.endsWith('*')?{prefix:line.slice(0,-1)}:{exact:line});
-}
-export async function loadOsmTagIgnore(url='./maps/osm-tags.ignore'){
- const response=await fetch(url,{cache:'no-cache'});
- if(!response.ok)throw new Error('OSMタグ除外ルールの読み込み失敗 HTTP '+response.status);
- return parseOsmTagIgnore(await response.text());
-}
-export function visibleOsmTags(tags={},rules=[]){
- return Object.entries(tags).filter(([key])=>!rules.some(rule=>rule.exact===key||(rule.prefix!==undefined&&key.startsWith(rule.prefix))));
-}
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
-export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateChange=null,onEditorPreviewGesture=null}={}){
+export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEditorPreviewGesture=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
@@ -545,7 +532,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
  // Actual card DOM is still lazy-created only after entering the viewport.
  function appendLabels(labels){
   if(!labels.length)return;
-  for(const label of labels)entries.push({...label,source:label,visibleTags:visibleOsmTags(label.tags,ignoreRules)});
+  for(const label of labels)entries.push({...label,source:label});
   for(const viewport of viewports)for(let i=0;i<labels.length;i++)viewport.items.push(null);
   shopIndexDirty=true;
  }
@@ -569,7 +556,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     retained.add(index);
     return old;
    }
-   return {...label,source:label,visibleTags:visibleOsmTags(label.tags,ignoreRules)};
+   return {...label,source:label};
   });
   for(const viewport of viewports){
    const before=viewport.items;
@@ -590,19 +577,10 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
     el.style.cssText='position:absolute;display:none;pointer-events:none;cursor:pointer;transform:translateX(-50%);flex-direction:column;align-items:center;white-space:normal;';
     const card=document.createElement('div');
     card.style.cssText='box-sizing:border-box;min-width:0;overflow-wrap:anywhere;overflow-y:auto;padding:7px 11px 8px;border:1px solid rgba(123,234,216,.72);border-radius:10px;background:rgba(23,40,56,.75);box-shadow:0 3px 14px rgba(6,15,29,.22);color:white;font-family:system-ui,-apple-system,sans-serif;text-align:left;';
-    const header=document.createElement('div');
-    header.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;';
-    for(const [key,value] of item.visibleTags){
-     const tag=document.createElement('span');
-     tag.style.cssText='display:inline-block;min-width:0;max-width:100%;box-sizing:border-box;padding:2px 5px;border:1px solid rgba(123,234,216,.55);border-radius:4px;color:#7bead8;font:500 9px/1.35 system-ui,-apple-system,sans-serif;overflow-wrap:anywhere;';
-     tag.textContent=key+': '+String(value);
-     header.appendChild(tag);
-    }
-    if(!item.visibleTags.length||item.kind==='poi'||item.shopList)header.style.display='none';
     const title=document.createElement('div');
     title.style.cssText='max-width:186px;overflow:hidden;text-overflow:ellipsis;color:#fff;font:600 13px/1.4 system-ui,-apple-system,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.28);';
     title.textContent=item.name;
-    card.append(header,title);
+    card.append(title);
     if(item.kind==='poi'&&item.tags?.level!==undefined){
      const floor=document.createElement('span');floor.textContent=' / level='+item.tags.level;floor.style.cssText='font-size:10px;color:#7bead8';title.appendChild(floor);
     }
@@ -828,7 +806,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
    kind:'building',name:'建物（'+selectedKey+'）',osmType:focusedBuilding.osmType,osmId:focusedBuilding.osmId,
    x:(focusedBuilding.bounds[0]+focusedBuilding.bounds[1])/2,
    z:(focusedBuilding.bounds[2]+focusedBuilding.bounds[3])/2,
-   y:focusedBuilding.height+.9,osmVersion:focusedBuilding.osmVersion,tags:focusedBuilding.tags||{},visibleTags:visibleOsmTags(focusedBuilding.tags||{},ignoreRules),source:focusedBuilding
+   y:focusedBuilding.height+.9,osmVersion:focusedBuilding.osmVersion,tags:focusedBuilding.tags||{},source:focusedBuilding
   }:index>=0?entries[index]:null;
   // One building directory retains every matched OSM POI in a scrollable viewport.
   const ranked=buildingEntry?[{i:-1,item:{...buildingEntry,shopList:shops}}]:[];
