@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-20 OSM編集比較機能・第一工程（main反映／実機未確認）：** テナント編集画面を画面下端のスクロール可能なボトムシートに変更。`maps/osm-test-links.js` を追加し、本番OSMのnode/way IDと実際に作成成功したテストOSM IDの対応をブラウザ内localStorageへ保存、次回編集時にコピー済み表示・テスト対象ID自動入力する。コピー／本番書込の安全条件や認証手順は変更なし。`map-labels.js` のSafariキャッシュキーを開発テンプレート・生成HTMLとも更新。**A/B比較モードの追加、テストlevelを使った3Dメッシュ差分反映、「3Dに反映」ボタンは未実装。** 静的配線確認のみ、Actions・Safari実機未確認。テストID対応は端末・ブラウザごとで、削除すると消える。
+
 > **2026-11-19 Overpass手動通信診断ワークフロー追加（未実行）：** `.github/workflows/overpass-network-diagnostic.yml` に `workflow_dispatch` のみ、`contents: read` の診断を追加。GitHubホストランナー送信元IPv4（AWS checkip）、OSM 2ホストのDNS A/AAAA、IPv4/IPv6別の GET `/api/status` および軽量 POST `/api/interpreter` のHTTPコード・リモートIP・接続時間・curl終了コードをログ出力。最大5分・`matsudo.json` 不変更・既存の地図取得Actionsと独立。診断ワークフローが緑色でもAPI成功を意味しない。手動実行リンク `https://github.com/shuma-fujita/komorebi/actions/workflows/overpass-network-diagnostic.yml`。結果のIP帯制限はこの診断のみでは確定できず、必要なら運営確認。
 
 > **2026-11-19 吉野家／日高屋の飲食店外観（main反映・Safari実機未確認）：** `objects/buildings/food/` をコンビニから独立新設し、`yoshinoya.js`（オレンジ主体のYOSHINOYA看板）・`hidakaya.js`（赤／黄のHIDAKAYA看板）・`osm-adapter.js`（`amenity=fast_food/restaurant` の日本語/英語ブランド判別、ポリゴン包含→外周1mの単独候補、OSM `level` による階別外観）・`common.js`（コンビニの共通窓・ドア・看板・外壁描画を再利用、同一階重複時はコンビニ優先）を追加。`map-builder.js` の建物外観にfoodの階別スパンを統合し、ブラウザ読み込みキャッシュキーを更新。保存済み `matsudo.json` で吉野家2店舗・日高屋2店舗の建物照合を確認。現在これらの店舗ノードに `level` はなく、コンビニと同じ未指定時の全体外観フォールバックとなる（各店舗への階数追加で限定階になる）。`tests/food-storefront.mjs` 追加。OSMデータ/API/Actions、コンビニ各ブランドの定義には手を加えていない。**実機描画は未確認。**
