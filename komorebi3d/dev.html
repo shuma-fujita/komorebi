@@ -2092,7 +2092,7 @@ function setScreenConfig({screen,setting,value}={}){
  screenConfigs={...screenConfigs,[screen]:{...screenConfigs[screen],[setting]:value}};
  if(setting==='engine')void reconfigureScreenRenderer(screen);
  if(setting==='map'&&activeWorld==='matsudo'){
-   if(matsudoMaps[value])Promise.resolve().then(()=>applyMatsudoScreenLabels(screen)).catch(error=>addMapDebug('ラベル切替失敗: '+error.message));
+   if(matsudoMaps[value])try{applyMatsudoScreenLabels(screen);}catch(error){addMapDebug('ラベル切替失敗: '+error.message);}
    else{matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;void loadMatsudoMapInBackground();}
    if(miniMapVisible)paintDebugMap();
   }
