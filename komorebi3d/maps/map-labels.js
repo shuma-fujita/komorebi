@@ -3,7 +3,7 @@ import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthErr
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=sheet-three-stops-20261120';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
-import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=slow-auto-orbit-20261120';
+import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=ios-keyboard-16px-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
@@ -116,7 +116,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   // The bottom sheet retains its native scroll and separate dismissal grip.
   const previewTouch=document.createElement('div');
   previewTouch.setAttribute('role','group');
-  previewTouch.setAttribute('aria-label','ビルの3Dプレビュー：左右スワイプで水平回転、2本指ピンチで拡大縮小');
+  previewTouch.setAttribute('aria-label','ビルの3Dプレビュー：タップで自動回転の停止・再開、左右スワイプで水平回転、2本指ピンチで拡大縮小');
   previewTouch.style.cssText='position:absolute;top:0;left:0;right:0;height:50%;z-index:1;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;pointer-events:auto;';
   editorPreviewGestures=attachBuildingPreviewGestures(previewTouch,state=>onEditorPreviewGesture?.(state));
   const form=document.createElement('form');
