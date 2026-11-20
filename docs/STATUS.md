@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 OSMテストOAuthの共通Client ID方式（main反映／設定待ち）：** 利用者によるClient ID入力とOAuthアプリ登録リンクをコピー画面・タグ送信画面の両方から撤去。`osm-test-api.js` はコミットされる空プレースホルダー `maps/osm-test-client-config.js` から共通Client IDを読む方式に変更し、既存OAuth 2.0 + PKCE/S256・state・固定redirect・sessionStorageトークン・OSMテスト専用APIは維持。`scripts/write-osm-test-oauth-config.mjs` と `.github/workflows/deploy-komorebi-pages.yml` を追加し、GitHub Actions Secret `OSM_TEST_CLIENT_ID` をGitHub Pages **公開用アーティファクト内のみ**へ反映（ソース・コミット履歴へ埋め込まない）。Secret不足時はActionsをエラー終了。通常の赤いOAuth未認証エラーは「テスト環境へログイン」案内に簡略化。`dev.template.html` と生成済み`dev.html`のキャッシュキー更新。セットアップ手順は `docs/OSM_TEST_OAUTH_SETUP.md`。**管理者による①Actions Secret登録、②Settings→PagesのSourceをGitHub Actionsへ切り替え、③ワークフロー再実行が必須。これらが完了するまで公開ページのOAuthログインは利用できない。現時点で実OAuth・Safari実機未確認。**
+
+
 > **2026-11-21 OSMテストOAuth未認証エラーの案内精緻化（main反映／実機未確認）：** `map-labels.js` の「確認してコピーを作成」直下の赤いエラー枠について、先頭「Komorebi側のOAuth認証が未完了です。」を維持し、Client ID入力・既存登録アプリからのID再取得・未登録の場合のみアプリ新規登録・アカウントがない場合の作成・Komorebi側ログインボタンの操作順に変更。リンク文言を「テスト環境のOAuthアプリを確認・登録」に変更し、従来の `/oauth2/applications/new`（新規登録直行）から `/oauth2/applications`（登録済みアプリ一覧）へ変更。`dev.template.html` と生成済み `dev.html` のモジュールキャッシュキー更新。OAuthトークン／実送信処理、3D描画、エラー枠デザインは変更なし。**GitHub反映済み、実機Safariと実OAuthでの動線は未確認。**
 
 
