@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "テストOSMコピー時のOAuth未認証エラーを、Client IDの確認・再利用を優先する案内に改訂。リンクを「テスト環境のOAuthアプリを確認・登録」に変更し、登録済み一覧へ誘導。エラー枠・認証・送信処理は変更なし（実機未確認）。",
+  "matsudo": "OSMテストOAuthをKomorebi共通Client IDのPKCE認証に変更。GitHub Actions SecretsからPages公開成果物へ生成しソースにClient IDを保存しない。Client ID入力欄とOAuthアプリ登録リンクは削除、未認証時はログイン案内。Secret登録・Pages公開元のGitHub Actions切替・実機認証確認は未完了。",
   "common": "地図ログを重要イベント固定＋直近12行＋全履歴最大512行に整理し、全ログ閲覧・コピー対応（構文確認PASS／実機待ち）"
 }
