@@ -1,11 +1,12 @@
 // Three-stop native-feeling OSM bottom sheet: half, full, dismiss.
 // Only the grip owns vertical gestures. The form keeps native scrolling.
+import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
 export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
  const SAMPLE_WINDOW=110,DISMISS_DISTANCE=90,FLICK_VELOCITY=.55;
  const reducedMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
  let mode='half',drag=null,animation=null,disposed=false,dismissing=false;
  function height(){return Math.max(1,sheet.parentElement?.getBoundingClientRect().height||sheet.clientHeight*2||1);}
- function half(){return height()*.7;}
+ function half(){return height()*BUILDING_SHEET_RATIO;}
  function stopAnimation(){
   if(animation){animation.cancel();animation=null;}
  }
@@ -16,7 +17,7 @@ export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
  }
  function settle(target,fromHeight,fromOffset=0,velocity=0){
   stopAnimation();
-  const screenHeight=height(),mid=screenHeight*.7;
+  const screenHeight=height(),mid=screenHeight*BUILDING_SHEET_RATIO;
   const toHeight=target==='full'?screenHeight:mid;
   const toOffset=target==='dismiss'?Math.max(mid+24,fromOffset+mid):0;
   const duration=target==='dismiss'
@@ -51,9 +52,9 @@ export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
    const parent=sheet.parentElement.getBoundingClientRect();
    const top=Math.max(0,visual.top-parent.top);
    mode=top<parent.height*.25?'full':'half';
-   setSize(mode==='full'?parent.height:parent.height*.7);
+   setSize(mode==='full'?parent.height:parent.height*BUILDING_SHEET_RATIO);
   }
-  const screenHeight=height(),baseTop=mode==='full'?0:screenHeight*.3;
+  const screenHeight=height(),baseTop=mode==='full'?0:screenHeight*BUILDING_PREVIEW_RATIO;
   drag={id:event.pointerId,startY:event.clientY,baseTop,top:baseTop,screenHeight,
    samples:[{y:event.clientY,t:performance.now()}]};
   handle.setPointerCapture(event.pointerId);
@@ -61,7 +62,7 @@ export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
  }
  function onPointerMove(event){
   if(!drag||event.pointerId!==drag.id)return;
-  const now=performance.now(),mid=drag.screenHeight*.3;
+  const now=performance.now(),mid=drag.screenHeight*BUILDING_PREVIEW_RATIO;
   // Full -> half -> past half into dismissal can happen in one continuous drag.
   drag.top=Math.max(0,Math.min(drag.screenHeight+.2*mid,drag.baseTop+event.clientY-drag.startY));
   const visibleHeight=drag.screenHeight-Math.min(drag.top,mid);
@@ -76,7 +77,7 @@ export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
   if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId);
   const samples=state.samples,first=samples[0],last=samples[samples.length-1];
   const velocity=(last.y-first.y)/Math.max(1,last.t-first.t);
-  const mid=state.screenHeight*.3,top=state.top;
+  const mid=state.screenHeight*BUILDING_PREVIEW_RATIO,top=state.top;
   const displacement=top-state.baseTop;
   const visibleHeight=state.screenHeight-Math.min(top,mid);
   const below=Math.max(0,top-mid);
