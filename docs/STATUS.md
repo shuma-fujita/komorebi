@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-20 ボトムシート慣性アニメーション（main反映／実機未確認）：** `komorebi3d/maps/sheet-motion.js` を新設し、つまみのPointer Events／指追従／直近110msの速度測定／約90pxの距離判定／素早い下フリックでの閉じ／Web Animations APIのスライドアウト／短距離操作時の軽い弾性復帰を分離。`prefers-reduced-motion` を尊重し、編集画面破棄時にイベント・アニメーションを解除。`map-labels.js` はモーションモジュールを接続し、50:50比率・固定グリップ・フォーム内スクロール・既存OSM編集は維持。`dev.template.html`・`dev.html` のキャッシュキーを更新。**静的接続確認のみ／GitHub Actions、実機Safari・ChatGPT内ブラウザでのアニメーションPASSは未確認。**
+
 > **2026-11-20 OSM編集ボトムシートのつまみ固定（main反映／実機未確認）：** `maps/map-labels.js` のドラッグ用グリップを `position:sticky;top:0;z-index:5` にして、50%高のフォーム内でタグ一覧をスクロールしても上端に留まる。グリップの背景を不透明にしてスクロール内容の重なりを防止。下ドラッグで閉じる既存の判定・本文スクロール・50:50比率は維持。`dev.template.html` と `dev.html` のブラウザキャッシュキー更新。静的照合のみ実施、GitHub Actions・Safari実機確認は未実施。
 
 > **2026-11-20 編集ボトムシート50:50・グリップ下スワイプ（main反映／Safari実機未確認）：** `map-labels.js` の編集フォームをゲーム領域の下半分 `height/max-height:50%` に固定し、ゲーム画面を上半分に残す。ボトムシート上端の36pxグリップ領域だけがPointer Eventsドラッグを受け、下方向90pxまたはシート高さ25%の小さい方以上で閉じる。満たさない操作は位置を戻し、本文スクロールと分離。背景マスクを薄くし、編集中のヘリ入力停止・閉じた後の解除は既存処理を維持。`dev.template.html`／`dev.html` のSafariキャッシュキー更新。**静的配線確認のみ。GitHub Actions／iPhone Safari実機で高さ・タッチ・スクロール・閉じ操作のPASSは未確認。**
