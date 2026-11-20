@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "OSMテストOAuthをKomorebi共通Client IDのPKCE認証に変更。GitHub Actions SecretsからPages公開成果物へ生成しソースにClient IDを保存しない。Client ID入力欄とOAuthアプリ登録リンクは削除、未認証時はログイン案内。Secret登録・Pages公開元のGitHub Actions切替・実機認証確認は未完了。",
+  "matsudo": "OSMテストOAuthを共通Client ID＋PKCEに整理し、Actions SecretsからPagesへ配信。ゲーム起動とOAuth設定読込を分離（Actions PASS／Safari起動・認証未確認）",
   "common": "地図ログを重要イベント固定＋直近12行＋全履歴最大512行に整理し、全ログ閲覧・コピー対応（構文確認PASS／実機待ち）"
 }
