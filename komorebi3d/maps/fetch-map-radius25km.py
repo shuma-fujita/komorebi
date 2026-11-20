@@ -8,7 +8,7 @@ Requires: pip install osmium
 Usage:
     python komorebi3d/maps/fetch-map-radius25km.py --pbf kanto-latest.osm.pbf
 
-Never modifies matsudo.json or the game's 500 m map loader.
+Never modifies the deployed 2km tile JSON or either A/B map loader.
 The output may be far too large to commit to GitHub (100 MB file limit).
 """
 from __future__ import annotations
