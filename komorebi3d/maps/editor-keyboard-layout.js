@@ -18,12 +18,19 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   surfacePosition:surface.style.position,surfaceInset:surface.style.inset,
   surfaceWidth:surface.style.width,surfaceHeight:surface.style.height,
   surfaceMaxWidth:surface.style.maxWidth,surfaceFlex:surface.style.flex};
- let focused=false,active=false,frame=0,gameHeight=0,previewHeight=0;
+ let focused=false,active=false,frame=0,gameHeight=0,previewHeight=0,retainedHeight=false;
  let sheetAtFocus=null;
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
  function restore(preserveViewport=true){
-  if(!active)return;
+  if(!active){
+   if(!preserveViewport&&retainedHeight){
+    game.style.height=originals.height;
+    retainedHeight=false;
+   }
+   return;
+  }
   active=false;
+  retainedHeight=preserveViewport;
   // The Done key should dismiss the keyboard, not jump the page or resize
   // the game. Keep the game height measured before the keyboard opened.
   const topBefore=game.getBoundingClientRect().top;
