@@ -206,8 +206,8 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   copyActionError.setAttribute('role','alert');
   const clearCopyActionError=()=>{copyActionError.hidden=true;copyActionError.textContent='';};
   const copyLink=document.createElement('a');
-  copyLink.href=OSM_TEST_ORIGIN+'/oauth2/applications/new';copyLink.target='_blank';copyLink.rel='noopener noreferrer';
-  copyLink.textContent='テスト環境のOAuthアプリ登録';
+  copyLink.href=OSM_TEST_ORIGIN+'/oauth2/applications';copyLink.target='_blank';copyLink.rel='noopener noreferrer';
+  copyLink.textContent='テスト環境のOAuthアプリを確認・登録';
   copyLink.style.cssText='display:block;font-size:12px;margin:5px 0;';
   const copySuccess=document.createElement('div');
   copySuccess.hidden=true;
@@ -262,7 +262,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    clearCopyActionError();
    if(!copySource){copyStatus.textContent='まだコピー元を取得できていません。上の「テスト環境へコピー」を開き直して、コピー元データが表示されるか確認してください。';return;}
    if(!hasOsmTestToken()){
-    copyActionError.textContent='Komorebi側のOAuth認証が未完了です。テストサイトでログインするだけでなく、開発用OAuthアプリを登録し、Client IDを入力して「テスト環境へログイン」を押してください。';
+    copyActionError.textContent='Komorebi側のOAuth認証が未完了です。\n\n「テスト環境OAuth Client ID」を入力してください。\n\nClient IDをお忘れの場合は、「テスト環境のOAuthアプリを確認・登録」からログインし、登録済みアプリのClient IDをコピーして入力してください。\n\nアプリを登録していない場合は、ログイン後に新規登録してください。\n\nテスト環境のアカウントをお持ちでない場合は、アカウントを作成してください。\n\nClient IDを入力したら、「テスト環境へログイン」を押してください。';
     copyActionError.hidden=false;
     return;
    }
