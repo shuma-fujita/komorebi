@@ -100,6 +100,7 @@ export function applyBuildingTagEditorTheme(form){
  .komo-tags-sheet .komo-osm-feedback[data-status-kind="normal"]{
   color:#c6e0d2!important;
  }
+ .komo-tags-sheet .komo-osm-feedback[hidden]{display:none!important;}
  .komo-tags-sheet .komo-osm-feedback[data-status-kind="error"]{
   display:block;padding:12px!important;
   border:1.5px solid #ff9d94!important;border-radius:10px!important;
