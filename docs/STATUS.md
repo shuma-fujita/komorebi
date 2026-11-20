@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 A/B地図選択ボタンの枠ずれ修正（GitHub反映／Safari実機未確認）：** iPhoneスクショで旧2km・新2km（Geofabrik）の選択枠が縦方向に食い違うことを確認。原因は `inline-flex` のラベルが1行テキストと2行テキストで異なるベースラインに揃っていたこと。`dev.html` の地図ソース選択用ラベルを `vertical-align:top` にして枠の上辺を一致させ、双方 `height/min-height:52px` と文字中央揃え・Geofabrikの改行を維持。共通 `panels/test.css` と生成 `mock.html` も同期。radioの旧/new値、地図処理、3D、OAuth、mock黒画面・エンジン非起動は変更なし。**Actions・Safari実機の表示は別途確認**。
+
 > **2026-11-21 A/B地図選択の高さ・中央揃えを統一（GitHub反映／実機未確認）：** ユーザー指摘の「新2km（Geofabrik）」だけ高さが違って見える問題に対し、`dev.html` と共通断片 `panels/test.css` の地図ソース選択用radioラベル（旧2km／新2km双方）を `height/min-height:52px`、縦横中央揃えにした。既存2行の「新2km」「（Geofabrik）」は維持して文字を中央揃え。mockを正本から再生成して同期。地図ソース値、3D、OAuth、mock黒画面・非描画を変更なし。**Actions・実機での最終見た目確認は別途必要。**
 
 > **2026-11-21 A/B地図選択ラベルのはみ出し対策（GitHub反映／Safari実機未確認）：** iPhone実機スクショでA/B比較の「新2km（Geofabrik）」が横にはみ出すことを確認。`dev.html` の地図データ選択A/B双方で「新2km」と「（Geofabrik）」を2行に分けるspanと限定CSSを追加。旧／新ソースのradio値、地図読み込み処理、3D、OAuthは変更なし。共通UI断片 `panels/test.html` と `panels/test.css` にも同表示を同期し、`mock.html` を正本 `dev.html` から再生成。mockゲーム領域は黒・Canvasなし・エンジン実行なしを維持。静的HTML確認済み。**GitHub Actionsによる公開チェック・Safari実機での表示は別途確認**。
