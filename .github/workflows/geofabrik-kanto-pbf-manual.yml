@@ -1,0 +1,67 @@
+name: Download Geofabrik Kanto OSM PBF (manual only)
+
+# Download the complete Kanto OSM snapshot into a downloadable Actions artifact.
+# Do not commit ~500 MB binary data to Git (GitHub's per-file limit is 100 MB).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: geofabrik-kanto-pbf-download
+  cancel-in-progress: false
+
+jobs:
+  download:
+    name: Download and archive Kanto OSM PBF
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Download Geofabrik Kanto PBF
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p geofabrik
+          url="https://download.geofabrik.de/asia/japan/kanto-latest.osm.pbf"
+          echo "Downloading $url"
+          curl --fail --location --show-error --silent \
+            --retry 4 --retry-all-errors --retry-delay 8 \
+            --connect-timeout 20 --max-time 1500 \
+            --output geofabrik/kanto-latest.osm.pbf.part "$url"
+          mv geofabrik/kanto-latest.osm.pbf.part geofabrik/kanto-latest.osm.pbf
+          python3 - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import hashlib
+
+          p = Path("geofabrik/kanto-latest.osm.pbf")
+          size = p.stat().st_size
+          if size < 100_000_000:
+              raise SystemExit(f"Downloaded file is unexpectedly small: {size} bytes")
+          with p.open("rb") as f:
+              if b"OSMHeader" not in f.read(128):
+                  raise SystemExit("Downloaded file does not look like an OSM PBF file")
+          sha = hashlib.file_digest(p.open("rb"), "sha256").hexdigest()
+          (p.parent / "SHA256SUMS").write_text(f"{sha}  {p.name}\n", encoding="utf-8")
+          (p.parent / "SOURCE.txt").write_text(
+              "Source: https://download.geofabrik.de/asia/japan/kanto-latest.osm.pbf\n"
+              f"Downloaded at (UTC): {datetime.now(timezone.utc).isoformat()}\n"
+              f"Size: {size} bytes\n"
+              "Data: © OpenStreetMap contributors (ODbL)\n",
+              encoding="utf-8",
+          )
+          print(f"Verified Kanto OSM PBF: {size:,} bytes; SHA256 {sha}")
+          PY
+
+      - name: Make PBF available for download in GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: geofabrik-kanto-osm-pbf
+          path: |
+            geofabrik/kanto-latest.osm.pbf
+            geofabrik/SHA256SUMS
+            geofabrik/SOURCE.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
