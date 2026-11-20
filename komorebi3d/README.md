@@ -2,14 +2,18 @@
 
 Komorebi Engineを利用するモバイル向け3Dゲームです。
 
-## ゲーム正本・ビルドの運用（2026-11-21）
+## UI要件定義からゲーム実装までの運用（2026-11-21）
 
-- **ゲームの唯一の編集元・公開対象は `komorebi3d/dev.html`。** GitHub Actionsはコミットされたファイルを再生成せず、そのままPagesの公開アーティファクトへコピーする。
-- **`dev.template.html` は廃止・削除済み。** ゲームをテンプレートから生成する作業は禁止。古いOverpass処理をデプロイで復活させないため、生成経路ごと撤去した。
-- **`build-dev.mjs` はモック専用。** `dev.html` の共通UI（パネル・レイアウト・CSS）を読み取り、ゲーム表示領域を黒いダミーに置換して `mock.html` を生成する。ゲーム処理は読み込まず、Canvasも生成しない。モック固有のUI動作は `mock-ui.js`、表示スタイルは `panels/game.mock.css`、タッチUIは `panels/game.touch.html` を使用する。旧 `mock.template.html` は削除済み。引数なし・`--mode=mock` のみ生成可能で、`--mode=dev` は拒否される。
-- OAuthの共通Client IDは既存どおりGitHub Actions Secretsから**公開アーティファクトの設定ファイルにのみ挿入**する。GitHubの正本 `dev.html` やOSM本番・テスト認証処理へは挿入しない。
-- GitHub Actionsは `node komorebi3d/build-dev.mjs --check` で **ゲーム正本とmockのUI同期**を検査し、不一致なら公開前に停止する。ゲームの再生成は絶対にしない。
-- ゲーム動作とGitHub Actionsのデプロイ成功、iPhone Safari実機PASSは個別に確認し、`docs/STATUS.md` に記録する。
+**設計順序はmock先行。** ゲームロジックの正本は引き続き `komorebi3d/dev.html` に一つだけ置く。UIの正本は共通部品に置き、完成済みゲームJSをテンプレートから再生成しない。
+
+1. **mockで要件定義・UI調整：** `page-shell.html`、`panels/*.html`、`common.css`、`layout.css`、`theme.css`、`panels/*.css` の共有UI部品を編集。ゲーム用・mock専用の表示領域はそれぞれ `panels/game.html`／`panels/game.mock.html` に分離。
+2. **mockを生成：** `node komorebi3d/build-ui.mjs --mock`。黒いダミーゲーム画面・3D Canvasなし・ゲームエンジンなしの `mock.html` を生成する。mock専用の操作表示は `mock-ui.js`。この段階では `dev.html` を変えない。
+3. **UI承認後にdevへ同期：** `node komorebi3d/build-ui.mjs --sync-dev`。共有CSSとパネルHTML部分だけを `dev.html` に同期し、ゲーム本体のJavaScriptや固定Engine参照は維持する。mockも再生成する。
+4. **検証：** `node komorebi3d/build-ui.mjs --check-mock`（mockのみ）、`node komorebi3d/build-ui.mjs --check`（dev・mock両方）。Pages Actionsでも両方の一致を検査。不一致時は公開前に停止する。
+
+**禁止事項：** デプロイ時に `dev.html` を上書き再生成しない。mockにゲームエンジン・3D Canvasを導入しない。`dev.template.html`、`mock.template.html`、旧 `build-dev.mjs` は廃止。固定Engine・森林・2km地図原本、OAuth/PKCE、GitHub Actions SecretsのClient ID挿入はこのUIビルドとは独立して維持する。
+
+ゲーム動作、UIの見た目、Actions公開、iPhone Safari実機PASSは別々に確認し、`docs/STATUS.md` に記録する。
 
 ## 現在の安定基準：v0.7
 
