@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 OSM編集中のビル3D左右比較を実装（main反映／実機未確認）：** ビルタグ編集画面で A=修正前のオリジナルプレビュー固定、B=編集中のタグに応じたプレビューを生成。`map-labels.js` に `onEditorDraftChange` を追加し、キー・値がそろったタグの `input` イベントから（フォーカス移動・確定不要で）編集内容を発行。未入力値は元データに戻すか新規キーを除外。`dev.html`/`dev.template.html` は元建物と店舗リストを保持し、右側だけ `requestAnimationFrame` で同フレーム内の変更をまとめて `createBuildingEditorPreview(...,draft)` 再生成。左は再生成なし、左右同じカメラパラメータで回転・ズーム同期、変更後の高さが増えたときは両画面のカメラ距離を共通化。`building-editor-preview.js` は対象OSM店舗nodeのタグのみを複製上書きし、`level` の0基準を維持して（例 level=1は2階、level=10は11階）必要に応じて右建物の高さと建物階数をプレビュー内だけで拡張。既存のコンビニ壁面階層塗り分けに反映。建物wayのタグ編集も右側へ反映。生成3Dのrevision IDを更新。元のOSMデータ、本番・テストサーバー送信条件・エンジンは変更なし。dev.templateとdevの機能対応。**JS構文PASS／モックのlevel=0→4m、level=1→8m、level=10→44m・11階、ソース不変・メッシュID一意PASS／実機Safari、コンビニ外壁レンダリング、Actions未確認。**
+
+
 > **2026-11-21 OAuth／OSMテスト送信エラー表示の可読性修正（main反映／実機未確認）：** iPhoneのビルタグ編集シートで「認証開始エラー: 開発用OSM OAuthアプリのClient IDを入力してください。」が薄桃色背景と淡い文字になり読めない件を修正。原因は `map-labels.js` のインライン色指定がダークテーマの `.komo-copy-pane p` / `.komo-review p` の `!important` カラーに負けること。`decorateStatus` は `data-status-kind=error/normal` を更新するだけにし、`building-tag-editor-theme.js` に暗赤背景・明るい文字・赤系枠線のエラー専用CSS（`!important`）を追加。コピー作成・認証・テスト送信エラーに共通適用、通常メッセージはテーマ色に。`map-labels.js` と `dev.html` / `dev.template.html` のモジュールキャッシュキー更新。OAuth認証・コピー・level送信のロジックは変更なし。**JS構文・参照・CSSの静的チェックPASS／実機SafariとActions未確認。**
 
 
