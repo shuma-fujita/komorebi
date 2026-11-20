@@ -166,10 +166,11 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   const copyStatus=document.createElement('p');
   copyStatus.style.cssText='font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;color:#345849;';
   const decorateStatus=(el)=>{
+   el.classList.add('komo-osm-feedback');
    const update=()=>{
-    const message=el.textContent.trim(),isError=/^(?:読み込み失敗|テスト送信失敗|コピー作成エラー|コピー準備エラー|認証開始エラー|認証失敗|テストAPI HTTP)/.test(message);
-    el.style.cssText='box-sizing:border-box;font:12px/1.6 system-ui;white-space:pre-wrap;overflow-wrap:anywhere;'+
-     (isError?'padding:11px;border:1px solid #c98578;border-radius:9px;background:#fae6df;color:#823a30;':'color:#345849;');
+    const message=el.textContent.trim();
+    const isError=/^(?:読み込み失敗|テスト送信失敗|コピー作成エラー|コピー準備エラー|認証開始エラー|認証失敗|テストAPI HTTP)/.test(message);
+    el.dataset.statusKind=isError?'error':'normal';
    };
    new MutationObserver(update).observe(el,{childList:true,characterData:true,subtree:true});
    update();
