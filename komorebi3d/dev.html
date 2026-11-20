@@ -1679,7 +1679,7 @@ async function loadMatsudoMapInBackground(){
  try{
   const ignoreRules=await loadOsmTagIgnore();
   if(!isCurrentMatsudoMapRequest(token,controller))return;
-  for(const source of ['old','new']){
+  for(const source of ['new','old']){
    if(!isCurrentMatsudoMapRequest(token,controller))return;
    const name=source==='old'?'旧2kmタイル '+TEST_TILE_ID:'Geofabrik新2kmタイル '+TEST_TILE_ID;
    try{
