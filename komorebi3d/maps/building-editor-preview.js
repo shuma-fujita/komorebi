@@ -1,7 +1,7 @@
 // Isolated OSM-building view for the tenant editor.
 // Reuses the same map geometry builder, without moving the helicopter or changing
 // the original map meshes. No animation dependencies.
-import {buildMap} from './map-builder.js?v=food-storefront-20261119';
+import {buildMap} from './map-builder.js?v=building-preview-source-20261120';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 
 export function createBuildingEditorPreview(feature,shops,createMeshGeometry){
