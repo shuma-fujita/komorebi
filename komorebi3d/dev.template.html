@@ -895,7 +895,7 @@ async function loadMatsudoMapInBackground({live=false,server='coffee'}={}){
  try{
   const ignoreRules=await loadOsmTagIgnore();
   if(!isCurrentMatsudoMapRequest(token,controller))return;
-  for(const source of ['old',...(screenConfigs.A.map==='new'||screenConfigs.B.map==='new'?['new']:[])]){
+  for(const source of [...(screenConfigs.A.map==='new'||screenConfigs.B.map==='new'?['new']:[]),'old']){
    if(!isCurrentMatsudoMapRequest(token,controller))return;
    const name=source==='old'?(live?'手動OSM最新250m（失敗時は保存500m JSON）':'保存済み500m JSON'):'2kmタイル '+TEST_TILE_ID;
    try{
