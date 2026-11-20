@@ -6,8 +6,9 @@ Komorebi Engineを利用するモバイル向け3Dゲームです。
 
 - **ゲームの唯一の編集元・公開対象は `komorebi3d/dev.html`。** GitHub Actionsはコミットされたファイルを再生成せず、そのままPagesの公開アーティファクトへコピーする。
 - **`dev.template.html` は廃止・削除済み。** ゲームをテンプレートから生成する作業は禁止。古いOverpass処理をデプロイで復活させないため、生成経路ごと撤去した。
-- **`build-dev.mjs` は名前を維持しているがモック専用。** `node komorebi3d/build-dev.mjs --mode=mock` で `mock.template.html` から `mock.html` を作る。引数なしでもmockだけを生成し、`--mode=dev` はエラーになる。
+- **`build-dev.mjs` はモック専用。** `dev.html` の共通UI（パネル・レイアウト・CSS）を読み取り、ゲーム表示領域を黒いダミーに置換して `mock.html` を生成する。ゲーム処理は読み込まず、Canvasも生成しない。モック固有のUI動作は `mock-ui.js`、表示スタイルは `panels/game.mock.css`、タッチUIは `panels/game.touch.html` を使用する。旧 `mock.template.html` は削除済み。引数なし・`--mode=mock` のみ生成可能で、`--mode=dev` は拒否される。
 - OAuthの共通Client IDは既存どおりGitHub Actions Secretsから**公開アーティファクトの設定ファイルにのみ挿入**する。GitHubの正本 `dev.html` やOSM本番・テスト認証処理へは挿入しない。
+- GitHub Actionsは `node komorebi3d/build-dev.mjs --check` で **ゲーム正本とmockのUI同期**を検査し、不一致なら公開前に停止する。ゲームの再生成は絶対にしない。
 - ゲーム動作とGitHub Actionsのデプロイ成功、iPhone Safari実機PASSは個別に確認し、`docs/STATUS.md` に記録する。
 
 ## 現在の安定基準：v0.7
