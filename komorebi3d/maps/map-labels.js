@@ -2,7 +2,7 @@
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-auto-comment-20261113';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=sheet-fling-20261120';
-import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=pinch-orbit-20261120';
+import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=slow-auto-orbit-20261120';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Uses a plain-text ignore file; no special handling of newly discovered OSM tag keys.
 export function parseOsmTagIgnore(source){
@@ -414,6 +414,7 @@ export function createMapLabels(host,ignoreRules=[],{screen=null,onEditorStateCh
   const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
   const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
   onEditorStateChange?.(true,{building:selectedFeature,shops:selectedFeature?shopsForFocus(selectedKey):[],screen});
+  if(selectedFeature)editorPreviewGestures?.startAutoRotate();
  }
  // Add only newly completed feature labels; preserve the existing HTML
  // cards and their OSM editing callbacks between progressive display batches.
