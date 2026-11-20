@@ -11,7 +11,7 @@ const modeArgs=process.argv.filter(x=>x.startsWith('--mode='));
 if(modeArgs.length>1)throw Error('Specify --mode only once');
 if(modeArgs[0]&&modeArgs[0]!=='--mode=mock')
  throw Error('Only --mode=mock is supported; dev.html is never generated');
-if(process.argv.some(x=>!['--mode=mock','--check'].includes(x)&&!x.endsWith('/build-dev.mjs')))
+if(process.argv.slice(2).some(x=>!['--mode=mock','--check'].includes(x)))
  throw Error('Unknown build option');
 
 const source=read('dev.html');
