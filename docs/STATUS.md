@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-21 編集ビルプレビューのタップ停止・再開（main反映／実機未確認）：** `maps/building-preview-gestures.js` を更新し、ビルの上半分プレビューで短いタップをするたび自動水平回転を停止／再開。初回は従来どおり30秒/周で回り始め、タップで停止・次のタップで同じyawから再開。指の微小揺れ9pxまではタップとみなし、スワイプ・2本指ピンチ・キャンセルでは自動回転を勝手に再開しない。端末のreduce motion設定を尊重し、閉じるとRAFとジェスチャー解除。`maps/map-labels.js` のアクセシビリティ説明と参照バージョン更新、`dev.template.html`・`dev.html` のJSキャッシュ更新。ビルプレビューA/B同期、ネオンタグ非表示、タグ編集シート50/100/閉じる、ヘリ復帰は維持。**構文チェックと停止→再開→スワイプ→ピンチ→再タップの模擬イベントPASS。iPhone Safari実機とActions未確認。**
+
+
 > **2026-11-21 編集ビルのA/Bプレビュー中に通常マップのネオンタグが混入する問題（main反映／実機未確認）：** `maps/map-labels.js` の `setPreviewActive` が従来 `viewport.summary` だけを非表示にし、事前に生成した `viewport.items` が残る可能性を解消。プレビュー開始時にタグ専用 `layer.style.display='none'` で通常マップのラベル・ネオンタグ全体を不可視にし、終了時は `display=''` に復帰。編集ボトムシートは `host` 直下の別要素なので隠さない。A/Bどちらも既存の `setPreviewActive(true/false)` を利用。ビル自動水平回転、ピンチ、0:100ボトムシート、編集タグ、ヘリ復帰は変更なし。`dev.html`／`dev.template.html` のキャッシュキー更新。JS構文、A/Bでのタグ非表示と復帰の模擬試験PASS。**ActionsとiPhone Safari／ChatGPT内ブラウザ実機未確認。**
 
 
