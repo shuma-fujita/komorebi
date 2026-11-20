@@ -81,8 +81,6 @@ body{padding:6px}
 /* Shared invisible touch surface, regardless of whether the view renders WebGL. */
 .touch-layer{position:absolute;inset:0;display:flex;z-index:2;touch-action:none}
 .touch-zone{flex:1;min-width:0;touch-action:none;background:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-/* Contain pan/scroll gestures to the game viewport, not the document or other panels. */
-.landscape-game .play-surface{touch-action:none;overscroll-behavior:contain}
 
 /* iPhone-sized portrait view: grow only the slot holding the game at initial layout. */
 @media (orientation:portrait) and (max-width:600px){
