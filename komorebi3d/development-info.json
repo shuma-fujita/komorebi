@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "dev.htmlを唯一のゲーム正本に統一し、旧devテンプレートを削除。build-dev.mjsはモック専用、Pagesは正本をそのまま配信（実機再確認待ち）",
-  "common": "A/B比較の旧2km・新2km（Geofabrik）選択肢を同じ52px高・中央揃えに統一（mock同期／実機未確認）"
+  "common": "A/B地図選択ラベルのSafari枠ずれを、旧／新2kmとも同高52px＋inline-flex上端揃えで修正。mock同期（実機未確認）"
 }
