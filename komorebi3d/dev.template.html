@@ -87,6 +87,21 @@ applyPanelLayout(PANEL_LAYOUT);
 })();
 
 // Live panel help/gestures are initialized after the Game API mounts.
+</script><script>
+// Runs before ES modules, so an import failure is visible instead of leaving a stale "JavaScript未実行" hint.
+(function(){
+ const diagnostic=()=>document.getElementById('launch-diagnostic');
+ const report=message=>{const el=diagnostic();if(el)el.textContent='診断：JavaScript読み込みエラー：'+message;};
+ const original='診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。';
+ const update=()=>{const el=diagnostic();if(el&&el.textContent===original)el.textContent='診断：JavaScript実行開始。モジュールを読み込み中…';};
+ document.readyState==='loading'?document.addEventListener('DOMContentLoaded',update,{once:true}):update();
+ window.addEventListener('error',event=>{
+  const target=event.target;
+  const message=event.message||(target&&target.src?'読み込み失敗: '+target.src:'リソースを読み込めませんでした');
+  report(message);
+ },true);
+ window.addEventListener('unhandledrejection',event=>report(String(event.reason)));
+})();
 </script><script type="module">
 import { InputManager } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/input/InputManager.js";
 import { TouchStick } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/input/TouchStick.js";
