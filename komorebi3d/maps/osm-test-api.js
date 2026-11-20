@@ -7,7 +7,10 @@ const AUTH_KEY='komorebi:osm-test:oauth';
 const ERROR_KEY='komorebi:osm-test:error';
 const types=new Set(['node','way','relation']);
 const facilities=['shop','amenity','office','tourism','healthcare','leisure'];
-const redirectUri=()=>location.origin+location.pathname;
+// OAuth application callback must be registered once at this exact public URL.
+// Do not derive it from a launch URL, a route, or transient query parameters.
+export const OSM_TEST_REDIRECT_URI='https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html';
+const redirectUri=()=>OSM_TEST_REDIRECT_URI;
 
 function randomUrlSafe(bytes=32){
  const data=new Uint8Array(bytes);
@@ -29,6 +32,7 @@ function readToken(){const token=scopedStorageGet(TOKEN_KEY);if(!token)throw Err
 export async function startOsmTestLogin(clientId){
  const id=String(clientId||'').trim();
  if(!id||id.length>512)throw Error('開発用OSM OAuthアプリのClient IDを入力してください。');
+ if(location.origin!==new URL(OSM_TEST_REDIRECT_URI).origin)throw Error('OAuth認証は公開ゲーム画面 '+OSM_TEST_REDIRECT_URI+' から開始してください。別のドメインでは認証情報を引き継げません。');
  if(!crypto?.subtle||!crypto?.getRandomValues)throw Error('このブラウザでは安全なPKCE認証を利用できません。');
  const verifier=randomUrlSafe(32),state=randomUrlSafe(24);
  const challenge=urlSafeBase64(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier)));
