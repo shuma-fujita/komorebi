@@ -10,7 +10,7 @@ const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
-export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEditorPreviewGesture=null}={}){
+export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
@@ -109,6 +109,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   closeEditor();
   const baseTags={...(item.originalTags||item.tags||{})};
   const initial={...baseTags};
+  const editTarget={osmType:item.osmType,osmId:item.osmId};
   const tagOrderPromise=loadOsmTagOrder();
   let tagOrderRules=[];
   const mask=document.createElement('div');
@@ -425,8 +426,24 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    return Object.keys(draft).some(key=>draft[key]!==testTags[key])||
     Object.keys(testTags).some(key=>!Object.prototype.hasOwnProperty.call(draft,key));
   };
+  function emitPreviewDraft(){
+   if(!editor||review.hidden===false)return;
+   const tags=captureDraft();
+   // An unfinished name/value pair must not be applied to the preview.
+   // Preserve any previously existing value until the replacement is complete.
+   const original=activeSource==='test'?(testTags||baseTags):baseTags;
+   for(const row of rows.children){
+    const key=row.children[0]?.value.trim()||'';
+    if(!key)continue;
+    if(!(row.children[1]?.value??'').trim()){
+     if(Object.prototype.hasOwnProperty.call(original,key))tags[key]=original[key];
+     else delete tags[key];
+    }
+   }
+   onEditorDraftChange?.({...editTarget,tags,source:activeSource});
+  }
   function updateConfirm(){confirm.hidden=!isEdited()||!review.hidden;}
-  rows.addEventListener('input',updateConfirm);
+  rows.addEventListener('input',()=>{updateConfirm();emitPreviewDraft();});
   add.addEventListener('click',()=>{updateConfirm();});
   const renderTags=(tags,editable)=>{
    rows.replaceChildren();
@@ -434,6 +451,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    tagsHeader.textContent='◇ タグ（'+Object.keys(tags).length+'件）';
    add.hidden=!editable;
    updateConfirm();
+   if(editable)emitPreviewDraft();
   };
   async function setSource(source){
    if(source!=='production'&&source!=='test')return;
