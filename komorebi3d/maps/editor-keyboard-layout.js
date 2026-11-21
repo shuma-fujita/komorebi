@@ -26,6 +26,25 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  let focused=false,active=false,frame=0,gameHeight=0,previewHeight=0;
  let sheetAtFocus=null;
  let diagnostic=null,disposed=false;
+ // Safari may scroll the document while opening the software keyboard.
+ // Restore its prior position only once the visual viewport has recovered.
+ let focusAnchor=null,pendingRestore=false,restoreTimer=0;
+ function captureFocusAnchor(){
+  if(!focusAnchor)focusAnchor={
+   x:window.scrollX||0,y:window.scrollY,
+   viewportHeight:vv.height,viewportTop:vv.offsetTop
+  };
+ }
+ const viewportRecovered=()=>!focusAnchor||(
+  vv.height>=focusAnchor.viewportHeight*.85
+  &&Math.abs(vv.offsetTop-focusAnchor.viewportTop)<=32
+ );
+ function restorePagePosition(){
+  if(!focusAnchor)return;
+  const {x,y}=focusAnchor;
+  focusAnchor=null;
+  if(window.scrollY!==y||window.scrollX!==x)window.scrollTo(x,y);
+ }
  // Optional device-only trace; the normal game never loads this module.
  if(window.location?.search&&new URLSearchParams(window.location.search).get('editorDiag')==='1'){
   import('./editor-keyboard-diagnostics.js?v=trace-20261121').then(mod=>{
@@ -48,9 +67,20 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   sheetAtFocus=null;
   previewTouch.style.height=originals.previewHeight;
  }
+ function finishBlur(){
+  if(focused)return;
+  pendingRestore=false;
+  if(restoreTimer){clearTimeout(restoreTimer);restoreTimer=0;}
+  restore();
+  restorePagePosition();
+ }
  function update(){
   frame=0;
-  if(!focused||!mask.isConnected)return;
+  if(!mask.isConnected)return;
+  if(!focused){
+   if(pendingRestore&&viewportRecovered())finishBlur();
+   return;
+  }
   // A hardware keyboard on a desktop must not change the game geometry.
   if(!window.matchMedia?.('(pointer:coarse)')?.matches)return;
   if(!active){
@@ -106,7 +136,9 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  }
  function onFocusIn(event){
   if(!isField(event.target)||!sheet.contains(event.target))return;
-  focused=true;
+  captureFocusAnchor(); // before Safari's asynchronous keyboard scroll
+  focused=true;pendingRestore=false;
+  if(restoreTimer){clearTimeout(restoreTimer);restoreTimer=0;}
   schedule();
  }
  function onFocusOut(){
@@ -114,8 +146,18 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   requestAnimationFrame(()=>{
    if(!mask.isConnected)return;
    focused=isField(document.activeElement)&&sheet.contains(document.activeElement);
-   if(focused)schedule();
-   else restore();
+   if(focused){pendingRestore=false;schedule();}
+   else{
+    pendingRestore=true;
+    // focusout precedes iOS keyboard dismissal: retain fixed geometry
+    // until the viewport expands to avoid the 258px transient jump.
+    schedule();
+    if(restoreTimer)clearTimeout(restoreTimer);
+    restoreTimer=setTimeout(()=>{
+     restoreTimer=0;
+     if(pendingRestore&&!focused)finishBlur();
+    },1800);
+   }
   });
  }
  sheet.addEventListener('focusin',onFocusIn);
@@ -132,6 +174,27 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   vv.removeEventListener('scroll',schedule);
   window.removeEventListener('resize',schedule);
   if(frame)cancelAnimationFrame(frame);
+  if(restoreTimer){clearTimeout(restoreTimer);restoreTimer=0;}
   restore();
+  // Closing the editor directly may precede keyboard dismissal too.
+  if(focusAnchor&&!viewportRecovered()){
+   const anchor=focusAnchor;
+   focusAnchor=null;
+   let timeout=0;
+   function done(){
+    vv.removeEventListener('resize',onViewport);
+    vv.removeEventListener('scroll',onViewport);
+    if(timeout)clearTimeout(timeout);
+    if(window.scrollY!==anchor.y||window.scrollX!==anchor.x)
+     window.scrollTo(anchor.x,anchor.y);
+   }
+   function onViewport(){
+    if(vv.height>=anchor.viewportHeight*.85
+      &&Math.abs(vv.offsetTop-anchor.viewportTop)<=32)done();
+   }
+   vv.addEventListener('resize',onViewport);
+   vv.addEventListener('scroll',onViewport);
+   timeout=setTimeout(done,1800);
+  }else restorePagePosition();
  }};
 }
