@@ -168,6 +168,12 @@ verifyNoLayoutChange();
 // Closing the editor while the keyboard is open keeps the restore delayed.
 sheet.emit('pointerdown',pointer(fields[2]));flush();
 window.scrollY=700;vv.height=313;vv.emit('resize');flush();
+assert.equal(sheet.children.length,1);
+vv.height=641;vv.emit('resize');flush();
+assert.equal(sheet.children.length,0,'keyboard dismissed without blur removes spacer');
+assert.equal(document.activeElement,fields[2],'input may remain focused without keyboard');
+vv.height=313;vv.emit('resize');flush();
+assert.equal(sheet.children.length,1,'keyboard reopening restores temporary space');
 keyboard.destroy();
 assert.equal(sheet.children.length,0,'direct editor close removes keyboard-only spacer');
 assert.equal(sheet.listenerCount('pointerdown'),0,'remove touch capture handler on destroy');
