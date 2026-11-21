@@ -7,12 +7,14 @@ import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-lay
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
+import {getPendingOsmTagChange} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
+import {applyPendingTagVisualStyle,syncPendingTagRows} from './osm-pending-tag-visual.js?v=step3-mock-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
-export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null}={}){
+export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
@@ -87,6 +89,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
 
  // JSON edit/confirm, with strictly isolated OSM development-server level test.
  let editor=null,editorMotion=null,editorScrollGuard=null,editorPreviewGestures=null,editorKeyboardLayout=null,previewActive=false;
+ let refreshEditorPending=null;
  function setPreviewActive(value){
   previewActive=Boolean(value);
   // The OSM label layer is independent from the editor mask (a host child).
@@ -99,6 +102,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   }
  }
  function closeEditor(){
+  refreshEditorPending=null;
   if(!editor)return;
   editorMotion?.destroy();editorMotion=null;
   editorKeyboardLayout?.destroy();editorKeyboardLayout=null;
@@ -396,6 +400,17 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   confirm.className='komo-action';back.className='komo-action komo-action-secondary';
   confirm.hidden=true;
   let activeSource='production',testTags=null,testDraft=null,productionDraft=null,testReady=false,sourceRequest=0;
+  // Only production OSM tags from the NEW Geofabrik map can be pending.
+  // A test OSM copy or an unsaved draft must never acquire this warning.
+  function refreshPendingTags(){
+   let pending=null;
+   if(mapSource==='new'&&activeSource==='production'){
+    try{pending=getPendingOsmTagChange(item.osmType,String(item.osmId));}
+    catch(error){console.warn('OSM反映待ちの読み取り失敗',error);}
+   }
+   syncPendingTagRows(rows,{pending,mapSource,dataSource:activeSource});
+  }
+  refreshEditorPending=refreshPendingTags;
   const sourceRow=document.createElement('div');
   sourceRow.style.cssText='display:flex;align-items:center;gap:10px;margin:13px 0;';
   const sourceHeading=document.createElement('strong');sourceHeading.textContent='表示データ';
@@ -451,6 +466,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    tagsHeader.textContent='◇ タグ（'+Object.keys(tags).length+'件）';
    add.hidden=!editable;
    updateConfirm();
+   refreshPendingTags();
    if(editable)emitPreviewDraft();
   };
   async function setSource(source){
@@ -459,6 +475,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    if(activeSource==='test'&&testReady)testDraft=captureDraft();
    if(activeSource==='production'&&rows.children.length)productionDraft=captureDraft();
    activeSource=source;
+   refreshPendingTags(); // Remove yellow immediately when switching to test OSM.
    const request=++sourceRequest;
    for(const [name,button] of Object.entries(sourceButtons))
     button.setAttribute('aria-pressed',String(name===source));
@@ -540,6 +557,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   metadata.style.margin='5px 0 10px';
   form.append(header,copyPane,sourceRow,sourceStatus,metadata,tagsHeader,rows,add,review,error,controls);
   applyBuildingTagEditorTheme(form);
+  applyPendingTagVisualStyle(form); // Same approved yellow design as the mock.
   // Use actual test data when an element has already been copied; never
   // mislabel local production tags as test data.
   setSource(linkedTestTarget?'test':'production');
@@ -922,5 +940,5 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   return false;
  }
  function clearTappedBuilding(){tappedBuilding=null;}
- return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,setPreviewActive,setTagHidden,isTagHidden,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,setPreviewActive,setTagHidden,isTagHidden,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,refreshPendingTags(){refreshEditorPending?.();},update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }

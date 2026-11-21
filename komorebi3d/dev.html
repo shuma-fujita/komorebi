@@ -678,7 +678,7 @@ import {recordConfirmedOsmTagChanges} from "./maps/osm-pending-changes.js?v=live
 import {patchLiveGeofabrikMap} from "./maps/map-live-osm-changes.js?v=live-overlay-step2-20261122";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=live-overlay-step2-20261122";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels} from "./maps/map-labels.js?v=native-keyboard-scroll-only-20261121";
+import {createMapLabels} from "./maps/map-labels.js?v=pending-osm-tags-step3-20261122";
 import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=tag-focus-scroll-only-20261121";
 window.__komorebiModuleStarted=true;
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
@@ -1837,6 +1837,8 @@ function onConfirmedProductionOsmSaved(value){
   publishRuntimeStatus('status',message);
  };
  const result=recordConfirmedOsmTagChanges(value,{onWarning});
+ // Refresh open production editors without replacing input values or closing sheets.
+ for(const screen of ['A','B'])matsudoLabels[screen]?.refreshPendingTags?.();
  const world=matsudoMaps.new;
  if(activeWorld==='matsudo'&&world){
   if(!world.ready)world.deferredEdits.set(result.entry.type+'/'+result.entry.id,result.entry);
@@ -2166,7 +2168,7 @@ function applyMatsudoScreenLabels(screen){
  matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;
  const data=matsudoMaps[screenConfigs[screen].map];
  if(data&&gameView?.surface){
-  matsudoLabels[screen]=createMapLabels(gameView.surface,{screen,onEditorStateChange:setOsmEditorOpen,onEditorPreviewGesture:setEditorPreviewGesture,onEditorDraftChange:setEditorDraftChange});
+  matsudoLabels[screen]=createMapLabels(gameView.surface,{screen,mapSource:screenConfigs[screen].map,onEditorStateChange:setOsmEditorOpen,onEditorPreviewGesture:setEditorPreviewGesture,onEditorDraftChange:setEditorDraftChange});
   matsudoLabels[screen].setLabels(data.labels);
   matsudoLabels[screen].setBuildingFeatures(data.mapFeatures);
   matsudoLabels[screen].setDebugAnchors(labelDebugVisible);
