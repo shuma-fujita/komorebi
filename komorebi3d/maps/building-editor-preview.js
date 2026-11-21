@@ -86,16 +86,12 @@ export function createBuildingEditorPreview(feature,shops,createMeshGeometry,dra
   width:Math.max(3,maxX-minX),depth:Math.max(3,maxZ-minZ),height:Math.max(3,previewHeight)};
 }
 
-// The canvas remains full height and the editor never moves it.
-// Center the building in the currently uncovered panel-local preview slice.
-// The slice can start below canvas y=0 when Safari scrolls the page on focus.
-export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={},
- previewRatio=BUILDING_PREVIEW_RATIO,previewStartRatio=0){
+// The 3D canvas remains full height under the editor sheet.
+// Center the building in the uncovered upper preview at y=ratio/2.
+export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={},previewRatio=BUILDING_PREVIEW_RATIO){
  const {centerX:x,centerZ:z,width,depth,height}=preview;
- const visibleRatio=buildingPreviewCenterY(previewRatio)*2;
- const start=Math.max(0,Math.min(1-visibleRatio,
-  Number.isFinite(previewStartRatio)?previewStartRatio:0));
- const imageCenterY=start+visibleRatio/2;
+ const centerY=buildingPreviewCenterY(previewRatio);
+ const visibleRatio=centerY*2;
  const safeAspect=Math.max(.24,Math.min(2,Number.isFinite(aspect)?aspect:1));
  const center=[x,height*.5,z];
  // Rotate the camera around the vertical axis only. Pitch stays unchanged.
@@ -143,10 +139,9 @@ export function buildingEditorCamera(preview,aspect,{yaw=0,zoom=1}={},
  let distance=Math.max(minDepth,horizontalDistance,upperDistance,lowerDistance);
  // Default distance fits all corners; pinch modifies only distance.
  distance/=Math.max(.55,Math.min(3,Number.isFinite(zoom)?zoom:1));
- // Translate the existing preview camera along its up axis to position
- // the building within the visible slice; do not move/resize the canvas.
- // For the original slice [0,0.3] this is exactly the prior offset.
- const offset=distance*tanHalf*(1-2*imageCenterY);
+ // Shift the camera's center ray down so the building appears at
+ // y=visibleRatio/2 measured from the top of the full canvas.
+ const offset=distance*tanHalf*(1-visibleRatio);
  const eye=center.map((v,i)=>v+backward[i]*distance-up[i]*offset);
  const target=center.map((v,i)=>v-up[i]*offset);
  return {eye,target};
