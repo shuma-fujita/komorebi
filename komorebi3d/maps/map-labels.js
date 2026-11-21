@@ -16,7 +16,7 @@ const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
-export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null}={}){
+export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null,onReviewStorageChange=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
@@ -477,7 +477,10 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    }
    onEditorDraftChange?.({...editTarget,tags,source:activeSource});
   }
-  function updateConfirm(){confirm.hidden=!isEdited()||!review.hidden;}
+  // Keep the confirmation action visible even when there are no edits.
+  // Confirming without changes is allowed; storage-save then reports that
+  // there is no change to persist.
+  function updateConfirm(){confirm.hidden=!review.hidden;}
   rows.addEventListener('input',()=>{updateConfirm();emitPreviewDraft();});
   add.addEventListener('click',()=>{updateConfirm();});
   const renderTags=(tags,editable)=>{
@@ -546,7 +549,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   let pending=null;
   // Same two buttons as the approved mock. Keep a separate test-only storage
   // namespace: this never signals a successful production OSM save.
-  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending});
+  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending,onChange:onReviewStorageChange});
   reviewStorageCheck.section.hidden=true;
   confirm.addEventListener('click',()=>{
    try{

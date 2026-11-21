@@ -194,7 +194,7 @@ import {prependOsmReviewStorageCheck} from './maps/osm-review-storage-check.js?v
   function update(){
    const draft=Object.create(null);
    for(const {key,value} of rowsData())if(key.trim())draft[key.trim()]=value;
-   confirm.hidden=!hasOsmTagChanges(originalTags,draft);
+   confirm.hidden=false; // Keep available even for an unchanged draft.
   }
   rows.addEventListener('input',()=>{error.textContent='';update();});
   add.addEventListener('click',()=>{addRow();updateCaption();update();rows.lastElementChild.firstElementChild.focus({preventScroll:true});});

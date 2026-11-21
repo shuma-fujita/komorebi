@@ -3,6 +3,7 @@
 // This helper is reusable by the mock and (after UI approval) the game.
 const TEST_PREFIX='komorebi3d:osm-review-storage-check:v1:';
 const TYPES=new Set(['node','way','relation']);
+const own=(object,key)=>Object.prototype.hasOwnProperty.call(object,key);
 
 function reviewKey(review){
  const osm=review?.osm;
@@ -18,8 +19,70 @@ function testPayload(review){
   throw Error('保存できる変更内容がありません。');
  return {key,payload:JSON.stringify({
   type:review.osm.type,id:String(review.osm.id),version:review.osm.version??null,
-  changes
+  changes,tags:review.tags
  })};
+}
+function decodeStored(text,key){
+ const value=JSON.parse(text);
+ if(!value||reviewKey({osm:value})!==key||!value.changes||
+  typeof value.changes!=='object'||Array.isArray(value.changes))
+  throw Error('保存した動作確認用データが不正です。');
+ const changes=Object.create(null);
+ for(const [tag,v] of Object.entries(value.changes)){
+  if(!tag||/[\u0000-\u001f=]/.test(tag)||(typeof v!=='string'&&v!==null))
+   throw Error('保存したタグ差分が不正です。');
+  changes[tag]=v;
+ }
+ let tags=null;
+ if(value.tags&&typeof value.tags==='object'&&!Array.isArray(value.tags)){
+  tags=Object.create(null);
+  for(const [tag,v] of Object.entries(value.tags)){
+   if(!tag||/[\u0000-\u001f=]/.test(tag)||typeof v!=='string')
+    throw Error('保存したタグ一覧が不正です。');
+   tags[tag]=v;
+  }
+ }
+ return {type:value.type,id:String(value.id),version:value.version,changes,tags};
+}
+export function getOsmReviewStorageCheck(type,id){
+ const key=reviewKey({osm:{type,id}});
+ const text=localStorage.getItem(key);
+ return text===null?null:decodeStored(text,key);
+}
+export function getAllOsmReviewStorageChecks({onWarning}={}){
+ const result=[];
+ try{
+  for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i);
+   if(!key?.startsWith(TEST_PREFIX))continue;
+   try{result.push(decodeStored(localStorage.getItem(key),key));}
+   catch(error){onWarning?.('動作確認データの読み取り失敗: '+String(error.message||error));}
+  }
+ }catch(error){onWarning?.('動作確認用localStorageの一覧取得に失敗: '+String(error.message||error));}
+ return result;
+}
+// Called only after the real-production pending layer is applied to the NEW
+// Geofabrik map. Preserve the pre-test tags for restoring a building in 3D.
+export function applyOsmReviewStorageChecksToMap(map,{source,onWarning}={}){
+ if(source!=='new')return 0;
+ if(!Array.isArray(map?.elements))throw Error('地図JSONの要素一覧が不正です。');
+ const originals=new Map();
+ Object.defineProperty(map,'reviewStorageOriginalTags',{value:originals});
+ const records=new Map(getAllOsmReviewStorageChecks({onWarning})
+  .map(record=>[record.type+'/'+record.id,record]));
+ let count=0;
+ for(const element of map.elements){
+  const key=element.type+'/'+element.id,record=records.get(key);
+  if(!record)continue;
+  originals.set(key,{...(element.tags||{})});
+  const tags=record.tags?{...record.tags}:{...(element.tags||{})};
+  if(!record.tags)for(const [tag,value] of Object.entries(record.changes)){
+   if(value===null)delete tags[tag];else tags[tag]=value;
+  }
+  element.tags=tags;
+  count++;
+ }
+ return count;
 }
 export function saveOsmReviewStorageCheck(review){
  const {key,payload}=testPayload(review);
@@ -35,7 +98,7 @@ export function releaseOsmReviewStorageCheck(review){
 }
 // Insert at the TOP of the confirmation UI. getReview returns only a
 // currently displayed draft, never a production save-success callback.
-export function prependOsmReviewStorageCheck(reviewPanel,{getReview}={}){
+export function prependOsmReviewStorageCheck(reviewPanel,{getReview,onChange}={}){
  if(typeof getReview!=='function')throw Error('確認データの取得処理がありません。');
  const section=document.createElement('section');
  section.className='komo-review-storage-check';
@@ -57,19 +120,34 @@ export function prependOsmReviewStorageCheck(reviewPanel,{getReview}={}){
  status.style.cssText='min-height:1em;margin:8px 0 0;color:#ffd08a;font:11px/1.5 system-ui,-apple-system,sans-serif;overflow-wrap:anywhere;';
  const help=document.createElement('p');
  help.style.cssText='margin:7px 0 0;color:#b8cabe;font:10px/1.5 system-ui,-apple-system,sans-serif;';
- help.textContent='保存・開放は動作確認専用。OSM本番への送信やGeofabrik反映待ちの正式記録にはなりません。';
- const invoke=(action,okText)=>{
+ help.textContent='新2kmの3Dへ一時反映します。保存・開放は動作確認専用で、本番OSMへの送信や正式なGeofabrik反映待ち記録にはなりません。';
+ const invoke=(action,kind,okText)=>{
+  let review;
   try{
-   action(getReview());
-   status.textContent=okText;
-   status.style.color='#d0f6c7';
+   review=getReview();
+   action(review);
   }catch(error){
    status.textContent='⚠ '+String(error?.message||error);
    status.style.color='#ffd08a';
+   return;
+  }
+  status.style.color='#d0f6c7';
+  status.textContent=okText;
+  if(typeof onChange==='function'){
+   try{
+    const scene=onChange({kind,review});
+    if(scene?.applied===false){
+     status.style.color='#ffd08a';
+     status.textContent=okText+' 3D反映は保留：'+String(scene.reason||'地図の読み込み待ち');
+    }else if(scene?.applied===true)status.textContent=okText+' 3Dにも反映しました。';
+   }catch(error){
+    status.style.color='#ffd08a';
+    status.textContent=okText+' ただし3D反映に失敗：'+String(error?.message||error);
+   }
   }
  };
- save.addEventListener('click',()=>invoke(saveOsmReviewStorageCheck,'✅ 動作確認用データをlocalStorageへ保存しました。'));
- release.addEventListener('click',()=>invoke(releaseOsmReviewStorageCheck,'✅ 動作確認用データをlocalStorageから開放しました。'));
+ save.addEventListener('click',()=>invoke(saveOsmReviewStorageCheck,'save','✅ 動作確認用データをlocalStorageへ保存しました。'));
+ release.addEventListener('click',()=>invoke(releaseOsmReviewStorageCheck,'release','✅ 動作確認用データをlocalStorageから開放しました。'));
  buttons.append(save,release);
  section.append(heading,buttons,status,help);
  reviewPanel.prepend(section);
