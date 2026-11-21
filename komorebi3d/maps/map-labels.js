@@ -10,6 +10,7 @@ import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy
 import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
 import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=step3-mock-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
+import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
@@ -330,7 +331,11 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   const review=document.createElement('div');review.hidden=true;review.className='komo-review';
   const previewTitle=document.createElement('p');previewTitle.textContent='JSON変更内容の確認（OSM未送信）';previewTitle.style.fontWeight='700';
   const json=document.createElement('pre');json.style.cssText='max-height:40vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#e8f0eb;border-radius:8px;color:#19352f;font:12px/1.5 ui-monospace,monospace;';
-  review.append(previewTitle,json);
+  const productionReviewNotice=document.createElement('p');
+  productionReviewNotice.className='komo-status';
+  productionReviewNotice.textContent='確認用の下書きです。本番OSMには送信・保存していません。';
+  productionReviewNotice.hidden=true;
+  review.append(previewTitle,json,productionReviewNotice);
 
   const controls=document.createElement('div');controls.style.cssText='display:flex;gap:8px;margin-top:12px;';
   const makeButton=(label,primary=false)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='flex:1;padding:11px 5px;border:1px solid #91aca0;border-radius:8px;background:'+(primary?'#236c56':'#fff')+';color:'+(primary?'white':'#163c30')+';font:700 14px system-ui;';return b;};
@@ -452,10 +457,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    return values;
   };
   const isEdited=()=>{
-   if(activeSource!=='test'||!testReady||!testTags)return false;
-   const draft=captureDraft();
-   return Object.keys(draft).some(key=>draft[key]!==testTags[key])||
-    Object.keys(testTags).some(key=>!Object.prototype.hasOwnProperty.call(draft,key));
+   const reference=activeSource==='production'?baseTags:(testReady?testTags:null);
+   return reference!==null&&hasOsmTagChanges(reference,captureDraft());
   };
   function emitPreviewDraft(){
    if(!editor||review.hidden===false)return;
@@ -503,8 +506,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    if(source==='production'){
     testReady=false;
     renderTags(productionDraft??baseTags,true);
-    add.hidden=true;
-    sourceStatus.textContent='本番OSMのタグを表示中。値はここで入力して試せますが、本番への送信・保存は行いません。実際の編集はテストOSMで行ってください。';
+    sourceStatus.textContent='本番OSMのタグを編集・追加して変更内容を確認できます。この画面から本番OSMへの送信・保存は行いません。';
     return;
    }
    if(!linkedTestTarget){
@@ -529,21 +531,16 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    }
   }
   function collect(){
-   if(activeSource!=='test'||!testReady||!testTags||!linkedTestTarget)throw Error('テストOSMのタグを読み込んでから編集してください。');
-   const tags={};
-   for(const row of rows.children){
-    const k=row.children[0].value.trim(),v=row.children[1].value;
-    if(!k){if(v.trim())throw Error('タグ名が空欄です');continue;}
-    if(Object.prototype.hasOwnProperty.call(tags,k))throw Error('タグ名が重複しています: '+k);
-    if(/[\u0000-\u001f=]/.test(k))throw Error('タグ名に使用できない文字が含まれています');
-    tags[k]=v;
-   }
-   const changed={};
-   for(const key of new Set([...Object.keys(testTags),...Object.keys(tags)])){
-    if(testTags[key]!==tags[key])changed[key]=Object.prototype.hasOwnProperty.call(tags,key)?tags[key]:null;
-   }
-   if(Object.keys(changed).some(key=>changed[key]===null))throw Error('タグ削除には対応していません。');
-   return {osm:{type:linkedTestTarget.type,id:String(linkedTestTarget.id),version:null},tags,changes:changed};
+   if(activeSource==='test'&&(!testReady||!testTags||!linkedTestTarget))
+    throw Error('テストOSMのタグを読み込んでから編集してください。');
+   const isProduction=activeSource==='production';
+   const osm=isProduction?
+    {type:item.osmType,id:item.osmId,version:item.osmVersion??null}:
+    {type:linkedTestTarget.type,id:linkedTestTarget.id,version:null};
+   return buildOsmTagReview({
+    osm,originalTags:isProduction?baseTags:testTags,
+    rows:[...rows.children].map(row=>({key:row.children[0].value,value:row.children[1].value}))
+   });
   }
   let pending=null;
   confirm.addEventListener('click',()=>{
@@ -552,21 +549,33 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     json.textContent=JSON.stringify({osm:pending.osm,changes:pending.changes,tags:pending.tags},null,2);
     rows.hidden=true;add.hidden=true;tagsHeader.hidden=true;review.hidden=false;
     sourceRow.hidden=true;sourceStatus.hidden=true;note.hidden=true;
-    testPane.hidden=!eligible;
-    loaded=null;consent.checked=false;testDetails.hidden=true;
-    levelValue=null;
-    if(eligible&&Object.keys(pending.changes).length===1&&Object.prototype.hasOwnProperty.call(pending.changes,'level')&&/^(?:[0-8])$/.test(String(pending.tags.level))){
-     levelValue=Number(pending.tags.level);
-     testStatus.textContent='準備OK: level='+levelValue+'。'+(savedTestLink?'コピー済みのテストIDを入力済みです。':'初回は上部の「テスト環境へコピー」から複製してください。')+' 認証後、テスト対象を読み込んでください。';
-    }else if(eligible){
-     testStatus.textContent='テスト送信には、追加する変更を level=0〜8 の1項目だけにしてください（1階は0）。';
+    // The production-side review cannot display test-server sending controls.
+    const isTestReview=activeSource==='test';
+    productionReviewNotice.hidden=isTestReview;
+    testPane.hidden=!isTestReview||!eligible;
+    if(isTestReview){
+     loaded=null;consent.checked=false;testDetails.hidden=true;
+     levelValue=null;
+     if(eligible&&Object.keys(pending.changes).length===1&&Object.prototype.hasOwnProperty.call(pending.changes,'level')&&/^(?:[0-8])$/.test(String(pending.tags.level))){
+      levelValue=Number(pending.tags.level);
+      testStatus.textContent='準備OK: level='+levelValue+'。'+(savedTestLink?'コピー済みのテストIDを入力済みです。':'初回は上部の「テスト環境へコピー」から複製してください。')+' 認証後、テスト対象を読み込んでください。';
+     }else if(eligible){
+      testStatus.textContent='テスト送信には、追加する変更を level=0〜8 の1項目だけにしてください（1階は0）。';
+     }
+     osmTestOAuthReturn.then(()=>{const authError=consumeOsmTestAuthError();if(authError)testStatus.textContent='認証失敗: '+authError;syncTestControls();});
+     syncTestControls();
     }
-    osmTestOAuthReturn.then(()=>{const authError=consumeOsmTestAuthError();if(authError)testStatus.textContent='認証失敗: '+authError;syncTestControls();});
-    syncTestControls();
     controls.replaceChildren(back);
    }catch(e){error.textContent=e.message;}
   });
-  back.addEventListener('click',()=>{pending=null;rows.hidden=false;tagsHeader.hidden=false;review.hidden=true;sourceRow.hidden=false;sourceStatus.hidden=false;note.hidden=false;controls.replaceChildren(confirm);add.hidden=activeSource!=='test'||!testReady;updateConfirm();});
+  back.addEventListener('click',()=>{
+   pending=null;rows.hidden=false;tagsHeader.hidden=false;review.hidden=true;
+   sourceRow.hidden=false;sourceStatus.hidden=false;note.hidden=false;
+   productionReviewNotice.hidden=true;
+   controls.replaceChildren(confirm);
+   add.hidden=activeSource==='test'&&!testReady;
+   updateConfirm();
+  });
   form.addEventListener('submit',event=>event.preventDefault());
   mask.addEventListener('pointerdown',event=>event.stopPropagation());
   mask.addEventListener('click',event=>{event.stopPropagation();if(event.target===mask)dismiss();});

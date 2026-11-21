@@ -45,6 +45,7 @@ function renderFauxGame(state){
 // production writes or simulated save-success events.
 import {applyBuildingTagEditorTheme} from './maps/building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
 import {applyPendingTagVisualStyle,syncPendingTagRows} from './maps/osm-pending-tag-visual.js?v=step3-mock-20261122';
+import {hasOsmTagChanges,buildOsmTagReview} from './maps/osm-tag-review.js?v=production-preview-20261122';
 
 (function mountPendingTagPreview(){
  const panel=document.querySelector('#test-ops-panel .test-panel-body');
@@ -121,6 +122,90 @@ import {applyPendingTagVisualStyle,syncPendingTagRows} from './maps/osm-pending-
   mask.appendChild(form);
   mask.addEventListener('click',event=>{if(event.target===mask)mask.remove();});
   game.appendChild(mask);
+ });
+})();
+
+
+// Preview of the existing editor's production-source draft/review controls.
+// Shared validation module, no API, localStorage or "save success" simulation.
+(function mountProductionTagDraftDemo(){
+ const panel=document.querySelector('#test-ops-panel .test-panel-body');
+ const game=document.querySelector('.landscape-game');
+ if(!panel||!game)return;
+ const heading=document.createElement('div');heading.className='test-section-title';
+ heading.textContent='📝 本番タグ編集（送信なし）';
+ const launch=document.createElement('button');launch.type='button';
+ launch.textContent='タグ追加・変更内容確認を試す';
+ launch.style.cssText='width:100%;min-height:44px';
+ const tip=document.createElement('p');tip.textContent='サンプルの編集・JSON確認のみ。本番OSMには送信・保存しません。';
+ tip.style.cssText='font:11px/1.6 system-ui;margin:5px 0 0';
+ const divider=document.createElement('div');divider.className='test-separator';
+ panel.prepend(divider);panel.prepend(tip);panel.prepend(launch);panel.prepend(heading);
+
+ launch.addEventListener('click',()=>{
+  game.querySelector('.komo-draft-mock-overlay')?.remove();
+  game.querySelector('.komo-pending-mock-overlay')?.remove();
+  const mask=document.createElement('div');mask.className='komo-draft-mock-overlay';
+  mask.style.cssText='position:absolute;inset:0;z-index:9;display:flex;align-items:flex-end;justify-content:center;background:rgba(8,18,25,.23);pointer-events:auto';
+  const form=document.createElement('section');
+  form.style.cssText='box-sizing:border-box;width:100%;height:70%;max-height:70%;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 16px 18px;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif';
+  const grip=document.createElement('div');grip.style.cssText='display:flex;align-items:center;justify-content:center;height:36px;background:#152c26;margin:0 -16px 6px;border-radius:18px 18px 0 0';
+  const handle=document.createElement('span');handle.className='komo-grip';handle.style.cssText='width:44px;height:5px;border-radius:20px';grip.appendChild(handle);
+  const header=document.createElement('div');header.className='komo-editor-header';
+  const titles=document.createElement('div');titles.className='komo-editor-heading';
+  const title=document.createElement('h3');title.textContent='建物（表示サンプル）';
+  const subtitle=document.createElement('p');subtitle.className='komo-editor-subtitle';subtitle.textContent='本番OSM（確認画面まで）';
+  titles.append(title,subtitle);
+  const close=document.createElement('button');close.type='button';close.className='komo-editor-close';close.textContent='×';close.setAttribute('aria-label','閉じる');
+  close.addEventListener('click',()=>mask.remove());header.append(titles,close);
+  const note=document.createElement('p');note.className='komo-status';
+  note.textContent='本番OSMのタグを編集・追加して変更内容を確認できます。この画面から本番OSMへの送信・保存は行いません。';
+  const metadata=document.createElement('p');metadata.textContent='OSM way/123456 ／ version: 9（サンプル）';
+  metadata.style.cssText='font:11px/1.5 system-ui;color:#9bb5a8;margin:5px 0 10px';
+  const caption=document.createElement('p');caption.className='komo-caption';
+  const rows=document.createElement('div');rows.setAttribute('aria-label','OSMタグ一覧（サンプル）');
+  const originalTags={name:'サンプルビル','building:levels':'4',building:'yes'};
+  function addRow(key='',value=''){
+   const row=document.createElement('div');row.className='komo-tag-row';
+   const k=document.createElement('input');k.value=key;k.placeholder='タグ名';k.readOnly=Boolean(key);k.setAttribute('aria-label','タグ名');
+   const v=document.createElement('input');v.value=value;v.placeholder='値';v.setAttribute('aria-label','タグの値');
+   if(key)k.addEventListener('click',()=>v.focus({preventScroll:true}));
+   row.append(k,v);rows.appendChild(row);
+  }
+  for(const [key,value] of Object.entries(originalTags))addRow(key,value);
+  const updateCaption=()=>{caption.textContent='◇ タグ（'+rows.children.length+'件）';};
+  updateCaption();
+  const add=document.createElement('button');add.type='button';add.className='komo-add-tag';add.textContent='＋ タグを追加';
+  const error=document.createElement('p');error.style.cssText='color:#ffb0a5;font:12px/1.5 system-ui;min-height:1em';
+  const confirm=document.createElement('button');confirm.type='button';confirm.className='komo-action';confirm.textContent='変更内容を確認';
+  const review=document.createElement('div');review.className='komo-review';review.hidden=true;
+  const reviewTitle=document.createElement('p');reviewTitle.textContent='JSON変更内容の確認（OSM未送信）';
+  const json=document.createElement('pre');json.style.cssText='max-height:40vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#10271f;color:#e6f5ed;font:12px/1.5 ui-monospace,monospace';
+  const notice=document.createElement('p');notice.className='komo-status';notice.textContent='確認用の下書きです。本番OSMには送信・保存していません。';
+  review.append(reviewTitle,json,notice);
+  const back=document.createElement('button');back.type='button';back.className='komo-action komo-action-secondary';back.textContent='編集に戻る';back.hidden=true;
+  const rowsData=()=>[...rows.children].map(row=>({key:row.children[0].value,value:row.children[1].value}));
+  function update(){
+   const draft=Object.create(null);
+   for(const {key,value} of rowsData())if(key.trim())draft[key.trim()]=value;
+   confirm.hidden=!hasOsmTagChanges(originalTags,draft);
+  }
+  rows.addEventListener('input',()=>{error.textContent='';update();});
+  add.addEventListener('click',()=>{addRow();updateCaption();update();rows.lastElementChild.firstElementChild.focus({preventScroll:true});});
+  confirm.addEventListener('click',()=>{
+   try{
+    const result=buildOsmTagReview({osm:{type:'way',id:'123456',version:9},originalTags,rows:rowsData()});
+    json.textContent=JSON.stringify(result,null,2);
+    rows.hidden=true;caption.hidden=true;add.hidden=true;confirm.hidden=true;review.hidden=false;back.hidden=false;note.hidden=true;
+    error.textContent='';
+   }catch(e){error.textContent=e.message;}
+  });
+  back.addEventListener('click',()=>{rows.hidden=false;caption.hidden=false;add.hidden=false;review.hidden=true;back.hidden=true;note.hidden=false;update();});
+  form.append(grip,header,note,metadata,caption,rows,add,error,confirm,review,back);
+  applyBuildingTagEditorTheme(form);
+  update();
+  mask.appendChild(form);game.appendChild(mask);
+  mask.addEventListener('click',event=>{if(event.target===mask)mask.remove();});
  });
 })();
 
