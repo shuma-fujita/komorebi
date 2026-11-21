@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-22 OSM未反映タグの黄色表示 Step 3（mock先行／ゲーム未接続）：** 既存のビルタグ編集画面と同じダークテーマを使い、変更したタグ行のみ黄色い枠・背景＋「⚠ Geofabrik反映待ち」を表示するデモを `mock-ui.js` に追加。プレビューの開閉と通常状態への切替が可能。独立した表示モジュール `maps/osm-pending-tag-visual.js` は、production＋新Geofabrikの場合のみ該当する変更キーの行を強調し、その他は元の色を維持。mockはゲーム・WebGL・OSM API・localStorageを一切操作せず、サンプルのway/123456を表示するだけ。ユーザー承認後に `map-labels.js` の実際のビルタグ行へ連携する。テナント一覧の警告はStep4。ユーザー希望により専用模擬テストは実施していない。Actions／Pages／iPhone Safariの動作は未確認。
+
 > **2026-11-22 Geofabrik保存差分の3D即時反映 Step 2（main反映／Actions・実機未確認）：** Step 1のOSM version照合後、未反映localStorage差分を新2km JSONのタグへ重畳してから3Dマップを生成し、再読み込み・松戸再入場時にも表示を維持する。map-builderに既存バッチ内の建物別三角形範囲記録を追加。今後の本番OSM保存成功（type/id/version/changes）を受けるゲームAPI `onConfirmedOsmTagSave` から、対象建物の元三角形のみ削除し、周辺の道路・テナントを参照して対象建物を再生成して表示する。node店舗のタグ更新も該当建物外観・タグラベルに反映し、地図読み込み途中の変更は完成後に適用する。旧2km・固定Engine・現行OSMテスト送信機能は変更しない。OSM本番へ送信する機能はまだ無いので、このフックは将来の本番送信実装で接続する。黄色いビルタグ／テナント反映待ち表示はStep 3・4。ユーザー希望により模擬テストなし、Actions・Pages・Safari実機は未確認。
 
 
