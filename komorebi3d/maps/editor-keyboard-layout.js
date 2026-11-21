@@ -71,9 +71,13 @@ export function attachEditorKeyboardLayout({host,mask,sheet,onViewportChange}){
    return;
   }
   keyboardSeen=true;
-  const rect=game.getBoundingClientRect();
-  const topInVisibleViewport=rect.top-vv.offsetTop;
-  onViewportChange?.(vv.height,topInVisibleViewport);
+  // Measure the *sheet's containing panel* (#play-surface), not the
+  // landscape-game wrapper: game padding must not skew keyboard geometry.
+  // DOMRects use layout-viewport coordinates, while VisualViewport's
+  // origin may have moved during Safari's automatic focus scrolling.
+  const rect=mask.getBoundingClientRect();
+  const panelTopInVisibleViewport=rect.top-vv.offsetTop;
+  onViewportChange?.(vv.height,panelTopInVisibleViewport);
   // No scrollTo here. It triggered a 52 <-> 380 px feedback loop when
   // Safari changed visualViewport.offsetTop after a page scroll.
  }
