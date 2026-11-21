@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-22 本番OSM確認画面へのlocalStorage動作確認2ボタン接続（main反映／今回のゲームSafari実機未確認）：** ユーザーから前回のmockの実機PASSを受領。承認された共通UI `maps/osm-review-storage-check.js` を実際の `maps/map-labels.js` に導入。「本番OSM」タブで変更したタグを「変更内容を確認」した画面の最上部に「ローカルストレージに保存」「ローカルストレージ開放」を追加し、操作結果を表示。`getReview` は確認画面の下書きだけを渡し、保存先は `komorebi3d:osm-review-storage-check:v1:` の独立したテスト用キー。本番OSM APIへの送信や `recordConfirmedOsmTagChanges` の呼び出しは禁止のまま、正式なGeofabrik反映待ちには影響しない。「テストOSM」タブの確認画面では動作確認2ボタンを非表示にし、既存のテスト環境送信フローを維持。「編集に戻る」でボタンを隠して状態表示をクリア。前回のmock実機PASSと今回ゲーム本体の確認を混同しない。専用模擬テストはユーザー希望により実施せず、Actions／Pages／Safariゲーム実機は未確認。
+
 > **2026-11-22 本番タグ確認画面のlocalStorageボタン（mock先行／ゲーム未接続）：** 本番タグ編集・差分JSON確認までの現行ゲーム画面はユーザー報告で実機PASS。次工程として確認画面の最上部に「ローカルストレージに保存」「ローカルストレージ開放」の2ボタンを追加するモックを作成。`maps/osm-review-storage-check.js` に保存・対象OSM要素の削除・成否表示を共通化し、`mock-ui.js` から利用する。保存先は `komorebi3d:osm-review-storage-check:v1:` で、本番OSM保存成功後だけ記録するStep1の `komorebi3d:osm-production-pending:v1:` と厳密に分離する。OSM API通信・本番保存成功扱い・3Dや黄色反映待ちの変更は行わない。モックのUI表示をユーザーが承認したらゲーム `map-labels.js` の本番確認画面へ同じ共通コンポーネントを接続する。専用模擬テストはユーザー希望により実施せず、GitHub反映・Pages・Safari実機確認は分けて報告する。
 
 

@@ -11,6 +11,7 @@ import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-c
 import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=step3-mock-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
+import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=preview-storage-check-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
@@ -543,6 +544,10 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    });
   }
   let pending=null;
+  // Same two buttons as the approved mock. Keep a separate test-only storage
+  // namespace: this never signals a successful production OSM save.
+  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending});
+  reviewStorageCheck.section.hidden=true;
   confirm.addEventListener('click',()=>{
    try{
     pending=collect();error.textContent='';
@@ -552,6 +557,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     // The production-side review cannot display test-server sending controls.
     const isTestReview=activeSource==='test';
     productionReviewNotice.hidden=isTestReview;
+    reviewStorageCheck.section.hidden=isTestReview;
+    reviewStorageCheck.clearStatus();
     testPane.hidden=!isTestReview||!eligible;
     if(isTestReview){
      loaded=null;consent.checked=false;testDetails.hidden=true;
@@ -572,6 +579,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    pending=null;rows.hidden=false;tagsHeader.hidden=false;review.hidden=true;
    sourceRow.hidden=false;sourceStatus.hidden=false;note.hidden=false;
    productionReviewNotice.hidden=true;
+   reviewStorageCheck.section.hidden=true;
+   reviewStorageCheck.clearStatus();
    controls.replaceChildren(confirm);
    add.hidden=activeSource==='test'&&!testReady;
    updateConfirm();
