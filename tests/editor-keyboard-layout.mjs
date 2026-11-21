@@ -13,9 +13,9 @@ assert.equal(focusedTagRowScrollDelta(600,800,680,760),2);
 assert.equal(focusedTagRowScrollDelta(600,800,710,790),32);
 assert.equal(focusedTagRowScrollDelta(600,800,640,720),-38);
 
-// Reproduce a measured Safari viewport transition: pageY 495 -> 753 during
-// keyboard display, and back to 495 after the visual viewport recovers.
-// This is a deterministic lifecycle test, not an iPhone Safari device PASS.
+// The screenshot regression is not just a wrong scrollY:
+// the editor stays open after keyboard Done, so the game must remain pinned.
+// Only closing the editor itself may restore normal flow.
 function emitter(object={}){
  const handlers=new Map();
  return Object.assign(object,{
@@ -33,76 +33,96 @@ class Node{
 globalThis.Element=Node;
 let frameId=0;
 const frames=new Map();
-globalThis.requestAnimationFrame=cb=>{const id=++frameId;frames.set(id,cb);return id;};
+globalThis.requestAnimationFrame=fn=>{const id=++frameId;frames.set(id,fn);return id;};
 globalThis.cancelAnimationFrame=id=>frames.delete(id);
-const flush=()=>{for(let n=0;frames.size&&n<10;n++){const items=[...frames.values()];frames.clear();for(const fn of items)fn();}assert.equal(frames.size,0);};
+const flush=()=>{for(let n=0;frames.size&&n<10;n++){
+ const callbacks=[...frames.values()];frames.clear();
+ for(const callback of callbacks)callback();
+}assert.equal(frames.size,0);};
 const vv=emitter({height:641,offsetTop:0});
+let coarse=true;
 const scrollCalls=[];
 globalThis.window=emitter({
- visualViewport:vv,scrollY:495,scrollX:0,
+ innerHeight:641,visualViewport:vv,scrollY:372,scrollX:0,
  scrollTo(x,y){scrollCalls.push([x,y]);this.scrollX=x;this.scrollY=y;},
- matchMedia:()=>({matches:true}),location:{search:''}
+ matchMedia:()=>({matches:coarse}),location:{search:''}
 });
 const body=new Node();body.style.position='';body.style.overflow='';
 globalThis.document={body,activeElement:null};
 const game=new Node();game.style.position='';game.style.top='';
 const slot=new Node();slot.style.overflow='hidden';
-game.getBoundingClientRect=()=>({top:160,height:800});
+game.getBoundingClientRect=()=>({
+ top:game.style.position==='fixed'?vv.offsetTop:8,
+ height:game.style.position==='fixed'?Number.parseFloat(game.style.height):699,
+ left:34,width:644
+});
 game.closest=sel=>sel==='.panel-slot-main'?slot:null;
 const host=new Node();host.closest=sel=>sel==='.landscape-game'?game:null;
-host.getBoundingClientRect=()=>({height:800});
+host.getBoundingClientRect=()=>({height:game.getBoundingClientRect().height});
 const mask=new Node(),sheet=new Node(),previewTouch=new Node();
 sheet.style.position='relative';sheet.style.height='70%';sheet.style.maxHeight='70%';
-sheet.getBoundingClientRect=()=>({top:410,bottom:670,height:260});
-const row=new Node();row.getBoundingClientRect=()=>({top:570,bottom:630});
-const field=new Node();
-field.closest=sel=>sel.startsWith('input,textarea')?field:sel==='.komo-tag-row'?row:null;
+sheet.getBoundingClientRect=()=>({top:210,bottom:420,height:210});
+const row=new Node();row.getBoundingClientRect=()=>({top:280,bottom:340});
+const field=new Node();field.closest=sel=>sel.startsWith('input,textarea')?field:sel==='.komo-tag-row'?row:null;
 sheet.contains=node=>node===field;
-const originalGamePosition=game.style.position||'';
-const binding=attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode:()=> 'half'});
-assert.equal(body.style.position,'','opening a tag editor does not pin the page');
-assert.equal(game.style.position,originalGamePosition,'opening editor leaves the game in normal flow');
-document.activeElement=field;sheet.emit('focusin',{target:field});flush();
-assert.equal(body.style.position,'','typing must not pin the entire page');
-assert.equal(slot.style.overflow,'hidden','the parent must retain its clipping');
-assert.equal(sheet.style.position,'absolute');
-assert.ok(Number.parseFloat(sheet.style.height)>0,'the tag sheet must have visible height');
-// Safari scrolls the page while the software keyboard is open.
-window.scrollY=753;vv.height=313;vv.offsetTop=258;vv.emit('resize');flush();
-assert.equal(game.style.position,'fixed','game remains fixed while keyboard is visible');
-document.activeElement=null;sheet.emit('focusout');flush();
-assert.equal(game.style.position,'fixed','blur must wait for viewport recovery before restoring');
-assert.equal(window.scrollY,753,'page is not scrolled behind the still-open keyboard');
-vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
-assert.equal(game.style.position,originalGamePosition,'Done clears temporary game positioning');
-assert.equal(game.style.top||'','','Done leaves no relative top offset');
-assert.equal(window.scrollY,495,'Done returns to the exact pre-keyboard page position');
-assert.deepEqual(scrollCalls,[[0,495]],'restore page only once after the keyboard closes');
-assert.equal(body.style.position,'','Done does not leave the page locked');
-assert.equal(slot.style.overflow,'hidden','parent clipping remains unchanged');
-binding.destroy();
-assert.equal(sheet.style.position,'relative','closing restores original sheet mode');
 
-// Switching between two fields must not restore the page in the middle.
-const binding2=attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode:()=> 'half'});
+const originalPosition=game.style.position;
+const binding=attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode:()=> 'half'});
+assert.equal(game.style.position,'fixed','opening editor immediately pins game');
+assert.equal(game.style.top,'0px','editor pins to viewport, even when opened lower on page');
+assert.equal(game.style.height,'641px','editor fits the full mobile layout viewport');
+assert.equal(sheet.style.position,'relative','unfocused sheet starts in its normal layout');
+assert.equal(body.style.position,'','never lock body while editor is open');
+assert.equal(slot.style.overflow,'hidden','parent clipping stays untouched');
 document.activeElement=field;sheet.emit('focusin',{target:field});flush();
-window.scrollY=753;vv.height=313;vv.offsetTop=258;vv.emit('resize');flush();
+window.scrollY=769;vv.height=313;vv.offsetTop=328;vv.emit('resize');flush();
+assert.equal(game.style.position,'fixed');
+assert.equal(game.style.top,'328px','game follows the visual viewport');
+assert.equal(sheet.style.position,'absolute','focused sheet becomes keyboard-aware');
+assert.ok(Number.parseFloat(sheet.style.height)>0);
+document.activeElement=null;sheet.emit('focusout');flush();
+assert.equal(game.style.position,'fixed','Done must not unpin the still-open editor');
+assert.equal(window.scrollY,769,'no premature page scroll while keyboard is open');
+vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
+assert.equal(window.scrollY,372,'keyboard Done returns page to pre-focus scroll');
+assert.equal(game.style.position,'fixed','Done preserves editor full-screen positioning');
+assert.equal(game.style.top,'0px');
+assert.equal(sheet.style.position,'relative','Done restores 70% tag sheet');
+assert.equal(sheet.style.height,'70%');
+
+// Focus switching is not keyboard dismissal.
+document.activeElement=field;sheet.emit('focusin',{target:field});flush();
+window.scrollY=769;vv.height=313;vv.offsetTop=328;vv.emit('resize');flush();
 sheet.emit('focusout');
 sheet.emit('focusin',{target:field});flush();
-assert.equal(game.style.position,'fixed','field-to-field focus keeps the editor fixed');
-assert.equal(window.scrollY,753,'field-to-field focus does not reset scroll');
+assert.equal(window.scrollY,769,'switching fields does not reset the page');
+assert.equal(game.style.position,'fixed');
 document.activeElement=null;sheet.emit('focusout');flush();
 vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
-binding2.destroy();
-assert.equal(window.scrollY,495,'field switch still restores the original page position');
+assert.equal(window.scrollY,372);
+assert.equal(game.style.position,'fixed');
+binding.destroy();
+assert.equal(game.style.position,originalPosition,'only closing the editor unpins game');
+assert.equal(game.style.top||'','','closing restores game top style');
+assert.equal(body.style.position,'','closing does not leave body locked');
 
-// Closing the entire editor while the keyboard is still open also returns
-// the page after the viewport has recovered, not during keyboard animation.
-const binding3=attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode:()=> 'half'});
+// If the editor is dismissed while the keyboard is still up, keep the game
+// pinned until the visual viewport actually recovers.
+window.scrollY=495;
+const binding2=attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode:()=> 'half'});
+assert.equal(game.style.position,'fixed');
 document.activeElement=field;sheet.emit('focusin',{target:field});flush();
 window.scrollY=753;vv.height=313;vv.offsetTop=258;vv.emit('resize');flush();
-binding3.destroy();
-assert.equal(window.scrollY,753,'closing during the keyboard does not jump the page early');
+binding2.destroy();
+assert.equal(game.style.position,'fixed','close must not unpin during keyboard animation');
 vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
-assert.equal(window.scrollY,495,'closed editor restores page after keyboard recovery');
-console.log('editor keyboard scroll restoration regression: PASS (iOS device verification pending)');
+assert.equal(window.scrollY,495,'editor dismissal restores pre-editor scroll');
+assert.equal(game.style.position,originalPosition,'unpin after viewport recovery');
+
+// Desktop keyboard must not create a mobile fixed editor.
+coarse=false;
+const desktop=attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getSheetMode:()=> 'half'});
+assert.equal(game.style.position,originalPosition);
+desktop.destroy();
+assert.equal(body.style.position,'');
+console.log('editor fixed-lifetime and keyboard viewport regression: PASS (Safari device verification pending)');
