@@ -120,8 +120,11 @@ export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null,
    const visual=sheet.getBoundingClientRect();
    stopAnimation();
    const parent=sheet.parentElement.getBoundingClientRect();
-   const split=geometry('half').top;
-   mode=visual.top-parent.top<split*.6?'full':'half';
+   const visible=region(),split=geometry('half').top;
+   // Preserve the old 25%-of-panel interruption threshold in normal mode.
+   // Shift it with the visible panel slice while the keyboard is open.
+   const threshold=visible.start+(split-visible.start)*5/6;
+   mode=visual.top-parent.top<threshold?'full':'half';
    drawSettled();
   }
   const baseTop=geometry(mode).top;
