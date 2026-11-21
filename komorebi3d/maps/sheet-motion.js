@@ -45,9 +45,6 @@ export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
  }
  function onPointerDown(event){
   if(disposed||dismissing||drag||!event.isPrimary||event.button!==0)return;
-  // Handle action buttons are taps, not draggable sheet grips. Let their
-  // click events through without pointer capture or preventDefault.
-  if(event.target instanceof Element&&event.target.closest('button'))return;
   // Interruption starts from the actual settled size.
   if(animation){
    const visual=sheet.getBoundingClientRect();
