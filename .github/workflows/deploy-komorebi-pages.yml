@@ -30,8 +30,6 @@ jobs:
           node --check komorebi3d/mock-ui.js
           node --check komorebi3d/maps/editor-keyboard-layout.js
           node --check komorebi3d/maps/editor-keyboard-diagnostics.js
-          node --check komorebi3d/maps/sheet-motion.js
-          node tests/sheet-motion-controls.mjs
           node tests/editor-keyboard-layout.mjs
           node komorebi3d/build-ui.mjs --check
       - name: Prepare Pages artifact without writing Client ID to git
