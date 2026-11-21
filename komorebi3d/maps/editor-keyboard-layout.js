@@ -1,11 +1,8 @@
-// The editor's game panel and 70% sheet never change geometry for keyboards.
-// Focus management only scrolls the selected tag within the sheet.
-// Safari owns the keyboard and any document scroll needed to reveal it.
-export function focusedTagRowScrollDelta(sheetTop,rowTop,gripHeight=36,gap=8){
- return rowTop-(sheetTop+gripHeight+gap);
-}
-
-export function attachEditorKeyboardLayout({host,mask,sheet,handle}){
+// Investigation baseline: keep the 30% preview and 70% form untouched.
+// Do not scroll tag rows or the page while an input has focus.
+// A trusted touch can focus a field synchronously with preventScroll;
+// Safari may still pan its visual viewport when the keyboard opens.
+export function attachEditorKeyboardLayout({host,mask,sheet}){
  const game=host.closest('.landscape-game');
  const vv=window.visualViewport;
  const mobile=window.matchMedia?.('(pointer:coarse)')?.matches===true;
@@ -13,25 +10,12 @@ export function attachEditorKeyboardLayout({host,mask,sheet,handle}){
  const KEYBOARD_THRESHOLD=110;
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
  let focusedField=null,focusOrigin=null,keyboardSeen=false,pendingBlur=false;
- let alignFrame=0,blurFrame=0,blurTimer=0,disposed=false,diagnostic=null;
+ let blurFrame=0,blurTimer=0,disposed=false,diagnostic=null;
  const keyboardOpen=()=>Boolean(vv)&&vv.height<baselineHeight-KEYBOARD_THRESHOLD;
  const viewportRecovered=()=>!vv||!keyboardOpen();
  function restorePagePosition(point){
   if(point&&(window.scrollX!==point.x||window.scrollY!==point.y))
    window.scrollTo(point.x,point.y);
- }
- function alignFocusedRow(){
-  alignFrame=0;
-  if(disposed||!mask.isConnected||!focusedField||
-    document.activeElement!==focusedField||!sheet.contains(focusedField))return;
-  const bounds=sheet.getBoundingClientRect();
-  const row=(focusedField.closest('.komo-tag-row')||focusedField).getBoundingClientRect();
-  const gripHeight=handle?.getBoundingClientRect?.().height||36;
-  const delta=focusedTagRowScrollDelta(bounds.top,row.top,gripHeight);
-  if(Math.abs(delta)>2)sheet.scrollTop+=delta;
- }
- function scheduleAlign(){
-  if(!alignFrame)alignFrame=requestAnimationFrame(alignFocusedRow);
  }
  function finishBlur(){
   pendingBlur=false;
@@ -39,22 +23,33 @@ export function attachEditorKeyboardLayout({host,mask,sheet,handle}){
   if(keyboardSeen)restorePagePosition(focusOrigin);
   keyboardSeen=false;focusOrigin=null;
  }
+ function onPointerDown(event){
+  // Safari normally focuses a tapped input as its default action, which
+  // may also scroll it. Focusing ahead of that action with preventScroll
+  // suppresses the focus-triggered scroll where WebKit supports it.
+  // Do NOT preventDefault: iOS still needs the native tap to open the
+  // keyboard and position the caret.
+  const target=event.target;
+  if(!mobile||event.pointerType!=='touch'||!isField(target)||
+   !sheet.contains(target)||target.disabled||document.activeElement===target)return;
+  if(!focusOrigin)focusOrigin={x:window.scrollX||0,y:window.scrollY};
+  target.focus({preventScroll:true});
+ }
  function onFocusIn(event){
   if(!isField(event.target)||!sheet.contains(event.target))return;
   if(!focusOrigin)focusOrigin={x:window.scrollX||0,y:window.scrollY};
   focusedField=event.target;pendingBlur=false;
   if(blurTimer){clearTimeout(blurTimer);blurTimer=0;}
-  scheduleAlign();
  }
  function onFocusOut(){
   if(blurFrame)cancelAnimationFrame(blurFrame);
-  // Moving between two tag fields sends focusout before focusin.
+  // A change of input fires focusout before the next focusin.
   blurFrame=requestAnimationFrame(()=>{
    blurFrame=0;
    if(disposed||!mask.isConnected)return;
    const next=document.activeElement;
    if(isField(next)&&sheet.contains(next)){
-    focusedField=next;pendingBlur=false;scheduleAlign();return;
+    focusedField=next;pendingBlur=false;return;
    }
    focusedField=null;pendingBlur=true;
    if(viewportRecovered()||!keyboardSeen){finishBlur();return;}
@@ -66,14 +61,11 @@ export function attachEditorKeyboardLayout({host,mask,sheet,handle}){
   });
  }
  function onViewportResize(){
-  // This event never sets the sheet size, game position or camera framing.
-  if(focusedField){
-   if(mobile&&keyboardOpen())keyboardSeen=true;
-   scheduleAlign();
-  }else if(pendingBlur&&viewportRecovered()){
-   finishBlur();
-  }
+  // Observe only: no sheet/game CSS, tag scrollTop or page scrollTo.
+  if(focusedField&&mobile&&keyboardOpen())keyboardSeen=true;
+  else if(pendingBlur&&viewportRecovered())finishBlur();
  }
+ sheet.addEventListener('pointerdown',onPointerDown,true);
  sheet.addEventListener('focusin',onFocusIn);
  sheet.addEventListener('focusout',onFocusOut);
  vv?.addEventListener('resize',onViewportResize);
@@ -83,19 +75,19 @@ export function attachEditorKeyboardLayout({host,mask,sheet,handle}){
    diagnostic=mod.attachEditorKeyboardDiagnostics({game,host,mask,sheet});
   }).catch(error=>console.warn('editor trace unavailable',error));
  }
- return {refresh:scheduleAlign,destroy(){
+ return {destroy(){
   if(disposed)return;
   disposed=true;diagnostic?.destroy();
+  sheet.removeEventListener('pointerdown',onPointerDown,true);
   sheet.removeEventListener('focusin',onFocusIn);
   sheet.removeEventListener('focusout',onFocusOut);
   vv?.removeEventListener('resize',onViewportResize);
-  if(alignFrame)cancelAnimationFrame(alignFrame);
   if(blurFrame)cancelAnimationFrame(blurFrame);
   if(blurTimer)clearTimeout(blurTimer);
   if(!keyboardSeen||!focusOrigin)return;
   if(viewportRecovered()){restorePagePosition(focusOrigin);return;}
-  // An editor may close while the iOS keyboard is still dismissing.
-  // Restore the *document* once afterward; never pin the game panel.
+  // Once the keyboard has fully closed, restore the page just once.
+  // Do not fight keyboard-opening scroll or visualViewport movement.
   const point=focusOrigin;
   let timer=0,doneFlag=false;
   function done(){
