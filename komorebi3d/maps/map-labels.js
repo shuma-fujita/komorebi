@@ -543,7 +543,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   // Use actual test data when an element has already been copied; never
   // mislabel local production tags as test data.
   setSource(linkedTestTarget?'test':'production');
-  form.style.position='relative';form.style.zIndex='2';
+  form.style.zIndex='2';
   mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
   editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form,onViewportChange:(height,gameTop)=>editorMotion?.setKeyboardViewport(height,gameTop)});
   editorScrollGuard=guardSheetScroll(mask,form,handle);
