@@ -149,7 +149,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
  sheet.addEventListener('focusout',onFocusOut);
  vv?.addEventListener('resize',onViewportResize);
  if(window.location?.search&&new URLSearchParams(window.location.search).get('editorDiag')==='1'&&vv&&game){
-  import('./editor-keyboard-diagnostics.js?v=keyboard-covered-field-20261121').then(mod=>{
+  import('./editor-keyboard-diagnostics.js?v=tag-focus-origin-row-20261121').then(mod=>{
    if(disposed||!mask.isConnected)return;
    diagnostic=mod.attachEditorKeyboardDiagnostics({game,host,mask,sheet});
   }).catch(error=>console.warn('editor trace unavailable',error));
