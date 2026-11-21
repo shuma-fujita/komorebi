@@ -33,6 +33,15 @@ let frameID=0;
 const frames=new Map();
 globalThis.requestAnimationFrame=fn=>{const id=++frameID;frames.set(id,fn);return id;};
 globalThis.cancelAnimationFrame=id=>frames.delete(id);
+let timerID=0;
+const timers=new Map();
+globalThis.setTimeout=(fn,delay)=>{const id=++timerID;timers.set(id,{fn,delay});return id;};
+globalThis.clearTimeout=id=>timers.delete(id);
+function runTimers(maxDelay){
+ const due=[...timers].filter(([,item])=>item.delay<=maxDelay);
+ for(const [id,{fn}] of due){timers.delete(id);fn();}
+ flush();
+}
 function flush(){
  for(let n=0;frames.size&&n<15;n++){
   const batch=[...frames.values()];frames.clear();
@@ -46,7 +55,15 @@ let coarse=true;
 globalThis.window=emitter({
  visualViewport:vv,innerHeight:641,scrollX:0,scrollY:372,location:{search:''},
  matchMedia:()=>({matches:coarse}),
- scrollTo(x,y){scrollCalls.push([x,y]);this.scrollX=x;this.scrollY=y;}
+ scrollTo(x,y){
+  scrollCalls.push([x,y]);this.scrollX=x;this.scrollY=y;
+  // Safari may change visualViewport.offsetTop when programmatic scrolling.
+  // A repeated scrollTo inside the scroll listener used to oscillate 52 <-> 380.
+  if(vv.height<500){
+   vv.offsetTop=y<100?0:328;
+   vv.emit('scroll');this.emit('scroll');
+  }
+ }
 });
 const body=new Node();body.style.position='';body.style.overflow='';
 globalThis.document={body,activeElement:null};
@@ -84,6 +101,14 @@ sheet.getBoundingClientRect=()=>{
 const field=new Node(),row=new Node();
 field.closest=selector=>selector.startsWith('input,textarea')?field:selector==='.komo-tag-row'?row:null;
 sheet.contains=target=>target===field;
+let nativeRevealCount=0;
+field.scrollIntoView=()=>{
+ nativeRevealCount++;
+ // This is the browser's native reveal, NOT window.scrollTo from the editor.
+ // The focus scroll can change vvTop, which must never trigger JS scroll loops.
+ window.scrollY=380;vv.offsetTop=0;
+ vv.emit('scroll');window.emit('scroll');
+};
 row.getBoundingClientRect=()=>{
  const rect=sheet.getBoundingClientRect(),top=rect.top+48-sheet.scrollTop;
  return {top,bottom:top+48,height:48};
@@ -108,13 +133,19 @@ assert.equal(sheet.style.height,'70%','focusing does not prematurely resize game
 window.scrollY=769;vv.height=313;vv.offsetTop=328;
 vv.emit('resize');flush();
 assertPanelUnchanged();
-assert.equal(window.scrollY,52,'document scrolling aligns game to visual viewport without game CSS changes');
-assert.equal(game.getBoundingClientRect().top-vv.offsetTop,0,'game top aligns to visual viewport, including Safari offsetTop');
+assert.equal(window.scrollY,769,'the editor must not fight Safari keyboard scrolling');
+assert.equal(scrollCalls.length,0,'no programmatic page scroll while focused');
 assert.equal(sheet.style.position,'absolute','only the sheet changes position with keyboard');
 assert.equal(Math.round(Number.parseFloat(sheet.style.height)),103,'sheet fits above keyboard after preview');
 assert.equal(Math.round(Number.parseFloat(sheet.style.top)),210,'preview keeps its 30% panel-local height');
-// A followup document scroll event does not introduce a second geometry owner.
-window.emit('scroll');flush();
+// Keyboard viewport settles before a single native focused-field reveal.
+runTimers(90);
+assert.equal(nativeRevealCount,1,'one native reveal after keyboard viewport settles');
+assert.equal(window.scrollY,380,'native scrollIntoView may expose the game and input');
+assert.equal(scrollCalls.length,0,'native reveal does not cause JS scrollTo feedback');
+window.emit('scroll');vv.emit('scroll');flush();
+assert.equal(nativeRevealCount,1,'scroll events must not repeatedly reveal the same field');
+assert.equal(scrollCalls.length,0,'visualViewport.offsetTop changes do not trigger page alignment');
 assertPanelUnchanged();
 assert.equal(Math.round(Number.parseFloat(sheet.style.height)),103);
 document.activeElement=null;sheet.emit('focusout');flush();
@@ -131,7 +162,11 @@ assertPanelUnchanged();
 document.activeElement=field;sheet.emit('focusin',{target:field});flush();
 window.scrollY=769;vv.height=313;vv.offsetTop=328;vv.emit('resize');flush();
 sheet.emit('focusout');sheet.emit('focusin',{target:field});flush();
-assert.equal(window.scrollY,52,'focus switch retains keyboard-aware document scroll');
+assert.equal(window.scrollY,769,'field change does not force page scroll');
+runTimers(90);
+assert.equal(nativeRevealCount,2,'the newly selected field gets a single native reveal');
+assert.equal(window.scrollY,380,'native reveal is allowed to scroll the page');
+assert.equal(scrollCalls.length,1,'only the previous Done may call window.scrollTo');
 assert.equal(sheet.style.position,'absolute');
 assertPanelUnchanged();
 document.activeElement=null;sheet.emit('focusout');flush();
@@ -151,7 +186,7 @@ assertPanelUnchanged();
 motion.destroy();
 binding.destroy();
 assertPanelUnchanged();
-assert.equal(window.scrollY,52,'editor removal does not restore scroll before keyboard recovery');
+assert.equal(window.scrollY,769,'editor removal does not restore scroll before keyboard recovery');
 vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
 assert.equal(window.scrollY,372,'editor removal restores normal page position after keyboard closes');
 assertPanelUnchanged();
