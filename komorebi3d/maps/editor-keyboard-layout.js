@@ -1,7 +1,10 @@
-// Investigation baseline: keep the 30% preview and 70% form untouched.
-// Do not scroll tag rows or the page while an input has focus.
-// A trusted touch can focus a field synchronously with preventScroll;
-// Safari may still pan its visual viewport when the keyboard opens.
+// The 30% preview and 70% sheet never change size or position for keyboards.
+// A trusted touch focuses with preventScroll; once the keyboard opens, only
+// reveal the covered part of the focused field INSIDE the sheet, before typing.
+// Safari still owns document scroll, and we never counter-scroll while focused.
+export function coveredFieldScrollDelta(fieldBottom,visibleBottom,margin=24){
+ return Math.max(0,fieldBottom-(visibleBottom-margin));
+}
 export function attachEditorKeyboardLayout({host,mask,sheet}){
  const game=host.closest('.landscape-game');
  const vv=window.visualViewport;
@@ -10,7 +13,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
  const KEYBOARD_THRESHOLD=110;
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
  let focusedField=null,focusOrigin=null,keyboardSeen=false,pendingBlur=false;
- let blurFrame=0,blurTimer=0,disposed=false,diagnostic=null;
+ let blurFrame=0,revealFrame=0,blurTimer=0,disposed=false,diagnostic=null;
  const keyboardOpen=()=>Boolean(vv)&&vv.height<baselineHeight-KEYBOARD_THRESHOLD;
  const viewportRecovered=()=>!vv||!keyboardOpen();
  function restorePagePosition(point){
@@ -22,6 +25,26 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
   if(blurTimer){clearTimeout(blurTimer);blurTimer=0;}
   if(keyboardSeen)restorePagePosition(focusOrigin);
   keyboardSeen=false;focusOrigin=null;
+ }
+ function revealKeyboardCoveredField(){
+  revealFrame=0;
+  if(disposed||!mask.isConnected||!mobile||!keyboardOpen()||
+   !focusedField||document.activeElement!==focusedField||
+   !sheet.contains(focusedField))return;
+  // The rect is in layout-viewport coordinates. visualViewport.offsetTop
+  // is the origin of the portion actually visible above the keyboard.
+  const field=focusedField.getBoundingClientRect();
+  const sheetRect=sheet.getBoundingClientRect();
+  const visibleBottom=vv.offsetTop+vv.height;
+  if(sheetRect.top>=visibleBottom)return;
+  const delta=coveredFieldScrollDelta(field.bottom,visibleBottom);
+  if(delta<=1)return;
+  const maxScroll=Math.max(0,sheet.scrollHeight-sheet.clientHeight);
+  const target=Math.min(maxScroll,sheet.scrollTop+delta);
+  if(target>sheet.scrollTop+1)sheet.scrollTop=target;
+ }
+ function scheduleReveal(){
+  if(!revealFrame)revealFrame=requestAnimationFrame(revealKeyboardCoveredField);
  }
  function onPointerDown(event){
   // Safari normally focuses a tapped input as its default action, which
@@ -40,6 +63,8 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
   if(!focusOrigin)focusOrigin={x:window.scrollX||0,y:window.scrollY};
   focusedField=event.target;pendingBlur=false;
   if(blurTimer){clearTimeout(blurTimer);blurTimer=0;}
+  // Switching to a different field while the keyboard is already open.
+  if(mobile&&keyboardOpen())scheduleReveal();
  }
  function onFocusOut(){
   if(blurFrame)cancelAnimationFrame(blurFrame);
@@ -61,9 +86,12 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
   });
  }
  function onViewportResize(){
-  // Observe only: no sheet/game CSS, tag scrollTop or page scrollTo.
-  if(focusedField&&mobile&&keyboardOpen())keyboardSeen=true;
-  else if(pendingBlur&&viewportRecovered())finishBlur();
+  // On keyboard resize, reveal only the part hidden below its top edge.
+  // No scroll handler, input handler, setInterval or page scroll correction.
+  if(focusedField&&mobile&&keyboardOpen()){
+   keyboardSeen=true;
+   scheduleReveal();
+  }else if(pendingBlur&&viewportRecovered())finishBlur();
  }
  sheet.addEventListener('pointerdown',onPointerDown,true);
  sheet.addEventListener('focusin',onFocusIn);
@@ -83,6 +111,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
   sheet.removeEventListener('focusout',onFocusOut);
   vv?.removeEventListener('resize',onViewportResize);
   if(blurFrame)cancelAnimationFrame(blurFrame);
+  if(revealFrame)cancelAnimationFrame(revealFrame);
   if(blurTimer)clearTimeout(blurTimer);
   if(!keyboardSeen||!focusOrigin)return;
   if(viewportRecovered()){restorePagePosition(focusOrigin);return;}
