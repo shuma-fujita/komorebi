@@ -183,7 +183,7 @@
 > **2026-11-19 松戸500mライブOSM取得（main反映／実機未確認）：** 松戸ワールド入場時、既存500m地図ソース（old）は `maps/map-overpass.js` から公開Overpass APIへ建物・道路・鉄道・店舗の小範囲問い合わせを1回行い、OSM要素を既存`map-builder.js`入力形式に変換する。500m範囲は保存済み`matsudo.json`と同一bbox。15秒上限、HTTP失敗・429・応答形式不正・データ不足の際は保存済み`matsudo.json`に自動切替（キャンセル時は切替しない）。API所要時間・OSM反映時刻・切替理由を既存地図ログへ記録。A/B初期地図を500mにし、2kmはユーザー選択時のみ読込。 `map-loader.js`、`dev.template.html`、`dev.html`、共通テストパネル、モック、およびモックUI状態を更新。 `tests/map-overpass.mjs`に変換・範囲・キャンセル・HTTP模擬テストを追加。**静的配線照合はPASS。Nodeテスト実行・Overpass実通信時間・GitHub Actions・Pages配信・Safari実機は未確認。** 旧地図JSON・2km原本・固定Engine・森は変更なし。次の実機確認：松戸入場後の「OSM最新500m」ログ（HTTP／取得・変換／OSM反映時刻）と3D建物・道路・店舗表示、失敗時のJSON切替、森との往復、2km選択時の描画を確認する。
 
 
-更新日：2026-11-19
+更新日：2026-11-21
 
 > この文書は**現時点の仕様・進行中の作業・次の課題・確認待ち**を記す。完了済み工程の細かい試行錯誤、差し戻した案、旧バグの修正過程はGit履歴で追う。**「コード反映」「静的テストPASS」「GitHub Actions PASS」「ユーザー実機PASS」は別の状態**として扱う。古い記録の「未実装・未確認」を後のPASSより優先しない。
 
@@ -221,6 +221,8 @@
 - **2026-11-21 OSMタグ入力中のキーボード対応（main反映／実機未確認）：** `maps/editor-keyboard-layout.js` を追加し、iPhoneなどタッチ端末でタグ入力にフォーカスすると、A/Bのゲーム画面枠を `visualViewport.offsetTop` に追従させて固定。ビルプレビュー上50%を維持し、フォームはキーボード上に残る高さを上限として縮小、編集中のタグをフォーム内部でスクロール。フォーカス解除・編集終了時は元の寸法と位置へ復元。`map-labels.js`、`dev.template.html` と生成済み `dev.html` の参照更新、サイズ計算の回帰テスト追加。既存のOSM送信、A/Bビル形状計算、回転・ピンチ、50%/100%シート操作仕様は変更しない。**GitHub反映済み／iPhone Safariでのキーボード表示・スクロール・復帰・フルシート操作は未確認。**
 
 ## 2. 現在進めている開発
+
+- **2026-11-21 Geofabrik関東PBFの日次自動更新（main反映／初回自動実行未確認）：** 毎日10:17 JST（UTC 01:17）に関東PBF取得Actionsを自動実行し、既存の手動実行も保持。取得成功→松戸2kmのtile 0_0 JSON生成→検証・GitHub公開→GitHub Pages明示dispatchの順に連携する。PBF自体をGitへコミットしない。公開ワークフローの自己ファイルpushトリガーは、旧B artifactの予期せぬ再公開を防ぐため撤去。旧2kmの原本・固定Engine・ゲームUI・OSM OAuthは変更しない。GitHub Actionsの連鎖成功、Pages反映、iPhone Safari実機は未確認。
 
 **主題：2kmタイル地図の描画最適化から、将来の隣接タイル・シームレス移動へ進む準備。**
 

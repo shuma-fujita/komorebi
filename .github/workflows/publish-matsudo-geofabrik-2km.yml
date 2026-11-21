@@ -10,10 +10,6 @@ on:
         required: false
         default: '44661761547'
         type: string
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/publish-matsudo-geofabrik-2km.yml'
   workflow_run:
     workflows:
       - Generate Matsudo 2km JSON from saved Geofabrik PBF
@@ -22,7 +18,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 concurrency:
   group: matsudo-geofabrik-comparison-publish
@@ -115,3 +111,13 @@ jobs:
           done
           echo "Failed to push Geofabrik comparison map" >&2
           exit 1
+
+      # GITHUB_TOKEN commits do not start a Pages push-triggered run.
+      # Dispatch Pages explicitly after publication, even when the tile was unchanged.
+      - name: Request Pages deployment after map publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run deploy-komorebi-pages.yml --repo "$GITHUB_REPOSITORY" --ref main

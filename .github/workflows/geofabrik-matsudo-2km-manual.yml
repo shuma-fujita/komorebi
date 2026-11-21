@@ -11,7 +11,7 @@ on:
         required: false
   workflow_run:
     workflows:
-      - Download Geofabrik Kanto OSM PBF (manual only)
+      - Download Geofabrik Kanto OSM PBF
     types:
       - completed
 

@@ -1,9 +1,12 @@
-name: Download Geofabrik Kanto OSM PBF (manual only)
+name: Download Geofabrik Kanto OSM PBF
 
 # Download the complete Kanto OSM snapshot into a downloadable Actions artifact.
 # Do not commit ~500 MB binary data to Git (GitHub's per-file limit is 100 MB).
 on:
   workflow_dispatch:
+  # Daily at 10:17 JST (01:17 UTC); manual runs remain available.
+  schedule:
+    - cron: '17 1 * * *'
 
 permissions:
   contents: read
