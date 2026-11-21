@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {attachEditorKeyboardLayout,coveredFieldScrollDelta} from '../komorebi3d/maps/editor-keyboard-layout.js';
+import {attachEditorKeyboardLayout,coveredFieldScrollDelta,keyboardTrailingSpace} from '../komorebi3d/maps/editor-keyboard-layout.js';
 import {attachSheetMotion} from '../komorebi3d/maps/sheet-motion.js';
 
 // Real-device geometry showed a focused input ending at y=362 while
@@ -9,6 +9,9 @@ import {attachSheetMotion} from '../komorebi3d/maps/sheet-motion.js';
 assert.equal(coveredFieldScrollDelta(362,313),73);
 assert.equal(coveredFieldScrollDelta(260,313),0);
 assert.equal(coveredFieldScrollDelta(313,313),24);
+assert.equal(keyboardTrailingSpace(495,313),206,'hidden sheet bottom plus 24px margin');
+assert.equal(keyboardTrailingSpace(495,641),0,'no extra space when keyboard is absent');
+assert.equal(keyboardTrailingSpace(500,500),24,'last row receives a small clearance');
 function emitter(object={}){
  const listeners=new Map();
  return Object.assign(object,{
@@ -19,9 +22,22 @@ function emitter(object={}){
  });
 }
 class Node{
- constructor(){Object.assign(this,emitter());this.style={};this.scrollTop=0;this.isConnected=true;this.disabled=false;}
+ constructor(){Object.assign(this,emitter());this.style={};this.children=[];this.scrollTop=0;this.isConnected=true;this.disabled=false;this.parentElement=null;}
  closest(){return null;}
  contains(target){return this===target;}
+ setAttribute(){}
+ appendChild(child){child.parentElement=this;this.children.push(child);return child;}
+ remove(){
+  if(this.parentElement){
+   const children=this.parentElement.children;
+   const i=children.indexOf(this);
+   if(i>=0)children.splice(i,1);
+   // DOM automatically clamps the scroll position when content shrinks.
+   const sheet=this.parentElement;
+   sheet.scrollTop=Math.min(sheet.scrollTop,Math.max(0,sheet.scrollHeight-sheet.clientHeight));
+  }
+  this.parentElement=null;
+ }
  getBoundingClientRect(){return {top:0,bottom:0,height:0};}
 }
 globalThis.Element=Node;
@@ -45,16 +61,22 @@ globalThis.window=emitter({
  location:{search:''},matchMedia:query=>({matches:query.includes('pointer:coarse')||query.includes('reduced-motion')}),
  scrollTo(x,y){scrollCalls.push([x,y]);this.scrollX=x;this.scrollY=y;}
 });
-globalThis.document={activeElement:null,body:new Node()};
+globalThis.document={activeElement:null,body:new Node(),createElement:()=>new Node()};
 const game=new Node(),host=new Node(),mask=new Node(),handle=new Node(),sheet=new Node();
 host.closest=selector=>selector==='.landscape-game'?game:null;
-sheet.parentElement=mask;sheet.clientHeight=488;sheet.scrollHeight=1300;
+sheet.parentElement=mask;sheet.clientHeight=488;
+const normalScrollHeight=560;
+// Keyboard-only trailing content adds real scroll extent without changing
+// the 70% sheet height. Without it the maximum scroll is only 72px.
+Object.defineProperty(sheet,'scrollHeight',{get(){
+ return normalScrollHeight+sheet.children.reduce((total,el)=>total+(Number.parseFloat(el.style.height)||0),0);
+}});
 mask.getBoundingClientRect=()=>({height:700,top:380-window.scrollY});
 handle.setPointerCapture=()=>{};handle.hasPointerCapture=()=>false;handle.releasePointerCapture=()=>{};
 const fields=[new Node(),new Node(),new Node()];
 fields[0].getBoundingClientRect=()=>({top:321-sheet.scrollTop,bottom:362-sheet.scrollTop,height:41});
 fields[1].getBoundingClientRect=()=>({top:420-sheet.scrollTop,bottom:461-sheet.scrollTop,height:41});
-fields[2].getBoundingClientRect=()=>({top:200-sheet.scrollTop,bottom:241-sheet.scrollTop,height:41});
+fields[2].getBoundingClientRect=()=>({top:494-sheet.scrollTop,bottom:535-sheet.scrollTop,height:41});
 sheet.getBoundingClientRect=()=>({top:7,bottom:495,height:488});
 for(const field of fields){
  field.closest=selector=>selector.startsWith('input,textarea')?field:null;
@@ -88,9 +110,13 @@ assert.equal(document.activeElement,fields[0]);
 assert.equal(scrollCalls.length,0,'focus handler does not call page scrollTo');
 verifyNoLayoutChange();
 assert.equal(sheet.scrollTop,0,'focus itself never scrolls the tag list');
+assert.equal(sheet.children.length,0,'no spacer when the keyboard is closed');
 // Keyboard opens without Safari document scroll. The input is partially
 // hidden at 362px, beyond keyboard boundary 313px.
 vv.height=313;vv.offsetTop=0;vv.emit('resize');flush();
+assert.equal(sheet.children.length,1,'one scroll spacer while the keyboard is open');
+assert.equal(sheet.children[0].style.height,'206px','spacer covers hidden lower sheet and margin');
+assert.equal(sheet.scrollHeight-sheet.clientHeight,278,'new scroll extent reaches lower fields');
 assert.equal(sheet.scrollTop,73,'only 73px of keyboard occlusion is revealed in sheet');
 assert.equal(fields[0].getBoundingClientRect().bottom,289,'24px clearance is kept');
 assert.equal(window.scrollY,423,'opening keyboard never triggers JS document scrolling');
@@ -113,26 +139,37 @@ assert.equal(fields[1].focusCalls.length,1);
 sheet.emit('pointerdown',pointer(fields[2],'mouse'));
 assert.equal(fields[2].focusCalls.length,0);
 verifyNoLayoutChange();
-// Typing does not execute a JavaScript page-scroll or endless viewport loop.
-sheet.emit('beforeinput',{target:fields[1]});
-sheet.emit('input',{target:fields[1]});
+// The lowermost tag was unable to rise without the extra scroll space:
+// normal max scroll=72px, but this field needs 246px to reach y=289.
+sheet.emit('focusout',{target:fields[1]});
+sheet.emit('pointerdown',pointer(fields[2]));flush();
+assert.equal(sheet.scrollTop,246,'last tag can rise above keyboard with trailing space');
+assert.equal(fields[2].getBoundingClientRect().bottom,289);
+assert.equal(sheet.children.length,1,'only one reusable spacer even when switching fields');
+verifyNoLayoutChange();
+// Typing itself does not cause an additional JS scroll.
+sheet.emit('beforeinput',{target:fields[2]});
+sheet.emit('input',{target:fields[2]});
 flush();
-assert.equal(sheet.scrollTop,172,'typing itself does not re-align tag rows');
+assert.equal(sheet.scrollTop,246,'typing itself does not re-align tag rows');
 assert.equal(window.scrollY,423,'typing itself does not trigger JS page scroll');
 assert.equal(scrollCalls.length,0);
 // Simulate a browser-native page pan anyway to keep Done restoration covered.
 window.scrollY=462;vv.offsetTop=39;
-document.activeElement=null;sheet.emit('focusout',{target:fields[1]});flush();
+document.activeElement=null;sheet.emit('focusout',{target:fields[2]});flush();
 assert.equal(window.scrollY,462,'do not restore while keyboard is visible');
 vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
 assert.equal(window.scrollY,423);
 assert.deepEqual(scrollCalls,[[0,423]],'Done restores the initial page position once');
+assert.equal(sheet.children.length,0,'trailing space is removed after keyboard dismissal');
+assert.equal(sheet.scrollHeight-sheet.clientHeight,72,'normal scroll range restored');
 verifyNoLayoutChange();
 
 // Closing the editor while the keyboard is open keeps the restore delayed.
 sheet.emit('pointerdown',pointer(fields[2]));flush();
 window.scrollY=700;vv.height=313;vv.emit('resize');flush();
 keyboard.destroy();
+assert.equal(sheet.children.length,0,'direct editor close removes keyboard-only spacer');
 assert.equal(sheet.listenerCount('pointerdown'),0,'remove touch capture handler on destroy');
 assert.equal(window.scrollY,700,'no page correction while keyboard is opening or open');
 vv.height=641;vv.emit('resize');flush();
@@ -140,4 +177,4 @@ assert.equal(window.scrollY,423,'restore document after keyboard closes');
 motion.destroy();
 verifyNoLayoutChange();
 assert.equal(dismissed,0);
-console.log('keyboard-covered-field reveal and unchanged 30/70 panel: PASS (real iPhone unverified)');
+console.log('keyboard-only trailing space for lower fields and unchanged 30/70 panel: PASS (real iPhone unverified)');
