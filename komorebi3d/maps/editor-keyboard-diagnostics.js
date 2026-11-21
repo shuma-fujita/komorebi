@@ -26,7 +26,7 @@ export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
   const active=document.activeElement;
   const field=active&&sheet.contains(active)&&active.getBoundingClientRect?active.getBoundingClientRect():null;
   const t=toNum(performance.now());
-  trace.push(`${t} ${event} | page=${toNum(window.scrollY)}, vvTop=${toNum(vv.offsetTop)}, vvH=${toNum(vv.height)}, winH=${toNum(window.innerHeight)} | slotTop=${toNum(sl?.top)}, gameTop=${toNum(g.top)}, gameH=${toNum(g.height)}, sheetTop=${toNum(sh.top)}, sheetH=${toNum(sh.height)}, sheetScroll=${toNum(sheet.scrollTop)}, fieldTop=${toNum(field?.top)}, fieldBottom=${toNum(field?.bottom)}, htmlScroll=${toNum(document.documentElement.scrollTop)}, vvPageTop=${toNum(vv.pageTop)}, gamePos=${getComputedStyle(game).position}, bodyPos=${getComputedStyle(document.body).position}`);
+  trace.push(`${t} ${event} | page=${toNum(window.scrollY)}, vvTop=${toNum(vv.offsetTop)}, vvH=${toNum(vv.height)}, winH=${toNum(window.innerHeight)} | slotTop=${toNum(sl?.top)}, gameTop=${toNum(g.top)}, gameH=${toNum(g.height)}, sheetTop=${toNum(sh.top)}, sheetH=${toNum(sh.height)}, sheetScroll=${toNum(sheet.scrollTop)}, sheetScrollMax=${toNum(Math.max(0,sheet.scrollHeight-sheet.clientHeight))}, fieldTop=${toNum(field?.top)}, fieldBottom=${toNum(field?.bottom)}, htmlScroll=${toNum(document.documentElement.scrollTop)}, vvPageTop=${toNum(vv.pageTop)}, gamePos=${getComputedStyle(game).position}, bodyPos=${getComputedStyle(document.body).position}`);
   if(trace.length>120)trace.shift();
   if(shown){pre.textContent=trace.slice(-32).join('\n');pre.scrollTop=pre.scrollHeight;}
  };
