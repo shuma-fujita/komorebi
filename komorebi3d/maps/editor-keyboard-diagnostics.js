@@ -18,12 +18,15 @@ export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
  pre.style.cssText='display:none;max-height:36vh;overflow:auto;margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text';
  panel.append(bar,pre);document.body.append(panel);
  const trace=[];let shown=false,raf=0,disposed=false;
+ const postInputTimers=new Set();
  const toNum=n=>Number.isFinite(n)?Math.round(n):'-';
  const snap=event=>{
   if(disposed)return;
   const g=game.getBoundingClientRect(),sl=slot?.getBoundingClientRect(),sh=sheet.getBoundingClientRect();
+  const active=document.activeElement;
+  const field=active&&sheet.contains(active)&&active.getBoundingClientRect?active.getBoundingClientRect():null;
   const t=toNum(performance.now());
-  trace.push(`${t} ${event} | page=${toNum(window.scrollY)}, vvTop=${toNum(vv.offsetTop)}, vvH=${toNum(vv.height)}, winH=${toNum(window.innerHeight)} | slotTop=${toNum(sl?.top)}, gameTop=${toNum(g.top)}, gameH=${toNum(g.height)}, sheetTop=${toNum(sh.top)}, sheetH=${toNum(sh.height)}, sheetScroll=${toNum(sheet.scrollTop)}, gamePos=${getComputedStyle(game).position}, bodyPos=${getComputedStyle(document.body).position}`);
+  trace.push(`${t} ${event} | page=${toNum(window.scrollY)}, vvTop=${toNum(vv.offsetTop)}, vvH=${toNum(vv.height)}, winH=${toNum(window.innerHeight)} | slotTop=${toNum(sl?.top)}, gameTop=${toNum(g.top)}, gameH=${toNum(g.height)}, sheetTop=${toNum(sh.top)}, sheetH=${toNum(sh.height)}, sheetScroll=${toNum(sheet.scrollTop)}, fieldTop=${toNum(field?.top)}, fieldBottom=${toNum(field?.bottom)}, htmlScroll=${toNum(document.documentElement.scrollTop)}, vvPageTop=${toNum(vv.pageTop)}, gamePos=${getComputedStyle(game).position}, bodyPos=${getComputedStyle(document.body).position}`);
   if(trace.length>120)trace.shift();
   if(shown){pre.textContent=trace.slice(-32).join('\n');pre.scrollTop=pre.scrollHeight;}
  };
@@ -41,6 +44,23 @@ export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
  const onWindowScroll=()=>sample('page-scroll');
  const onVVResize=()=>sample('vv-resize');
  const onVVScroll=()=>sample('vv-scroll');
+ const onBeforeInput=()=>sample('beforeinput');
+ const onInput=()=>{
+  sample('input');
+  // Record a short, read-only tail after each actual text edit. The
+  // native scroll can occur *after* the input event in iOS WebKit.
+  for(const timer of postInputTimers)clearTimeout(timer);
+  postInputTimers.clear();
+  for(const delay of [80,300,700]){
+   const timer=setTimeout(()=>{
+    postInputTimers.delete(timer);
+    if(!disposed)snap('after-input+'+delay+'ms');
+   },delay);
+   postInputTimers.add(timer);
+  }
+ };
+ const onCompositionStart=()=>sample('compositionstart');
+ const onCompositionEnd=()=>sample('compositionend');
  expand.addEventListener('click',()=>{
   shown=!shown;pre.style.display=shown?'block':'none';
   expand.textContent=shown?'閉じる':'ログ表示';
@@ -52,6 +72,10 @@ export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
  });
  sheet.addEventListener('focusin',onFocusIn);
  sheet.addEventListener('focusout',onFocusOut);
+ sheet.addEventListener('beforeinput',onBeforeInput);
+ sheet.addEventListener('input',onInput);
+ sheet.addEventListener('compositionstart',onCompositionStart);
+ sheet.addEventListener('compositionend',onCompositionEnd);
  window.addEventListener('scroll',onWindowScroll,{passive:true});
  vv.addEventListener('resize',onVVResize);
  vv.addEventListener('scroll',onVVScroll);
@@ -60,6 +84,12 @@ export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
   disposed=true;
   sheet.removeEventListener('focusin',onFocusIn);
   sheet.removeEventListener('focusout',onFocusOut);
+  sheet.removeEventListener('beforeinput',onBeforeInput);
+  sheet.removeEventListener('input',onInput);
+  sheet.removeEventListener('compositionstart',onCompositionStart);
+  sheet.removeEventListener('compositionend',onCompositionEnd);
+  for(const timer of postInputTimers)clearTimeout(timer);
+  postInputTimers.clear();
   window.removeEventListener('scroll',onWindowScroll);
   vv.removeEventListener('resize',onVVResize);
   vv.removeEventListener('scroll',onVVScroll);
