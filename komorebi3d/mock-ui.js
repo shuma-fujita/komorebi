@@ -46,6 +46,7 @@ function renderFauxGame(state){
 import {applyBuildingTagEditorTheme} from './maps/building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
 import {applyPendingTagVisualStyle,syncPendingTagRows} from './maps/osm-pending-tag-visual.js?v=step3-mock-20261122';
 import {hasOsmTagChanges,buildOsmTagReview} from './maps/osm-tag-review.js?v=production-preview-20261122';
+import {prependOsmReviewStorageCheck} from './maps/osm-review-storage-check.js?v=preview-storage-check-20261122';
 
 (function mountPendingTagPreview(){
  const panel=document.querySelector('#test-ops-panel .test-panel-body');
@@ -127,7 +128,8 @@ import {hasOsmTagChanges,buildOsmTagReview} from './maps/osm-tag-review.js?v=pro
 
 
 // Preview of the existing editor's production-source draft/review controls.
-// Shared validation module, no API, localStorage or "save success" simulation.
+// Shared validation module, no OSM API or production save-success simulation.
+// The optional smoke check uses a separate localStorage debug namespace.
 (function mountProductionTagDraftDemo(){
  const panel=document.querySelector('#test-ops-panel .test-panel-body');
  const game=document.querySelector('.landscape-game');
@@ -183,6 +185,10 @@ import {hasOsmTagChanges,buildOsmTagReview} from './maps/osm-tag-review.js?v=pro
   const json=document.createElement('pre');json.style.cssText='max-height:40vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#10271f;color:#e6f5ed;font:12px/1.5 ui-monospace,monospace';
   const notice=document.createElement('p');notice.className='komo-status';notice.textContent='確認用の下書きです。本番OSMには送信・保存していません。';
   review.append(reviewTitle,json,notice);
+  let currentReview=null;
+  const storageControls=prependOsmReviewStorageCheck(review,{
+   getReview:()=>currentReview
+  });
   const back=document.createElement('button');back.type='button';back.className='komo-action komo-action-secondary';back.textContent='編集に戻る';back.hidden=true;
   const rowsData=()=>[...rows.children].map(row=>({key:row.children[0].value,value:row.children[1].value}));
   function update(){
@@ -195,12 +201,18 @@ import {hasOsmTagChanges,buildOsmTagReview} from './maps/osm-tag-review.js?v=pro
   confirm.addEventListener('click',()=>{
    try{
     const result=buildOsmTagReview({osm:{type:'way',id:'123456',version:9},originalTags,rows:rowsData()});
+    currentReview=result;
+    storageControls.clearStatus();
     json.textContent=JSON.stringify(result,null,2);
     rows.hidden=true;caption.hidden=true;add.hidden=true;confirm.hidden=true;review.hidden=false;back.hidden=false;note.hidden=true;
     error.textContent='';
    }catch(e){error.textContent=e.message;}
   });
-  back.addEventListener('click',()=>{rows.hidden=false;caption.hidden=false;add.hidden=false;review.hidden=true;back.hidden=true;note.hidden=false;update();});
+  back.addEventListener('click',()=>{
+   currentReview=null;
+   rows.hidden=false;caption.hidden=false;add.hidden=false;
+   review.hidden=true;back.hidden=true;note.hidden=false;update();
+  });
   form.append(grip,header,note,metadata,caption,rows,add,error,confirm,review,back);
   applyBuildingTagEditorTheme(form);
   update();
