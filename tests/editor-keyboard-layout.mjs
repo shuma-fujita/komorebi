@@ -1,238 +1,142 @@
 import assert from 'node:assert/strict';
 import {focusedTagRowScrollDelta,attachEditorKeyboardLayout}
  from '../komorebi3d/maps/editor-keyboard-layout.js';
-import {sheetGeometry,panelVisibleRange,attachSheetMotion}
+import {attachSheetMotion}
  from '../komorebi3d/maps/sheet-motion.js';
-import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO}
- from '../komorebi3d/maps/building-editor-layout.js';
 
-assert.equal(focusedTagRowScrollDelta(600,800,680,760),2);
-assert.equal(Math.round(sheetGeometry(700,'half').height),490);
-assert.deepEqual(sheetGeometry(700,'half',313),{top:210,height:103});
-assert.deepEqual(sheetGeometry(700,'full',313),{top:0,height:313});
-// The old code ignored negative panelTop and cut the sheet off early.
-assert.deepEqual(panelVisibleRange(700,313,-300),{start:300,end:613,height:313});
-assert.deepEqual(sheetGeometry(700,'half',313,-300),{top:510,height:103});
-assert.deepEqual(sheetGeometry(700,'full',313,-300),{top:300,height:313});
-assert.deepEqual(sheetGeometry(700,'half',313,-389),{top:599,height:101});
-assert.deepEqual(sheetGeometry(700,'half',313,30),{top:187,height:96});
-assert.deepEqual(sheetGeometry(700,'half',220,-90),{top:214,height:96});
-// A very small visible area gives input at least 96px by reducing preview.
-assert.deepEqual(sheetGeometry(700,'half',180,-350),{top:434,height:96});
-// For every visible panel intersection, the sheet must end precisely at
-// the keyboard boundary (or the panel's natural end if it is shorter).
-for(const [panelH,vvH,panelTop] of [
- [700,313,0],[700,313,-200],[700,313,-328],[700,313,-389],
- [700,313,30],[700,180,-350],[700,500,-100]
-]){
- const visible=panelVisibleRange(panelH,vvH,panelTop);
- const g=sheetGeometry(panelH,'half',vvH,panelTop);
- assert.ok(Math.abs(g.top+g.height-visible.end)<1e-9,
-  'input sheet has no uncovered gap to keyboard for '+panelTop);
- if(visible.height>=panelH*BUILDING_PREVIEW_RATIO+96){
-  assert.ok(Math.abs(g.top-visible.start-panelH*BUILDING_PREVIEW_RATIO)<1e-9,
-   'game keeps full 30% preview where space permits');
- }
-}
+// Only form scroll is needed: position the active tag just below the grip.
+assert.equal(focusedTagRowScrollDelta(200,360,36,8),116);
+assert.equal(focusedTagRowScrollDelta(200,244,36,8),0);
 
 function emitter(object={}){
- const handlers=new Map();
+ const listeners=new Map();
  return Object.assign(object,{
-  addEventListener(type,fn){if(!handlers.has(type))handlers.set(type,new Set());handlers.get(type).add(fn);},
-  removeEventListener(type,fn){handlers.get(type)?.delete(fn);},
-  emit(type,event={}){for(const fn of handlers.get(type)||[])fn(event);}
+  addEventListener(type,fn){if(!listeners.has(type))listeners.set(type,new Set());listeners.get(type).add(fn);},
+  removeEventListener(type,fn){listeners.get(type)?.delete(fn);},
+  emit(type,event={}){for(const fn of listeners.get(type)||[])fn(event);}
  });
 }
-class Node {
+class Node{
  constructor(){Object.assign(this,emitter());this.style={};this.scrollTop=0;this.clientHeight=0;this.isConnected=true;}
  closest(){return null;}
  contains(target){return this===target;}
  getBoundingClientRect(){return {top:0,bottom:0,height:0};}
 }
 globalThis.Element=Node;
-let frameID=0;
-const frames=new Map();
+let frameID=0;const frames=new Map();
 globalThis.requestAnimationFrame=fn=>{const id=++frameID;frames.set(id,fn);return id;};
 globalThis.cancelAnimationFrame=id=>frames.delete(id);
-let timerID=0;
-const timers=new Map();
-globalThis.setTimeout=(fn,delay)=>{const id=++timerID;timers.set(id,{fn,delay});return id;};
-globalThis.clearTimeout=id=>timers.delete(id);
-function runTimers(maxDelay){
- const due=[...timers].filter(([,item])=>item.delay<=maxDelay);
- for(const [id,{fn}] of due){timers.delete(id);fn();}
- flush();
-}
 function flush(){
- for(let n=0;frames.size&&n<15;n++){
-  const batch=[...frames.values()];frames.clear();
-  for(const fn of batch)fn();
+ for(let i=0;frames.size&&i<20;i++){
+  const pending=[...frames.values()];frames.clear();
+  for(const fn of pending)fn();
  }
- assert.equal(frames.size,0,'requestAnimationFrame must reach a stable state');
+ assert.equal(frames.size,0,'requestAnimationFrame must stabilize');
 }
+let timerID=0;const timers=new Map();
+globalThis.setTimeout=(fn,ms)=>{const id=++timerID;timers.set(id,{fn,ms});return id;};
+globalThis.clearTimeout=id=>timers.delete(id);
 const vv=emitter({height:641,offsetTop:0});
 const scrollCalls=[];
-let coarse=true;
 globalThis.window=emitter({
- visualViewport:vv,innerHeight:641,scrollX:0,scrollY:372,location:{search:''},
- matchMedia:()=>({matches:coarse}),
- scrollTo(x,y){
-  scrollCalls.push([x,y]);this.scrollX=x;this.scrollY=y;
-  // Safari may change visualViewport.offsetTop when programmatic scrolling.
-  // A repeated scrollTo inside the scroll listener used to oscillate 52 <-> 380.
-  if(vv.height<500){
-   vv.offsetTop=y<100?0:328;
-   vv.emit('scroll');this.emit('scroll');
-  }
- }
+ innerHeight:641,visualViewport:vv,scrollX:0,scrollY:372,
+ location:{search:''},
+ matchMedia:query=>({matches:query.includes('reduced-motion')}),
+ scrollTo(x,y){scrollCalls.push([x,y]);this.scrollX=x;this.scrollY=y;}
 });
-const body=new Node();body.style.position='';body.style.overflow='';
-globalThis.document={body,activeElement:null};
-const slot=new Node();slot.style.overflow='hidden';
-const game=new Node();
-const stableGameStyles=JSON.stringify(game.style);
-const stableHostStyles=JSON.stringify({});
-const gameDocumentTop=380;
-const gameHeight=699;
-game.getBoundingClientRect=()=>({
- top:gameDocumentTop-window.scrollY,bottom:gameDocumentTop-window.scrollY+gameHeight,
- height:gameHeight,left:14,width:360
-});
-game.closest=sel=>sel==='.panel-slot-main'?slot:null;
-const host=new Node();
+globalThis.document={activeElement:null,body:new Node()};
+const game=new Node(),host=new Node(),mask=new Node(),handle=new Node(),sheet=new Node();
+game.style.position='';host.style.position='';
 host.closest=sel=>sel==='.landscape-game'?game:null;
-host.getBoundingClientRect=()=>game.getBoundingClientRect();
-const mask=new Node();
-mask.getBoundingClientRect=()=>({
- top:gameDocumentTop-window.scrollY,
- height:gameHeight,
- bottom:gameDocumentTop-window.scrollY+gameHeight
-});
-const handle=new Node();
-handle.parentElement=mask;
-handle.setPointerCapture=()=>{};
-handle.hasPointerCapture=()=>false;
-handle.releasePointerCapture=()=>{};
-const sheet=new Node();
+mask.isConnected=true;
+mask.getBoundingClientRect=()=>({height:699,top:380-window.scrollY});
 sheet.parentElement=mask;
 sheet.clientHeight=488;
-sheet.style.position='relative';sheet.style.height='70%';sheet.style.maxHeight='70%';
+sheet.style.height='70%';sheet.style.maxHeight='70%';
 sheet.getBoundingClientRect=()=>{
- const top=gameDocumentTop-window.scrollY+
-  (sheet.style.position==='absolute'?Number.parseFloat(sheet.style.top):gameHeight-Number.parseFloat(sheet.style.height||'70')/100*gameHeight);
- const height=sheet.style.height.endsWith('%')?Number.parseFloat(sheet.style.height)/100*gameHeight:Number.parseFloat(sheet.style.height);
- return {top,bottom:top+height,height};
+ const value=Number.parseFloat(sheet.style.height);
+ const h=sheet.style.height.endsWith('%')?699*value/100:value;
+ const top=380-window.scrollY+699-h;
+ return {top,bottom:top+h,height:h};
 };
-const field=new Node(),row=new Node();
-field.closest=selector=>selector.startsWith('input,textarea')?field:selector==='.komo-tag-row'?row:null;
-sheet.contains=target=>target===field;
-let nativeRevealCount=0;
-field.scrollIntoView=()=>{
- nativeRevealCount++;
- // This is the browser's native reveal, NOT window.scrollTo from the editor.
- // The focus scroll can change vvTop, which must never trigger JS scroll loops.
- window.scrollY=380;vv.offsetTop=0;
- vv.emit('scroll');window.emit('scroll');
-};
-row.getBoundingClientRect=()=>{
- const rect=sheet.getBoundingClientRect(),top=rect.top+48-sheet.scrollTop;
+handle.getBoundingClientRect=()=>({height:36});
+handle.pointers=new Set();
+handle.setPointerCapture=id=>handle.pointers.add(id);
+handle.hasPointerCapture=id=>handle.pointers.has(id);
+handle.releasePointerCapture=id=>handle.pointers.delete(id);
+const row1=new Node(),row2=new Node(),field1=new Node(),field2=new Node();
+const rowBounds=offset=>()=>{
+ const top=sheet.getBoundingClientRect().top+offset-sheet.scrollTop;
  return {top,bottom:top+48,height:48};
 };
-let dismissCount=0;
-const previewTouch=new Node();
-const previewRegions=[];
-const motion=attachSheetMotion(sheet,handle,()=>dismissCount++,null,{
- previewTouch,onPreviewRegionChange:region=>previewRegions.push(region)
-});
-const binding=attachEditorKeyboardLayout({
- host,mask,sheet,onViewportChange:(height,top)=>motion.setKeyboardViewport(height,top)
-});
-const assertPanelUnchanged=()=>{
- assert.equal(JSON.stringify(game.style),stableGameStyles,'editor must never change game CSS');
- assert.equal(JSON.stringify(host.style),stableHostStyles,'editor must never change WebGL surface CSS');
- assert.equal(slot.style.overflow,'hidden','existing panel slot clipping is preserved');
- assert.equal(body.style.position,'','body is never position:fixed');
+row1.getBoundingClientRect=rowBounds(140);
+row2.getBoundingClientRect=rowBounds(360);
+field1.closest=sel=>sel.startsWith('input,textarea')?field1:sel==='.komo-tag-row'?row1:null;
+field2.closest=sel=>sel.startsWith('input,textarea')?field2:sel==='.komo-tag-row'?row2:null;
+sheet.contains=el=>el===field1||el===field2;
+const gameStyle=JSON.stringify(game.style),hostStyle=JSON.stringify(host.style);
+const assertLayout=()=>{
+ assert.equal(sheet.style.position,'relative','form always remains in normal game panel flow');
+ assert.equal(sheet.style.top||'','','no absolute positioning for keyboard');
+ assert.equal(sheet.style.height,'70%','form is always 70% in half mode');
+ assert.equal(sheet.style.maxHeight,'70%','no keyboard-driven height cap');
+ assert.equal(JSON.stringify(game.style),gameStyle,'game element is never repositioned');
+ assert.equal(JSON.stringify(host.style),hostStyle,'WebGL host is never repositioned');
+ assert.equal(document.body.style.position,undefined,'body has no fixed lock');
 };
-assertPanelUnchanged();
-assert.equal(sheet.style.height,'70%','editor starts as panel-local 70% sheet');
-document.activeElement=field;
-sheet.emit('focusin',{target:field});flush();
-assertPanelUnchanged();
-assert.equal(sheet.style.height,'70%','focusing does not prematurely resize game/sheet');
-window.scrollY=580;vv.height=313;vv.offsetTop=0;
-vv.emit('resize');flush();
-assertPanelUnchanged();
-assert.equal(window.scrollY,580,'the editor must not fight Safari keyboard scrolling');
-assert.equal(scrollCalls.length,0,'no programmatic page scroll while focused');
-assert.equal(sheet.style.position,'absolute','only the sheet changes position with keyboard');
-assert.equal(Math.round(Number.parseFloat(sheet.style.height)),103,'sheet fits above keyboard after preview');
-assert.equal(Math.round(Number.parseFloat(sheet.style.top)),410,'preview starts 210px below visible panel intersection');
-assert.equal(Math.round(Number.parseFloat(previewTouch.style.top)),200,'preview gesture begins at visible panel top');
-assert.equal(Math.round(Number.parseFloat(previewTouch.style.height)),210,'visible preview keeps nominal 30% game height');
-assert.equal(previewRegions.at(-1).startRatio,200/699,'camera receives visible canvas slice offset');
-// Keyboard viewport settles before a single native focused-field reveal.
-runTimers(90);
-assert.equal(nativeRevealCount,1,'one native reveal after keyboard viewport settles');
-assert.equal(window.scrollY,380,'native scrollIntoView may expose the game and input');
-assert.equal(scrollCalls.length,0,'native reveal does not cause JS scrollTo feedback');
-window.emit('scroll');vv.emit('scroll');flush();
-assert.equal(nativeRevealCount,1,'scroll events must not repeatedly reveal the same field');
-assert.equal(scrollCalls.length,0,'visualViewport.offsetTop changes do not trigger page alignment');
-assertPanelUnchanged();
-assert.equal(Math.round(Number.parseFloat(sheet.style.height)),103);
-assert.equal(Math.round(Number.parseFloat(sheet.style.top)),210,'sheet follows normal page scroll without moving panel');
-document.activeElement=null;sheet.emit('focusout');flush();
-assert.equal(sheet.style.position,'absolute','Done keeps keyboard-safe sheet until viewport recovers');
-assertPanelUnchanged();
-vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
-assert.equal(window.scrollY,372,'Done restores the pre-focus page scroll');
-assert.equal(game.getBoundingClientRect().top,8,'game is back at its original on-page position');
-assert.equal(sheet.style.position,'relative');
-assert.equal(sheet.style.height,'70%');
-assertPanelUnchanged();
+let dismissed=0;
+const motion=attachSheetMotion(sheet,handle,()=>dismissed++);
+const keyboard=attachEditorKeyboardLayout({host,mask,sheet,handle});
+assertLayout();
 
-// Changing fields while keyboard stays visible must not reset the page.
-document.activeElement=field;sheet.emit('focusin',{target:field});flush();
-window.scrollY=580;vv.height=313;vv.offsetTop=0;vv.emit('resize');flush();
-sheet.emit('focusout');sheet.emit('focusin',{target:field});flush();
-assert.equal(window.scrollY,580,'field change does not force page scroll');
-runTimers(90);
-assert.equal(nativeRevealCount,2,'the newly selected field gets a single native reveal');
-assert.equal(window.scrollY,380,'native reveal is allowed to scroll the page');
-assert.equal(scrollCalls.length,1,'only the previous Done may call window.scrollTo');
-assert.equal(sheet.style.position,'absolute');
-assertPanelUnchanged();
-document.activeElement=null;sheet.emit('focusout');flush();
-vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
-assert.equal(window.scrollY,372);
+// First focus: move the target below the sticky grip by scrolling the form.
+document.activeElement=field1;sheet.emit('focusin',{target:field1});flush();
+assert.equal(sheet.scrollTop,96,'first tag is aligned at the top of the 70% form');
+assertLayout();
+assert.equal(scrollCalls.length,0,'focus never calls document scrollTo');
+// iOS opens the keyboard and pans the whole page. Neither event changes
+// game/sheet proportions or tries to fight the document scroll.
+window.scrollY=769;vv.height=313;vv.offsetTop=328;vv.emit('resize');flush();
+assert.equal(sheet.scrollTop,96);
+assertLayout();
+assert.equal(scrollCalls.length,0);
 
-// Full sheet is still constrained to the visible viewport when keyboard opens.
+// Moving to another input must scroll *that* row only, not restore the page.
+sheet.emit('focusout',{target:field1});
+document.activeElement=field2;sheet.emit('focusin',{target:field2});flush();
+assert.equal(sheet.scrollTop,316,'second tag moved under grip inside the form');
+assert.equal(scrollCalls.length,0,'switching inputs never moves document');
+assertLayout();
+// Repeated viewport changes must not create a scroll feedback loop.
+vv.emit('resize');vv.emit('resize');flush();
+assert.equal(sheet.scrollTop,316);
+assert.equal(scrollCalls.length,0);
+assertLayout();
+
+// Checkmark closes the keyboard while editor remains open. One restore is
+// permitted after the visual viewport has recovered, with no game CSS writes.
+document.activeElement=null;sheet.emit('focusout',{target:field2});flush();
+assert.equal(window.scrollY,769,'do not restore while keyboard is still showing');
+vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
+assert.equal(window.scrollY,372,'Done restores the original document scroll');
+assert.deepEqual(scrollCalls,[[0,372]]);
+assertLayout();
+
+// The original full-screen swipe/keyboard-toggle mode stays independent.
 motion.toggle();assert.equal(motion.getMode(),'full');
 assert.equal(sheet.style.height,'100%');
-document.activeElement=field;sheet.emit('focusin',{target:field});flush();
-window.scrollY=380;vv.height=313;vv.offsetTop=328;vv.emit('resize');flush();
-assert.equal(motion.getMode(),'full');
-assert.equal(Math.round(Number.parseFloat(sheet.style.height)),313);
-assert.equal(sheet.style.top,'328px','full sheet follows visible panel top, not the hidden layout top');
-assertPanelUnchanged();
-// Closing during keyboard dismissal should not pin the game or leave the page scrolled.
-motion.destroy();
-binding.destroy();
-assertPanelUnchanged();
-assert.equal(window.scrollY,380,'editor removal does not restore scroll before keyboard recovery');
-vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
-assert.equal(window.scrollY,372,'editor removal restores normal page position after keyboard closes');
-assertPanelUnchanged();
-
-// The same editor must not reposition the game on desktop or without VV keyboard.
-coarse=false;
-const desktopMotion=attachSheetMotion(sheet,handle,()=>{});
-const desktop=attachEditorKeyboardLayout({
- host,mask,sheet,onViewportChange:(height,top)=>desktopMotion.setKeyboardViewport(height,top)
-});
-document.activeElement=field;sheet.emit('focusin',{target:field});
+document.activeElement=field1;sheet.emit('focusin',{target:field1});flush();
 vv.height=313;vv.emit('resize');flush();
-assertPanelUnchanged();
-desktop.destroy();desktopMotion.destroy();
-assert.equal(dismissCount,0);
-console.log('panel-local editor, iOS keyboard, sheet geometry and unchanged game layout: PASS (real-device verification pending)');
+assert.equal(sheet.style.height,'100%','focused input never changes full-sheet mode');
+assert.equal(JSON.stringify(game.style),gameStyle);
+assert.equal(JSON.stringify(host.style),hostStyle);
+
+// Closing the editor while iOS is still hiding the keyboard keeps document
+// restore deferred; no game fixed positioning is ever introduced.
+window.scrollY=753;keyboard.destroy();motion.destroy();
+assert.equal(window.scrollY,753);
+assert.equal(JSON.stringify(game.style),gameStyle);
+vv.height=641;vv.emit('resize');flush();
+assert.equal(window.scrollY,372,'closing editor restores page after keyboard recovery');
+assert.equal(dismissed,0);
+console.log('focused tag internal-scroll + unchanged panel proportions: PASS (device verification pending)');
