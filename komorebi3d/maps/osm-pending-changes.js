@@ -136,3 +136,26 @@ export function reconcilePendingOsmTagChanges(map,{source,onWarning}={}){
  }
  return released;
 }
+
+// Overlay only still-pending edits, after comparing original Geofabrik versions.
+// The old 2km comparison map is never modified.
+export function applyPendingOsmTagChangesToMap(map,{source,onWarning}={}){
+ if(source!=='new')return 0;
+ if(!Array.isArray(map?.elements))throw Error('地図JSONの要素一覧が不正です。');
+ const records=getAllPendingOsmTagChanges({onWarning});
+ const byId=new Map(records.map(record=>[record.type+'/'+record.id,record]));
+ let applied=0;
+ for(const element of map.elements){
+  const record=byId.get(element.type+'/'+element.id);
+  if(!record)continue;
+  const version=Number(element.version);
+  if(!Number.isSafeInteger(version)||version>record.version)continue;
+  const tags={...(element.tags||{})};
+  for(const [key,value] of Object.entries(record.changes))
+   if(value===null)delete tags[key];else tags[key]=value;
+  element.tags=tags;
+  element.version=record.version;
+  applied++;
+ }
+ return applied;
+}

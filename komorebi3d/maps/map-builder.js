@@ -144,6 +144,7 @@ function strip(m,points,width,t,y=.045){
 }
 function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1],[x1,-.22,z0],t);}
  let buildings=palette.map(builder),roads=builder(),walks=builder(),rails=builder();
+ let buildingSlices=[]; // Per-building spans inside existing grouped batch meshes.
  const floor=builder(),labels=[],mapFeatures=[],poiLabels=[];
  const facilityKeys=['shop','amenity','tourism','office','leisure','healthcare'];
  // Step 1: prioritize complete OSM features nearest the helicopter.
@@ -163,13 +164,15 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  const earlyPoiDisplay=[];
  function flushBatch(end){
   const meshes=[...buildings,roads,walks,rails].filter(m=>m.positions.length>0);
-  const batch={meshes,start:batchStart,end,labels:[...labels.slice(lastLabelIndex),...earlyPoiDisplay.slice(lastEarlyPoiIndex)],mapFeatures:mapFeatures.slice(lastFeatureIndex)};
+  const batch={meshes,start:batchStart,end,labels:[...labels.slice(lastLabelIndex),...earlyPoiDisplay.slice(lastEarlyPoiIndex)],mapFeatures:mapFeatures.slice(lastFeatureIndex),
+   buildingSlices:buildingSlices.map(slice=>({osmKey:slice.osmKey,meshIndex:meshes.indexOf(slice.mesh),start:slice.start,end:slice.end}))};
   if(meshes.length||batch.labels.length||batch.mapFeatures.length){
    displayBatches.push(batch);
    for(let i=batchStart;i<=end;i++)completedBatchByIndex[processedIndices[i]]=batch;
   }
   lastLabelIndex=labels.length;lastFeatureIndex=mapFeatures.length;lastEarlyPoiIndex=earlyPoiDisplay.length;
   buildings=palette.map(builder);roads=builder();walks=builder();rails=builder();
+  buildingSlices=[];
   batchStart=end+1;
   return batch;
  }
@@ -253,9 +256,11 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    if(!validHeight)height=validLevels?Math.min(60,levels*3):inferredLevels?inferredLevels*4:4;
    const tint=resolveLoveHotelColor(e.id,loveHotelBuildings,palette[e.id%palette.length],tags,height,inferredLevels);
    const pinkSpans=resolveLoveHotelFloorSpans(e.id,loveHotelBuildings,tags,height,inferredLevels)||[];
-   building(buildings[e.id%palette.length],p,height,tint,
+   const buildingMesh=buildings[e.id%palette.length],buildingStart=buildingMesh.positions.length;
+   building(buildingMesh,p,height,tint,
     resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels),roadSegments,tags,pinkSpans,
     resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels));
+   buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.
     Object.defineProperty(feature,'previewSource',{value:e});

@@ -1,5 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-22 Geofabrik保存差分の3D即時反映 Step 2（main反映／Actions・実機未確認）：** Step 1のOSM version照合後、未反映localStorage差分を新2km JSONのタグへ重畳してから3Dマップを生成し、再読み込み・松戸再入場時にも表示を維持する。map-builderに既存バッチ内の建物別三角形範囲記録を追加。今後の本番OSM保存成功（type/id/version/changes）を受けるゲームAPI `onConfirmedOsmTagSave` から、対象建物の元三角形のみ削除し、周辺の道路・テナントを参照して対象建物を再生成して表示する。node店舗のタグ更新も該当建物外観・タグラベルに反映し、地図読み込み途中の変更は完成後に適用する。旧2km・固定Engine・現行OSMテスト送信機能は変更しない。OSM本番へ送信する機能はまだ無いので、このフックは将来の本番送信実装で接続する。黄色いビルタグ／テナント反映待ち表示はStep 3・4。ユーザー希望により模擬テストなし、Actions・Pages・Safari実機は未確認。
+
+
 > **2026-11-22 OSM差分localStorage管理 Step 1（main反映／実行確認なし）：** `maps/osm-pending-changes.js` を新設。本番OSM APIで保存成功済みの編集についてのみ呼び出す登録API `recordConfirmedOsmTagChanges({type,id,version,changes})`、取得API、同一OSM要素の差分統合・新version保持、localStorage保存失敗時のメモリ保持＋通知コールバック、Geofabrik新2kmタイル読み込み成功時だけの差分吸収判定と個別削除を追加。`map-loader.js` の新地図検証後にクリーンアップを接続し、旧2kmには適用しない。新JSONのversionが古い／該当要素がない／version一致でも変更タグが一致しない場合は差分を保持。地図JSON全体や形状は保存しない。ストレージ使用件数・容量は表示しない。今回はStep 1のみで、OSM本番書き込み・3D即時反映・タグ行／テナント一覧の黄色警告は未接続。ユーザー希望により専用模擬テストは実施せず。Actions・Pages・iPhone Safari実機は未確認。
 
 

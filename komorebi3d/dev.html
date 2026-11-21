@@ -673,8 +673,10 @@ import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komor
 import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/core/CharacterMotionCore2D.js";
 import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=matsudo-2km-ab-20261120";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-initializer-20261117";
-import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=osm-pending-storage-20261122";
-import {createMapBuildSteps} from "./maps/map-builder.js?v=building-preview-source-20261120";
+import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=live-overlay-step2-20261122";
+import {recordConfirmedOsmTagChanges} from "./maps/osm-pending-changes.js?v=live-overlay-step2-20261122";
+import {patchLiveGeofabrikMap} from "./maps/map-live-osm-changes.js?v=live-overlay-step2-20261122";
+import {createMapBuildSteps} from "./maps/map-builder.js?v=live-overlay-step2-20261122";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
 import {createMapLabels} from "./maps/map-labels.js?v=native-keyboard-scroll-only-20261121";
 import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=tag-focus-scroll-only-20261121";
@@ -1755,7 +1757,10 @@ function productRenderSnapshot(screen,frameId){
   // During editor preview both viewports show the same new 2km baseline,
   // without applying or claiming test-OSM changes yet.
   const source=activeOsmEditors>0&&matsudoMaps.new?'new':screenConfigs[screen].map;
-  const objs=(matsudoMaps[source]?.meshes||[]).map((geometry,i)=>({id:'matsudo:'+source+':'+i,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true}));
+  const world=matsudoMaps[source];
+  const objs=(world?.meshes||[]).flatMap((geometry,i)=>geometry?[{id:'matsudo:'+source+':'+i,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true}]:[]);
+  if(source==='new')for(const [key,geometry] of world?.liveMeshes||[])
+   objs.push({id:'matsudo:live:'+key,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true});
   if(ghostIndex>=0)objs.push({id:'ghost-helicopter',geometry:engineMeshes[ghostIndex],position:[game.x,flightAltitude,game.z],yaw:game.angle,opacity:1,visible:true});
   return createMeshRenderSnapshot({frameId,camera:{eye:pose.eye,target:pose.target,fovDegrees:45,near:.1,far:2200},objects:objs});
  }
@@ -1824,6 +1829,34 @@ function addMapDebug(line){
  publishRuntimeStatus('map-debug-full-log',mapDebugLog.join('\n'));
  publishRuntimeStatus('map-debug-log',mapDebugLog.slice(-MAP_DEBUG_RECENT_LIMIT).join('\n'));
 }
+// Future production OSM writer calls this only after the API confirms success.
+// The existing test OSM writer never calls it.
+function onConfirmedProductionOsmSaved(value){
+ const onWarning=message=>{
+  addMapDebug('OSM差分: '+message);
+  publishRuntimeStatus('status',message);
+ };
+ const result=recordConfirmedOsmTagChanges(value,{onWarning});
+ const world=matsudoMaps.new;
+ if(activeWorld==='matsudo'&&world){
+  if(!world.ready)world.deferredEdits.set(result.entry.type+'/'+result.entry.id,result.entry);
+  else{
+   try{
+    const applied=patchLiveGeofabrikMap(world,result.entry,createMeshGeometry);
+    if(applied.applied){
+     for(const screen of ['A','B'])if(screenConfigs[screen].map==='new'){
+      matsudoLabels[screen]?.reconcileLabels(world.labels);
+      matsudoLabels[screen]?.setBuildingFeatures(world.mapFeatures);
+     }
+     if(miniMapVisible)paintDebugMap();
+    }else addMapDebug('OSM差分: 画面への即時反映を保留 / '+applied.reason);
+   }catch(error){
+    onWarning('OSM差分の3D反映に失敗しました。保存済み差分は次回地図読み込み時に反映します: '+String(error.message||error));
+   }
+  }
+ }
+ return result;
+}
 // Matsudo owns the map request lifecycle. World switching only disposes the old session.
 function cancelMatsudoMapRequest(){
  mapFrameProbe=null;
@@ -1854,7 +1887,9 @@ async function loadMatsudoMapInBackground(){
     const builder=createMapBuildSteps(map,{
      halfSize:1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
     });
-    const displayed={meshes:[],mapFeatures:[],labels:[],mapSpan:2000};
+    const displayed={meshes:[],mapFeatures:[],labels:[],mapSpan:2000,
+     sourceMap:source==='new'?map:null,buildingSlices:new Map(),liveMeshes:new Map(),
+     ready:false,deferredEdits:new Map()};
     matsudoMaps[source]=displayed;
     const workStart=performance.now();
     let result=builder.next(),batchIndex=0,processedInSlice=0;
@@ -1924,6 +1959,7 @@ async function loadMatsudoMapInBackground(){
      for(const entry of entries){
       const {batch,index,quarterStats}=entry;
       const meshStart=performance.now();
+      const meshOffset=displayed.meshes.length;
       for(let i=0;i<batch.meshes.length;i++){
        const mesh=batch.meshes[i];
        // Vertex count is a geometry-size indicator, not measured GPU/RAM usage.
@@ -1935,6 +1971,10 @@ async function loadMatsudoMapInBackground(){
         positions:mesh.positions,normals:mesh.normals,colors:mesh.colors
        }));
       }
+      if(source==='new')for(const slice of batch.buildingSlices||[])
+       displayed.buildingSlices.set(slice.osmKey,{
+        meshIndex:meshOffset+slice.meshIndex,start:slice.start,end:slice.end
+       });
       quarterStats.meshCount+=batch.meshes.length;
       displayStats.meshTotal+=batch.meshes.length;
       quarterStats.meshMs+=performance.now()-meshStart;
@@ -2049,6 +2089,14 @@ async function loadMatsudoMapInBackground(){
     const reconcileStart=performance.now();
     displayed.labels=next.labels;
     displayed.mapFeatures=next.mapFeatures;
+    displayed.ready=true;
+    if(source==='new'&&displayed.deferredEdits.size){
+     for(const entry of displayed.deferredEdits.values()){
+      try{patchLiveGeofabrikMap(displayed,entry,createMeshGeometry);}
+      catch(error){onLog('OSM差分: 読み込み中に受け取った編集の再反映失敗 / '+String(error.message||error));}
+     }
+     displayed.deferredEdits.clear();
+    }
     for(const screen of ['A','B'])if(screenConfigs[screen].map===source){
      matsudoLabels[screen]?.reconcileLabels(next.labels);
      matsudoLabels[screen]?.setBuildingFeatures(next.mapFeatures);
@@ -2284,7 +2332,9 @@ const gameApi=Object.freeze({
   return ()=>gameStateListeners.delete(listener);
  },
  reset:resetGameForTest,setRenderMode,setScreenConfig,setNpcCount,setNpcRenderLimit,setNpcRenderDistance,
- setMapVisible:setMiniMapVisible,setLabelDebugVisible,teleport:teleportToTestSpot,setWorld
+ setMapVisible:setMiniMapVisible,setLabelDebugVisible,teleport:teleportToTestSpot,setWorld,
+ // Integration point for the future production OSM save flow (not a test API).
+ onConfirmedOsmTagSave:onConfirmedProductionOsmSaved
 });
 // Panel views subscribe to Game API without controlling each other.
 const unmountRuntimeStatusPanel=mountRuntimeStatusPanel(document.querySelector('.runtime-status'),gameApi);
