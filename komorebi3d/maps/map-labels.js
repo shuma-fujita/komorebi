@@ -1,7 +1,7 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=lazy-oauth-config-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
-import {attachSheetMotion} from './sheet-motion.js?v=panel-local-sheet-20261121';
+import {attachSheetMotion} from './sheet-motion.js?v=keyboard-preview-intersection-20261121';
 import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=keyboard-no-feedback-20261121';
 import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
@@ -12,7 +12,7 @@ const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
-export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null}={}){
+export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null,onEditorPreviewRegionChange=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
@@ -137,7 +137,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   handle.appendChild(grip);
   handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();editorMotion?.toggle();}else if(event.key==='Escape'){event.preventDefault();closeEditor();}});
   // Motion controller owns grip dragging, fling velocity and sheet transitions.
-  editorMotion=attachSheetMotion(form,handle,closeEditor,()=>editorKeyboardLayout?.refresh());
+  editorMotion=attachSheetMotion(form,handle,closeEditor,()=>editorKeyboardLayout?.refresh(),{previewTouch,onPreviewRegionChange:onEditorPreviewRegionChange});
   form.appendChild(handle);
   const title=document.createElement('h3');
   title.textContent=item.name||'OSMの建物';
@@ -545,7 +545,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   setSource(linkedTestTarget?'test':'production');
   form.style.zIndex='2';
   mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
-  editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form,onViewportChange:(height,gameTop)=>editorMotion?.setKeyboardViewport(height,gameTop)});
+  editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form,onViewportChange:(height,panelTop)=>editorMotion?.setKeyboardViewport(height,panelTop)});
   editorScrollGuard=guardSheetScroll(mask,form,handle);
   const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
   const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
