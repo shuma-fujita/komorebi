@@ -3,9 +3,6 @@
 // feedback loop (scrollTo on every scroll/visualViewport event) is forbidden.
 // This observer reports viewport geometry to sheet-motion and reveals the
 // selected field once after the keyboard viewport has settled.
-export function keyboardSheetHeight(viewHeight,previewHeight,normalSheetHeight,gameTop=0){
- return Math.max(0,Math.min(normalSheetHeight,viewHeight-Math.max(0,gameTop)-previewHeight));
-}
 export function focusedTagRowScrollDelta(sheetTop,sheetBottom,rowTop,rowBottom){
  const grip=Math.min(36,Math.max(0,sheetBottom-sheetTop)/3);
  return (rowTop+rowBottom)/2-(sheetTop+grip+sheetBottom)/2;
