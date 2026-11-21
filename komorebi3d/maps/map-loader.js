@@ -1,5 +1,4 @@
-import {reconcilePendingOsmTagChanges,applyPendingOsmTagChangesToMap} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
-import {applyOsmReviewStorageChecksToMap} from './osm-review-storage-check.js?v=shared-save-workflow-20261122';
+import {reconcilePendingOsmTagChanges,applySavedOsmTagChangesToMap} from './osm-pending-changes.js?v=unified-osm-storage-v2-20261122';
 // Two independent 2km Matsudo snapshots. No 500m or live Overpass fetch.
 const TILE_ROOTS=Object.freeze({
  old:'./maps/data/tiles-2km/',
@@ -38,12 +37,8 @@ export async function loadMap({onLog=()=>{},signal,source='old'}={}){
  if(source==='new'){
   const options={source,onWarning:msg=>onLog('OSM差分: '+msg)};
   reconcilePendingOsmTagChanges(map,options);
-  const applied=applyPendingOsmTagChangesToMap(map,options);
-  if(applied)onLog('OSM差分: '+applied+'件を新Geofabrik地図へ反映');
-  // Review-only localStorage is a separate layer, with its own originals
-  // captured AFTER any legitimate production-pending overlay.
-  const testApplied=applyOsmReviewStorageChecksToMap(map,options);
-  if(testApplied)onLog('OSM動作確認: '+testApplied+'件を新2km表示に仮反映');
+  const applied=applySavedOsmTagChangesToMap(map,options);
+  if(applied)onLog('OSMタグ変更: '+applied+'件を新2km表示に反映');
  }
  onLog('JSON: '+label+' 検証PASS / 要素 '+map.elements.length+'件 / '+Math.round(performance.now()-start)+'ms');
  return map;

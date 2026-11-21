@@ -31,22 +31,19 @@ export function applyPendingTagVisualStyle(form){
  form.appendChild(style);
 }
 
-// Both proven production writes and review-only localStorage writes reach
-// the same visible pending-row presentation. Their storage/provenance remains
-// separate; no review-only operation is treated as a remote OSM save.
-export function syncPendingTagRows(rows,{pending=null,localReview=null,mapSource='new',dataSource='production'}={}){
+// All saved OSM tag changes render the same pending-row visual.
+// Both local reviews and confirmed OSM writes have one canonical entry.
+export function syncPendingTagRows(rows,{entry=null,pending=null,localReview=null,mapSource='new',dataSource='production'}={}){
  const enabled=mapSource==='new'&&dataSource==='production';
- const official=enabled&&pending?.changes&&typeof pending.changes==='object'&&!Array.isArray(pending.changes)?
-  pending.changes:null;
- const local=enabled&&localReview?.changes&&typeof localReview.changes==='object'&&!Array.isArray(localReview.changes)?
-  localReview.changes:null;
+ // The legacy optional args keep the independent mock sample working.
+ const sources=enabled?[entry?.changes,entry?.confirmedOsm?.changes,pending?.changes,localReview?.changes]:[];
+ const changedKeys=new Set();
+ for(const source of sources)if(source&&typeof source==='object'&&!Array.isArray(source))
+  for(const key of Object.keys(source))changedKeys.add(key);
  for(const row of rows.children){
   if(!row.classList?.contains('komo-tag-row'))continue;
   const key=row.children[0]?.value?.trim()||'';
-  const highlighted=!!key&&(
-   (!!official&&Object.prototype.hasOwnProperty.call(official,key))||
-   (!!local&&Object.prototype.hasOwnProperty.call(local,key))
-  );
+  const highlighted=!!key&&changedKeys.has(key);
   row.classList.toggle('komo-pending-tag-row',highlighted);
   const existing=[...row.querySelectorAll('.komo-pending-tag-note')];
   if(!highlighted){

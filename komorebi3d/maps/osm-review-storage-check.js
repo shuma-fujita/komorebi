@@ -1,121 +1,49 @@
-// LocalStorage smoke-check controls for an unsent tag review.
-// Test-only namespace: NEVER create a confirmed-production pending OSM record.
-// This helper is reusable by the mock and (after UI approval) the game.
-const TEST_PREFIX='komorebi3d:osm-review-storage-check:v1:';
-const TYPES=new Set(['node','way','relation']);
+// Shared localStorage smoke-check controls; test and confirmed OSM edits
+// now use the SAME key, release function and tag-change storage module.
+// osmVersion=null is an unsent local review; this module does not send to OSM.
+import {osmTagChangeStorageKey,getSavedOsmTagChange,getAllSavedOsmTagChanges,
+ saveStoredOsmTagChange,releaseStoredOsmTagChange,applySavedOsmTagChangesToMap}
+ from './osm-pending-changes.js?v=unified-osm-storage-v2-20261122';
 const own=(object,key)=>Object.prototype.hasOwnProperty.call(object,key);
-
-function reviewKey(review){
- const osm=review?.osm;
- const id=String(osm?.id??'');
- if(!TYPES.has(osm?.type)||!/^[1-9]\d*$/.test(id))
-  throw Error('OSM要素のIDが不正です。');
- return TEST_PREFIX+osm.type+'/'+id;
-}
+const reviewKey=review=>osmTagChangeStorageKey(review?.osm?.type,review?.osm?.id);
 function testPayload(review){
- const key=reviewKey(review),previous=getOsmReviewStorageCheck(review.osm.type,review.osm.id);
+ const key=reviewKey(review);
+ const previous=getOsmReviewStorageCheck(review.osm.type,review.osm.id);
  const current=review?.changes;
  if(!current||typeof current!=='object'||Array.isArray(current))
   throw Error('保存する変更内容が不正です。');
+ if(previous?.osmVersion!==null&&previous?.osmVersion!==undefined)
+  throw Error('本番OSM送信済みの反映待ちデータがあるため、動作確認で上書きできません。');
  const baseTags=previous?.baseTags||review.originalTags||null;
  const tags=review.tags;
- // Recalculate ALL still-pending keys from the pre-edit base. When the same
- // OSM element is edited twice, older changes remain highlighted as well.
  let changes={...current};
  if(baseTags&&tags){
   changes={};
-  for(const tag of new Set([...Object.keys(baseTags),...Object.keys(tags)])){
-   if(baseTags[tag]!==tags[tag])
-    changes[tag]=own(tags,tag)?tags[tag]:null;
-  }
+  for(const tag of new Set([...Object.keys(baseTags),...Object.keys(tags)]))
+   if(baseTags[tag]!==tags[tag])changes[tag]=own(tags,tag)?tags[tag]:null;
  }
  if(!Object.keys(changes).length)throw Error('保存する変更がありません。');
- return {key,payload:JSON.stringify({
-  type:review.osm.type,id:String(review.osm.id),version:review.osm.version??null,
-  changes,tags,baseTags
- })};
-}
-function decodeStored(text,key){
- const value=JSON.parse(text);
- if(!value||reviewKey({osm:value})!==key||!value.changes||
-  typeof value.changes!=='object'||Array.isArray(value.changes))
-  throw Error('保存した動作確認用データが不正です。');
- const changes=Object.create(null);
- for(const [tag,v] of Object.entries(value.changes)){
-  if(!tag||/[\u0000-\u001f=]/.test(tag)||(typeof v!=='string'&&v!==null))
-   throw Error('保存したタグ差分が不正です。');
-  changes[tag]=v;
- }
- let tags=null;
- if(value.tags&&typeof value.tags==='object'&&!Array.isArray(value.tags)){
-  tags=Object.create(null);
-  for(const [tag,v] of Object.entries(value.tags)){
-   if(!tag||/[\u0000-\u001f=]/.test(tag)||typeof v!=='string')
-    throw Error('保存したタグ一覧が不正です。');
-   tags[tag]=v;
-  }
- }
- let baseTags=null;
- if(value.baseTags&&typeof value.baseTags==='object'&&!Array.isArray(value.baseTags)){
-  baseTags=Object.create(null);
-  for(const [tag,v] of Object.entries(value.baseTags)){
-   if(!tag||/[\u0000-\u001f=]/.test(tag)||typeof v!=='string')
-    throw Error('保存した変更前のタグが不正です。');
-   baseTags[tag]=v;
-  }
- }
- return {type:value.type,id:String(value.id),version:value.version,changes,tags,baseTags};
+ return {key,record:{type:review.osm.type,id:String(review.osm.id),
+  osmVersion:null,changes,tags,baseTags}};
 }
 export function getOsmReviewStorageCheck(type,id){
- const key=reviewKey({osm:{type,id}});
- const text=localStorage.getItem(key);
- return text===null?null:decodeStored(text,key);
+ return getSavedOsmTagChange(type,id);
 }
 export function getAllOsmReviewStorageChecks({onWarning}={}){
- const result=[];
- try{
-  for(let i=0;i<localStorage.length;i++){
-   const key=localStorage.key(i);
-   if(!key?.startsWith(TEST_PREFIX))continue;
-   try{result.push(decodeStored(localStorage.getItem(key),key));}
-   catch(error){onWarning?.('動作確認データの読み取り失敗: '+String(error.message||error));}
-  }
- }catch(error){onWarning?.('動作確認用localStorageの一覧取得に失敗: '+String(error.message||error));}
- return result;
+ return getAllSavedOsmTagChanges({onWarning});
 }
-// Called only after the real-production pending layer is applied to the NEW
-// Geofabrik map. Preserve the pre-test tags for restoring a building in 3D.
-export function applyOsmReviewStorageChecksToMap(map,{source,onWarning}={}){
- if(source!=='new')return 0;
- if(!Array.isArray(map?.elements))throw Error('地図JSONの要素一覧が不正です。');
- const originals=new Map();
- Object.defineProperty(map,'reviewStorageOriginalTags',{value:originals});
- const records=new Map(getAllOsmReviewStorageChecks({onWarning})
-  .map(record=>[record.type+'/'+record.id,record]));
- let count=0;
- for(const element of map.elements){
-  const key=element.type+'/'+element.id,record=records.get(key);
-  if(!record)continue;
-  originals.set(key,{...(element.tags||{})});
-  const tags=record.tags?{...record.tags}:{...(element.tags||{})};
-  if(!record.tags)for(const [tag,value] of Object.entries(record.changes)){
-   if(value===null)delete tags[tag];else tags[tag]=value;
-  }
-  element.tags=tags;
-  count++;
- }
- return count;
-}
+// Compatibility for older callers. Loader now applies the single shared
+// overlay itself, not a second separate test overlay.
+export const applyOsmReviewStorageChecksToMap=applySavedOsmTagChangesToMap;
 export function saveOsmReviewStorageCheck(review){
- const {key,payload}=testPayload(review);
- localStorage.setItem(key,payload);
- if(localStorage.getItem(key)!==payload)throw Error('保存内容を読み取れません。');
+ const {record,key}=testPayload(review);
+ const result=saveStoredOsmTagChange(record);
+ if(!result.persisted)throw Error('保存内容を読み取れません。');
  return key;
 }
 export function releaseOsmReviewStorageCheck(review){
  const key=reviewKey(review);
- localStorage.removeItem(key);
- if(localStorage.getItem(key)!==null)throw Error('保存データを開放できません。');
+ releaseStoredOsmTagChange(review.osm.type,review.osm.id);
  return key;
 }
 // Insert at the TOP of the confirmation UI. getReview returns only a

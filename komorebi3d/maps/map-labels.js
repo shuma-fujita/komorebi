@@ -7,11 +7,11 @@ import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-lay
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
-import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
-import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=geofabrik-wait-only-20261122';
+import {getSavedOsmTagChange,getAllSavedOsmTagChanges} from './osm-pending-changes.js?v=unified-osm-storage-v2-20261122';
+import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=unified-osm-storage-v2-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
-import {prependOsmReviewStorageCheck,getOsmReviewStorageCheck,getAllOsmReviewStorageChecks} from './osm-review-storage-check.js?v=storage-inventory-20261122';
+import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=unified-osm-storage-v2-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
@@ -23,19 +23,15 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
  let buildings=[];
- // Cache both pending sources outside the animation loop. A local review
- // has never been sent to production OSM.
+ // Cache saved OSM tag keys outside the animation loop; one record per element.
  let pendingTenantKeys=new Set();
  function refreshPendingTenants(){
   const keys=new Set();
   if(mapSource==='new'){
    try{
-    for(const entry of getAllPendingOsmTagChanges())keys.add(entry.type+'/'+entry.id);
-   }catch(error){console.warn('OSM本番反映待ちの読み取り失敗',error);}
-   try{
-    for(const entry of getAllOsmReviewStorageChecks({onWarning:message=>console.warn(message)}))
+    for(const entry of getAllSavedOsmTagChanges({onWarning:message=>console.warn(message)}))
      keys.add(entry.type+'/'+entry.id);
-   }catch(error){console.warn('OSM保存確認の読み取り失敗',error);}
+   }catch(error){console.warn('OSMタグ変更の読み取り失敗',error);}
   }
   pendingTenantKeys=keys;
  }
@@ -428,14 +424,12 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   // Only production OSM tags from the NEW Geofabrik map can be pending.
   // A test OSM copy or an unsaved draft must never acquire this warning.
   function refreshPendingTags(){
-   let pending=null,localReview=null;
+   let entry=null;
    if(mapSource==='new'&&activeSource==='production'){
-    try{pending=getPendingOsmTagChange(item.osmType,String(item.osmId));}
-    catch(error){console.warn('OSM本番反映待ちの読み取り失敗',error);}
-    try{localReview=getOsmReviewStorageCheck(item.osmType,String(item.osmId));}
-    catch(error){console.warn('OSM動作確認の読み取り失敗',error);}
+    try{entry=getSavedOsmTagChange(item.osmType,String(item.osmId));}
+    catch(error){console.warn('OSMタグ変更の読み取り失敗',error);}
    }
-   syncPendingTagRows(rows,{pending,localReview,mapSource,dataSource:activeSource});
+   syncPendingTagRows(rows,{entry,mapSource,dataSource:activeSource});
   }
   refreshEditorPending=refreshPendingTags;
   const sourceRow=document.createElement('div');
@@ -552,8 +546,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    });
   }
   let pending=null;
-  // Same two buttons as the approved mock. Keep a separate test-only storage
-  // namespace: this never signals a successful production OSM save.
+  // Both save sources now use one per-element storage key.
+  // A local review writes osmVersion=null, never a confirmed OSM version.
   const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending?{...pending,originalTags:baseTags}:pending,onChange:onReviewStorageChange,showInventory:true});
   reviewStorageCheck.section.hidden=true;
   confirm.addEventListener('click',()=>{
