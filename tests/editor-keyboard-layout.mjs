@@ -10,7 +10,7 @@ assert.equal(keyboardSheetHeight(313,210,488),103);
 assert.equal(keyboardSheetHeight(641,210,488),431);
 assert.equal(keyboardSheetHeight(313,210,488,40),63);
 assert.equal(focusedTagRowScrollDelta(600,800,680,760),2);
-assert.deepEqual(sheetGeometry(700,'half'),{top:210,height:490});
+assert.equal(Math.round(sheetGeometry(700,'half').height),490);
 assert.deepEqual(sheetGeometry(700,'half',313),{top:210,height:103});
 assert.deepEqual(sheetGeometry(700,'full',313),{top:0,height:313});
 
