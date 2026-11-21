@@ -7,8 +7,8 @@ import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-lay
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
-import {getPendingOsmTagChange} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
-import {applyPendingTagVisualStyle,syncPendingTagRows} from './osm-pending-tag-visual.js?v=step3-mock-20261122';
+import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
+import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=step3-mock-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
@@ -21,6 +21,22 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
  let buildings=[];
+ // Tenant warning IDs are snapshotted on layer creation and on confirmed
+ // production saves. Do not query browser storage during animation frames.
+ let pendingTenantKeys=new Set();
+ function refreshPendingTenants(){
+  if(mapSource!=='new'){pendingTenantKeys=new Set();return;}
+  try{
+   pendingTenantKeys=new Set(getAllPendingOsmTagChanges()
+    .map(entry=>entry.type+'/'+entry.id));
+  }catch(error){
+   console.warn('OSMテナント反映待ちの読み取り失敗',error);
+   pendingTenantKeys=new Set();
+  }
+ }
+ refreshPendingTenants();
+ const tenantIsPending=shop=>mapSource==='new'&&
+  pendingTenantKeys.has(shop.osmType+'/'+shop.osmId);
  let cachedShops=[],lastShopKey=null,shopIndexDirty=true;
  function shopsForFocus(key){
   if(shopIndexDirty||lastShopKey!==key){
@@ -643,15 +659,20 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
       row.style.cssText='padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
       const prefix=shop.tags?.level!==undefined?'[level='+shop.tags.level+'] ':'';
       row.textContent=prefix+shop.name;
-      if(shop.outsideFootprint){
-       // Warn about OSM nodes outside the footprint; retain the original editor target.
+      const pendingGeofabrik=tenantIsPending(shop);
+      if(shop.outsideFootprint||pendingGeofabrik){
+       // Same yellow treatment as the existing 1m warning. Both can coexist.
        row.style.background='rgba(255,176,68,.16)';
        row.style.borderLeft='3px solid #ffbd62';
        row.style.paddingLeft='6px';
-       const warning=document.createElement('span');
-       warning.style.cssText='display:block;color:#ffd08a;font:600 10px/1.5 system-ui,-apple-system,sans-serif';
-       warning.textContent='⚠ 建物外（外周1m以内・位置要確認）';
-       row.appendChild(warning);
+       const addWarning=message=>{
+        const warning=document.createElement('span');
+        warning.style.cssText='display:block;color:#ffd08a;font:600 10px/1.5 system-ui,-apple-system,sans-serif';
+        warning.textContent=message;
+        row.appendChild(warning);
+       };
+       if(shop.outsideFootprint)addWarning('⚠ 建物外（外周1m以内・位置要確認）');
+       if(pendingGeofabrik)addWarning(PENDING_GEOFABRIK_LABEL);
       }
       row.dataset.osmKey=shop.osmType+':'+shop.osmId;
       row._osmItem=shop;pane.appendChild(row);
@@ -868,7 +889,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    const heightLimit=Math.max(1,Math.floor(rect.height-42));
    const topInset=Math.min(28,Math.max(8,Math.floor(rect.height*.06)));
    const {item}=ranked[0];
-   const signature=selectedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')+':'+(shop.outsideFootprint?'outside':'inside')).join('|');
+   const signature=selectedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')+':'+(shop.outsideFootprint?'outside':'inside')+':'+(tenantIsPending(shop)?'pending':'synced')).join('|');
    if(viewport.summary?.signature!==signature){
     viewport.summary?.el.remove();
     viewport.summary=createItem(item,widthLimit,heightLimit);
@@ -942,5 +963,5 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   return false;
  }
  function clearTappedBuilding(){tappedBuilding=null;}
- return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,setPreviewActive,setTagHidden,isTagHidden,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,refreshPendingTags(){refreshEditorPending?.();},update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
+ return {setLabels,appendLabels,setBuildingFeatures,appendBuildingFeatures,reconcileLabels,replaceCanvas,setDebugAnchors,setPreviewActive,setTagHidden,isTagHidden,scrollPaneAt,selectTappedBuildingAt,clearTappedBuilding,refreshPendingTags(){refreshEditorPending?.();},refreshPendingTenants,update,hitTest,openHit,dispose(){closeEditor();layer.remove();entries=[];}};
 }

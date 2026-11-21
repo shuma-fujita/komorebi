@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-22 Step4 テナント一覧にGeofabrik反映待ち黄色警告（main反映／ゲーム実機未確認）：** `maps/map-labels.js` の建物テナント一覧に、本番OSMへの保存成功後に残るタグ差分を店舗のOSM type/idで照合し、黄色背景・左枠＋「⚠ Geofabrik反映待ち」を表示。既存の「⚠ 建物外（外周1m以内・位置要確認）」警告は維持し、該当時は両方表示。対象はGeofabrik新2kmのみ、旧2kmは変更しない。保存済み差分はラベルレイヤー生成時と本番保存成功フックで取得し、毎フレームlocalStorageを読み直さない。表示中の反映待ちが変われば署名差で該当一覧を更新する。OSMテストコピー・未保存ドラフトは黄色表示の根拠にしない。新JSON反映確認後はStep1が保存差分を削除し、次の地図ロードで通常表示へ戻る。既存Step3モックと固定Engineは変更しない。本番OSM送信は別工程で未実装。ユーザー希望により模擬テストなし、Actions・Pages・iPhone Safari動作未確認。
+
 > **2026-11-22 OSMタグ反映待ち Step 3 ゲーム接続（main反映／ゲーム実機未確認）：** ユーザーが実機でPASSを報告した黄色モックのデザインを変更せず、`maps/map-labels.js` に実際のビルタグ編集行との接続を追加。`createMapLabels` は画面ごとの `mapSource` を受け取り、「新2km Geofabrik ＋ 本番OSM表示」の条件でのみ `getPendingOsmTagChange(type,id)` を参照し、保存成功後に残る変更キーのタグ行だけ `syncPendingTagRows` により黄色枠・背景＋「⚠ Geofabrik反映待ち」を表示する。テストOSMに切り替えると警告解除、旧2kmや未保存ドラフトを反映待ちと誤表示しない。タグ行再表示時に差分読み取り、保存成功フックからの `refreshPendingTags()` 呼び出しで開いた編集シートもDOM全再構成なしに警告を更新。Step 1の新JSON取り込み時の反映済み差分削除に伴い、次にタグ画面を開く際は黄色表示も消える。本番OSMの送信処理は未実装。Step 4テナント一覧警告は未実装。モック実機PASSは既報、今回のゲーム本体はActions・Pages・Safari実機未確認。ユーザー希望で専用模擬テストは実施しない。
 
 > **2026-11-22 OSM未反映タグの黄色表示 Step 3（mock先行／ゲーム未接続）：** 既存のビルタグ編集画面と同じダークテーマを使い、変更したタグ行のみ黄色い枠・背景＋「⚠ Geofabrik反映待ち」を表示するデモを `mock-ui.js` に追加。プレビューの開閉と通常状態への切替が可能。独立した表示モジュール `maps/osm-pending-tag-visual.js` は、production＋新Geofabrikの場合のみ該当する変更キーの行を強調し、その他は元の色を維持。mockはゲーム・WebGL・OSM API・localStorageを一切操作せず、サンプルのway/123456を表示するだけ。ユーザー承認後に `map-labels.js` の実際のビルタグ行へ連携する。テナント一覧の警告はStep4。ユーザー希望により専用模擬テストは実施していない。Actions／Pages／iPhone Safariの動作は未確認。
