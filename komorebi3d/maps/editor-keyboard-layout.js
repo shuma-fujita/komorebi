@@ -115,12 +115,19 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
   });
  }
  function onViewportResize(){
+  // The trailing space exists only while the software keyboard is visible,
+  // even if Safari keeps an input focused when the keyboard is dismissed.
+  if(viewportRecovered()){
+   removeTrailingSpace();
+   if(pendingBlur)finishBlur();
+   return;
+  }
   // On keyboard resize, reveal only the part hidden below its top edge.
   // No scroll handler, input handler, setInterval or page scroll correction.
   if(focusedField&&mobile&&keyboardOpen()){
    keyboardSeen=true;
    scheduleReveal();
-  }else if(pendingBlur&&viewportRecovered())finishBlur();
+  }
  }
  sheet.addEventListener('pointerdown',onPointerDown,true);
  sheet.addEventListener('focusin',onFocusIn);
