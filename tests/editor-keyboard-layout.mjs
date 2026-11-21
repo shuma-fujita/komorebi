@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {attachEditorKeyboardLayout,coveredFieldScrollDelta,keyboardTrailingSpace,gamePanelTopScrollY} from '../komorebi3d/maps/editor-keyboard-layout.js';
+import {attachEditorKeyboardLayout,coveredFieldScrollDelta,keyboardTrailingSpace} from '../komorebi3d/maps/editor-keyboard-layout.js';
 import {attachSheetMotion} from '../komorebi3d/maps/sheet-motion.js';
 import {tagFieldLocation} from '../komorebi3d/maps/editor-keyboard-diagnostics.js';
 
@@ -13,10 +13,6 @@ assert.equal(coveredFieldScrollDelta(313,313),24);
 assert.equal(keyboardTrailingSpace(495,313),206,'hidden sheet bottom plus 24px margin');
 assert.equal(keyboardTrailingSpace(495,641),0,'no extra space when keyboard is absent');
 assert.equal(keyboardTrailingSpace(500,500),24,'last row receives a small clearance');
-assert.equal(gamePanelTopScrollY(423,-203,0),220,'scroll document upward to bring game panel to top');
-assert.equal(gamePanelTopScrollY(462,-242,39),181,'account for Safari visual viewport offset');
-assert.equal(gamePanelTopScrollY(0,-75,0),0,'document scroll never goes negative');
-assert.equal(gamePanelTopScrollY(220,0,0),220,'do nothing if panel is already at top');
 function emitter(object={}){
  const listeners=new Map();
  return Object.assign(object,{
@@ -120,7 +116,7 @@ const verifyNoLayoutChange=()=>{
  assert.equal(JSON.stringify(game.style),gameStyles,'game is not repositioned');
  assert.equal(JSON.stringify(host.style),hostStyles,'WebGL host is not repositioned');
 };
-// Independent regression for user-requested focus-only page alignment.
+// Regression: focusing different tag inputs must never scroll the page to the game panel.
 const anchorGame=new Node(),anchorHost=new Node(),anchorMask=new Node(),anchorSheet=new Node();
 const anchorInput=new Node(),anchorOtherInput=new Node();
 anchorHost.closest=sel=>sel==='.landscape-game'?anchorGame:null;
@@ -136,20 +132,20 @@ for(const field of [anchorInput,anchorOtherInput]){
 }
 const anchorKeyboard=attachEditorKeyboardLayout({host:anchorHost,mask:anchorMask,sheet:anchorSheet});
 anchorSheet.emit('pointerdown',{target:anchorInput,pointerType:'touch'});
-assert.equal(window.scrollY,220,'focus aligns entire normal-flow game panel with viewport top');
-assert.equal(anchorGame.getBoundingClientRect().top,0,'panel top is 0 without fixed positioning');
-assert.deepEqual(scrollCalls,[[0,220]],'focus initiates exactly one document scroll');
+assert.equal(window.scrollY,423,'focus keeps the page at its original position');
+assert.equal(anchorGame.getBoundingClientRect().top,-203,'game panel is not aligned or fixed');
+assert.deepEqual(scrollCalls,[],'focus never scrolls the document');
 assert.equal(JSON.stringify(anchorGame.style),'{}','game position is never changed');
 anchorSheet.emit('focusin',{target:anchorInput});
 anchorSheet.emit('input',{target:anchorInput});
 vv.emit('resize');flush();
-assert.equal(scrollCalls.length,1,'repeated focus and keyboard changes never trigger another scroll');
+assert.equal(scrollCalls.length,0,'repeated focus and keyboard changes never scroll the document');
 window.scrollY=250; // Safari/browser may pan between tag fields.
 anchorSheet.emit('focusout',{target:anchorInput});
 anchorSheet.emit('pointerdown',{target:anchorOtherInput,pointerType:'touch'});
 flush();
-assert.equal(window.scrollY,220,'a distinct input focus aligns game again once');
-assert.equal(scrollCalls.length,2,'one scroll per newly focused input');
+assert.equal(window.scrollY,250,'a distinct input focus does not override natural page position');
+assert.equal(scrollCalls.length,0,'neither focus invokes page scrolling');
 anchorKeyboard.destroy();
 assert.equal(anchorSheet.listenerCount('pointerdown'),0,'focus listener is cleaned up');
 document.activeElement=null;
