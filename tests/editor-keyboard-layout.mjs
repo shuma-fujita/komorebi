@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {keyboardSheetHeight,focusedTagRowScrollDelta,attachEditorKeyboardLayout}
  from '../komorebi3d/maps/editor-keyboard-layout.js';
-import {sheetGeometry,attachSheetMotion}
+import {sheetGeometry,panelVisibleRange,attachSheetMotion}
  from '../komorebi3d/maps/sheet-motion.js';
 import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO}
  from '../komorebi3d/maps/building-editor-layout.js';
@@ -13,6 +13,15 @@ assert.equal(focusedTagRowScrollDelta(600,800,680,760),2);
 assert.equal(Math.round(sheetGeometry(700,'half').height),490);
 assert.deepEqual(sheetGeometry(700,'half',313),{top:210,height:103});
 assert.deepEqual(sheetGeometry(700,'full',313),{top:0,height:313});
+// The old code ignored negative panelTop and cut the sheet off early.
+assert.deepEqual(panelVisibleRange(700,313,-300),{start:300,end:613,height:313});
+assert.deepEqual(sheetGeometry(700,'half',313,-300),{top:510,height:103});
+assert.deepEqual(sheetGeometry(700,'full',313,-300),{top:300,height:313});
+assert.deepEqual(sheetGeometry(700,'half',313,-389),{top:599,height:101});
+assert.deepEqual(sheetGeometry(700,'half',313,30),{top:187,height:96});
+assert.deepEqual(sheetGeometry(700,'half',220,90,-90),{top:90,height:90});
+// A very small visible area gives input at least 96px by reducing preview.
+assert.deepEqual(sheetGeometry(700,'half',180,-350),{top:434,height:96});
 
 function emitter(object={}){
  const handlers=new Map();
@@ -82,7 +91,11 @@ const host=new Node();
 host.closest=sel=>sel==='.landscape-game'?game:null;
 host.getBoundingClientRect=()=>game.getBoundingClientRect();
 const mask=new Node();
-mask.getBoundingClientRect=()=>game.getBoundingClientRect();
+mask.getBoundingClientRect=()=>({
+ top:gameDocumentTop-window.scrollY+vv.offsetTop,
+ height:gameHeight,
+ bottom:gameDocumentTop-window.scrollY+vv.offsetTop+gameHeight
+});
 const handle=new Node();
 handle.parentElement=mask;
 handle.setPointerCapture=()=>{};
@@ -114,7 +127,11 @@ row.getBoundingClientRect=()=>{
  return {top,bottom:top+48,height:48};
 };
 let dismissCount=0;
-const motion=attachSheetMotion(sheet,handle,()=>dismissCount++);
+const previewTouch=new Node();
+const previewRegions=[];
+const motion=attachSheetMotion(sheet,handle,()=>dismissCount++,null,{
+ previewTouch,onPreviewRegionChange:region=>previewRegions.push(region)
+});
 const binding=attachEditorKeyboardLayout({
  host,mask,sheet,onViewportChange:(height,top)=>motion.setKeyboardViewport(height,top)
 });
@@ -130,14 +147,17 @@ document.activeElement=field;
 sheet.emit('focusin',{target:field});flush();
 assertPanelUnchanged();
 assert.equal(sheet.style.height,'70%','focusing does not prematurely resize game/sheet');
-window.scrollY=769;vv.height=313;vv.offsetTop=328;
+window.scrollY=580;vv.height=313;vv.offsetTop=0;
 vv.emit('resize');flush();
 assertPanelUnchanged();
-assert.equal(window.scrollY,769,'the editor must not fight Safari keyboard scrolling');
+assert.equal(window.scrollY,580,'the editor must not fight Safari keyboard scrolling');
 assert.equal(scrollCalls.length,0,'no programmatic page scroll while focused');
 assert.equal(sheet.style.position,'absolute','only the sheet changes position with keyboard');
 assert.equal(Math.round(Number.parseFloat(sheet.style.height)),103,'sheet fits above keyboard after preview');
-assert.equal(Math.round(Number.parseFloat(sheet.style.top)),210,'preview keeps its 30% panel-local height');
+assert.equal(Math.round(Number.parseFloat(sheet.style.top)),410,'preview starts 210px below visible panel intersection');
+assert.equal(Math.round(Number.parseFloat(previewTouch.style.top)),200,'preview gesture begins at visible panel top');
+assert.equal(Math.round(Number.parseFloat(previewTouch.style.height)),210,'visible preview keeps nominal 30% game height');
+assert.equal(previewRegions.at(-1).startRatio,200/699,'camera receives visible canvas slice offset');
 // Keyboard viewport settles before a single native focused-field reveal.
 runTimers(90);
 assert.equal(nativeRevealCount,1,'one native reveal after keyboard viewport settles');
@@ -148,6 +168,7 @@ assert.equal(nativeRevealCount,1,'scroll events must not repeatedly reveal the s
 assert.equal(scrollCalls.length,0,'visualViewport.offsetTop changes do not trigger page alignment');
 assertPanelUnchanged();
 assert.equal(Math.round(Number.parseFloat(sheet.style.height)),103);
+assert.equal(Math.round(Number.parseFloat(sheet.style.top)),210,'sheet follows normal page scroll without moving panel');
 document.activeElement=null;sheet.emit('focusout');flush();
 assert.equal(sheet.style.position,'absolute','Done keeps keyboard-safe sheet until viewport recovers');
 assertPanelUnchanged();
@@ -160,9 +181,9 @@ assertPanelUnchanged();
 
 // Changing fields while keyboard stays visible must not reset the page.
 document.activeElement=field;sheet.emit('focusin',{target:field});flush();
-window.scrollY=769;vv.height=313;vv.offsetTop=328;vv.emit('resize');flush();
+window.scrollY=580;vv.height=313;vv.offsetTop=0;vv.emit('resize');flush();
 sheet.emit('focusout');sheet.emit('focusin',{target:field});flush();
-assert.equal(window.scrollY,769,'field change does not force page scroll');
+assert.equal(window.scrollY,580,'field change does not force page scroll');
 runTimers(90);
 assert.equal(nativeRevealCount,2,'the newly selected field gets a single native reveal');
 assert.equal(window.scrollY,380,'native reveal is allowed to scroll the page');
@@ -186,7 +207,7 @@ assertPanelUnchanged();
 motion.destroy();
 binding.destroy();
 assertPanelUnchanged();
-assert.equal(window.scrollY,769,'editor removal does not restore scroll before keyboard recovery');
+assert.equal(window.scrollY,580,'editor removal does not restore scroll before keyboard recovery');
 vv.height=641;vv.offsetTop=0;vv.emit('resize');flush();
 assert.equal(window.scrollY,372,'editor removal restores normal page position after keyboard closes');
 assertPanelUnchanged();
