@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {attachEditorKeyboardLayout,coveredFieldScrollDelta,keyboardTrailingSpace,gamePanelTopScrollY} from '../komorebi3d/maps/editor-keyboard-layout.js';
 import {attachSheetMotion} from '../komorebi3d/maps/sheet-motion.js';
+import {tagFieldLocation} from '../komorebi3d/maps/editor-keyboard-diagnostics.js';
 
 // Real-device geometry showed a focused input ending at y=362 while
 // Safari's keyboard reduced visual viewport to 313. Move only the covered
@@ -45,6 +46,24 @@ class Node{
  getBoundingClientRect(){return {top:0,bottom:0,height:0};}
 }
 globalThis.Element=Node;
+// The opt-in trace records only a 1-based tag row and left/right column.
+// Both fields are deliberately unreadable so a value access fails the test.
+const diagRows=new Node(),diagRow1=new Node(),diagRow2=new Node();
+diagRows.appendChild(diagRow1);diagRows.appendChild(diagRow2);
+const diagInputs=[new Node(),new Node(),new Node(),new Node()];
+diagRow1.appendChild(diagInputs[0]);diagRow1.appendChild(diagInputs[1]);
+diagRow2.appendChild(diagInputs[2]);diagRow2.appendChild(diagInputs[3]);
+for(const row of [diagRow1,diagRow2])row.closest=selector=>selector==='.komo-tag-row'?row:null;
+for(const input of diagInputs){
+ input.closest=selector=>selector==='.komo-tag-row'?input.parentElement:null;
+ Object.defineProperty(input,'value',{get(){throw Error('diagnostic must not read tag values');}});
+}
+const diagSheet={contains(el){return el===diagRow1||el===diagRow2||diagInputs.includes(el);}};
+assert.equal(tagFieldLocation(diagInputs[0],diagSheet),'row1:left-key');
+assert.equal(tagFieldLocation(diagInputs[1],diagSheet),'row1:right-value');
+assert.equal(tagFieldLocation(diagInputs[2],diagSheet),'row2:left-key');
+assert.equal(tagFieldLocation(diagInputs[3],diagSheet),'row2:right-value');
+assert.equal(tagFieldLocation(new Node(),diagSheet),'-','unrelated form fields are not mislabelled');
 let frameID=0;const frames=new Map();
 globalThis.requestAnimationFrame=fn=>{const id=++frameID;frames.set(id,fn);return id;};
 globalThis.cancelAnimationFrame=id=>frames.delete(id);
