@@ -31,6 +31,7 @@ jobs:
           node --check komorebi3d/maps/sheet-scroll-guard.js
           node tests/editor-keyboard-layout.mjs
           node tests/sheet-gesture-ownership.mjs
+          node tests/editor-preview-camera-window.mjs
           node komorebi3d/build-ui.mjs --check
       - name: Prepare Pages artifact without writing Client ID to git
         env:
