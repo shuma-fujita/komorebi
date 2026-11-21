@@ -81,9 +81,10 @@ handle.emit('pointerup',pointer(105));
 assert.equal(motion.getMode(),'full','drag up expands the existing sheet');
 handle.emit('pointerdown',pointer(80,2));
 assert.equal(handle.pointerCaptures.has(2),true);
-motion.setKeyboardViewport(313,0);
-assert.equal(handle.pointerCaptures.has(2),false,'keyboard reflow releases active grip pointer');
-motion.setKeyboardViewport(null);
+// Cancelling a pointer must release the grip without touching sheet geometry.
+handle.emit('pointercancel',pointer(80,2));
+assert.equal(handle.pointerCaptures.has(2),false,'pointercancel releases the active grip');
+assert.equal(sheet.style.height,'100%','gesture cancel keeps settled full mode');
 handle.emit('pointerdown',pointer(80));
 handle.emit('pointermove',pointer(400));
 handle.emit('pointerup',pointer(400));
