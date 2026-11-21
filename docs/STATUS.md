@@ -2,6 +2,8 @@
 
 
 
+> **2026-11-21 GitHub Pages deploy実行失敗の原因調査・ジョブ分離（main反映／新実行の公開成否未確認）：** [Actions実行 #44852925924](https://github.com/shuma-fujita/komorebi/actions/runs/44852925924) の生ログでは、構文・UI・回帰テスト・成果物アップロードはすべてPASS、`actions/deploy-pages@v4` が同一runでアップロードした `github-pages` アーティファクトを最初は0件と判定し失敗。失敗ジョブを再実行すると、同run内の旧成果物と新成果物が2件となり、複数存在エラーで再失敗。アプリ修正ではなく、**ビルドとデプロイを別jobへ分離し `deploy.needs: build` でアップロード完了への依存を明示**した。GitHub mainへのワークフロー変更は反映、変更コミットが新しいrunを生成する。新runのActions成功／GitHub Pages実際の公開は未確認。EngineやUIやゲームには未変更。
+
 > **2026-11-21 ビルタグ編集・iPhoneキーボード中の高速画面往復を原因再現して修正（GitHub main反映／実機再確認待ち）：** ユーザー実機スクショで、nameフォーカス中にA/B建物プレビューが2つの位置を高速で交互表示し入力欄が見えない問題を確認。直前のパネル内シート方式で新設した `editor-keyboard-layout.js` は、`window.scroll`/`visualViewport.scroll` のたびに `window.scrollTo(scrollY+gameTop-vv.offsetTop)` を実行。Safariのページスクロールに応じ `visualViewport.offsetTop` が変わる条件を**実コードで模擬**すると、`scrollY=52→380→52→380…` の連続往復を再現できた。修正は**キーボード表示中のJSによるページスクロール補正を完全撤去**し、Safariのスクロールへ追従する。キーボードサイズ変化後90ms落ち着いてから選択中タグ行をシート内部で中央寄せし、入力欄が画面外の場合だけ標準 `scrollIntoView` をフォーカスごとに一度呼ぶ。✓後のキーボード消失時は元のページスクロール位置へ戻す。ゲームパネル/Canvas/host の位置・高さは不変で、ボトムシートはゲームパネル内、形状は `sheet-motion.js` の単独管理、つまみの上下スワイプ継続、追加ボタンなし。リグレッションテストを `vv.offsetTop` 連動時でも編集中に `window.scrollTo` が発火しないこと／連続位置往復しないこと／入力欄の一度限りのブラウザ標準スクロール／✓後復元／ゲームスタイル不変へ修正し、JavaScript模擬テスト2件PASS。**GitHub Actionsの実行結果、GitHub Pagesデプロイ完了、SafariおよびChatGPT内ブラウザ実機改善は未確認。**
 
 
