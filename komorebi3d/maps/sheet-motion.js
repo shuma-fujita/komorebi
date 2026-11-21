@@ -21,6 +21,12 @@ export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
  function stopAnimation(){
   if(animation){animation.cancel();animation=null;}
  }
+ function cancelDrag(){
+  if(!drag)return;
+  const id=drag.id;
+  drag=null;
+  if(handle.hasPointerCapture?.(id))handle.releasePointerCapture(id);
+ }
  function drawSettled(){
   const g=geometry(mode);
   sheet.style.position=viewportHeight===null?'relative':'absolute';
@@ -133,12 +139,12 @@ export function attachSheetMotion(sheet,handle,onDismiss,onModeChange=null){
    if(viewportHeight===next&&gameTop===top)return;
    viewportHeight=next;gameTop=top;
    if(animation)stopAnimation();
-   if(drag)drag=null;
+   cancelDrag();
    drawSettled();
   },
   destroy(){
    if(disposed)return;
-   disposed=true;drag=null;
+   disposed=true;cancelDrag();
    stopAnimation();
    handle.removeEventListener('pointerdown',onPointerDown);
    handle.removeEventListener('pointermove',onPointerMove);
