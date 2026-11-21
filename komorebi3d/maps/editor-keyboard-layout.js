@@ -11,12 +11,6 @@ export function coveredFieldScrollDelta(fieldBottom,visibleBottom,margin=24){
 export function keyboardTrailingSpace(sheetBottom,visibleBottom,margin=24){
  return Math.max(0,Math.ceil(sheetBottom-visibleBottom+margin));
 }
-// Translate the existing normal-flow game panel to the top of the visible
-// browser viewport by scrolling the DOCUMENT. Never change panel positioning.
-// Rect coordinates are layout-viewport-relative; VisualViewport may be offset.
-export function gamePanelTopScrollY(scrollY,gameTop,visualOffsetTop=0){
- return Math.max(0,Math.round(scrollY+gameTop-visualOffsetTop));
-}
 export function attachEditorKeyboardLayout({host,mask,sheet}){
  const game=host.closest('.landscape-game');
  const vv=window.visualViewport;
@@ -96,17 +90,8 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
  function onFocusIn(event){
   if(!isField(event.target)||!sheet.contains(event.target))return;
   if(!focusOrigin)focusOrigin={x:window.scrollX||0,y:window.scrollY};
-  const newField=focusedField!==event.target;
   focusedField=event.target;pendingBlur=false;
   if(blurTimer){clearTimeout(blurTimer);blurTimer=0;}
-  if(newField&&game){
-   // One intentional document scroll when an input receives focus.
-   // Do not chase scrolling from keyboard resize, typing or visualViewport.
-   const gameTop=game.getBoundingClientRect().top;
-   const destination=gamePanelTopScrollY(window.scrollY,gameTop,vv?.offsetTop??0);
-   if(Math.abs(window.scrollY-destination)>1)
-    window.scrollTo(window.scrollX||0,destination);
-  }
   // Switching to a different field while the keyboard is already open.
   if(mobile&&keyboardOpen())scheduleReveal();
  }
