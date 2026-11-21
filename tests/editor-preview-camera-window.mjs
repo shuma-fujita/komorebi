@@ -24,12 +24,14 @@ function imageCenterY(camera){
  return (1-dot(ray,up)/dot(ray,forward)/fovHalf)/2;
 }
 const near=(a,b,comment)=>assert.ok(Math.abs(a-b)<1e-9,comment+': '+a+' vs '+b);
+// The WebGL canvas stays 100% high. A/B building framing is always in
+// the upper 30% of that canvas, regardless of whether iOS shows a keyboard.
 const original=buildingEditorCamera(building,.5,{yaw:0,zoom:1});
-const explicitOriginal=buildingEditorCamera(building,.5,{yaw:0,zoom:1},BUILDING_PREVIEW_RATIO,0);
-assert.deepEqual(original,explicitOriginal,'original 30% framing must not change');
-near(imageCenterY(original),.15,'unscrolled game preview centers at 15% canvas height');
-for(const [start,ratio] of [[.25,.3],[.4,.3],[.65,.3],[.45,.15]]){
- const shifted=buildingEditorCamera(building,.5,{yaw:0,zoom:1},ratio,start);
- near(imageCenterY(shifted),start+ratio/2,'building centers in panel visible slice');
+const explicit=buildingEditorCamera(building,.5,{yaw:0,zoom:1},BUILDING_PREVIEW_RATIO);
+assert.deepEqual(original,explicit,'the default preview ratio stays at 30%');
+near(imageCenterY(original),.15,'building center stays at 15% of full canvas');
+for(const [yaw,zoom] of [[0,1],[.8,1],[1.5,1],[.3,.7],[2.6,2.2]]){
+ const camera=buildingEditorCamera(building,.5,{yaw,zoom});
+ near(imageCenterY(camera),.15,'3D preview is always framed in panel top 30%');
 }
-console.log('A/B camera visible-slice framing: PASS');
+console.log('unchanged A/B 30%-of-canvas camera framing: PASS');
