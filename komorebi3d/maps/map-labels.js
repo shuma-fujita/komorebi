@@ -1,7 +1,7 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=lazy-oauth-config-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
-import {attachSheetMotion} from './sheet-motion.js?v=sheet-tap-controls-20261121';
+import {attachSheetMotion} from './sheet-motion.js?v=ratio-centered-20261121';
 import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=editor-session-pinned-20261121';
 import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
@@ -127,39 +127,17 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   const form=document.createElement('form');
   form.style.cssText='box-sizing:border-box;width:100%;height:'+(BUILDING_SHEET_RATIO*100)+'%;max-height:'+(BUILDING_SHEET_RATIO*100)+'%;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#f8fcfa;color:#18352f;border-radius:18px 18px 0 0;font:14px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 -10px 35px #06140d66;';
   const handle=document.createElement('div');
-  // Mobile in-app browsers can reserve downward swipes to dismiss their
-  // native browser sheet. Keep drag gestures, but provide true tap controls
-  // that cannot be mistaken for a pull-down browser gesture.
-  handle.setAttribute('role','group');
-  handle.setAttribute('aria-label','ビル編集シートの操作');
-  handle.style.cssText='position:sticky;top:0;z-index:5;box-sizing:border-box;height:36px;margin:0 -16px 6px;padding:0 8px;display:flex;align-items:center;justify-content:space-between;background:#152c26;border-radius:18px 18px 0 0;touch-action:none;overscroll-behavior:none;cursor:grab;user-select:none;-webkit-user-select:none;';
+  handle.setAttribute('role','button');
+  handle.setAttribute('aria-label','上にスワイプで全画面、下にスワイプで半画面または閉じる');
+  handle.setAttribute('tabindex','0');
+  handle.style.cssText='position:sticky;top:0;z-index:5;box-sizing:border-box;height:36px;margin:0 -16px 6px;padding:0 16px;display:flex;align-items:center;justify-content:center;background:#152c26;border-radius:18px 18px 0 0;touch-action:none;overscroll-behavior:none;cursor:grab;user-select:none;-webkit-user-select:none;';
   const grip=document.createElement('span');
   grip.className='komo-grip';
-  grip.style.cssText='display:block;position:absolute;left:50%;transform:translateX(-50%);width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
-  const handleActionStyle='box-sizing:border-box;flex:0 0 auto;min-width:74px;min-height:30px;padding:3px 7px;border:1px solid #71948a;border-radius:8px;background:#28483e;color:#eafff2;font:700 11px/1.1 system-ui;touch-action:manipulation;cursor:pointer;';
-  const toggleHandle=document.createElement('button');
-  toggleHandle.type='button';toggleHandle.className='komo-sheet-toggle';
-  toggleHandle.style.cssText=handleActionStyle;
-  const closeHandle=document.createElement('button');
-  closeHandle.type='button';closeHandle.className='komo-sheet-close';
-  closeHandle.style.cssText=handleActionStyle;
-  closeHandle.textContent='× 閉じる';
-  closeHandle.setAttribute('aria-label','ビルタグ編集を閉じる');
-  const syncHandle=()=>{
-   const full=editorMotion?.getMode()==='full';
-   toggleHandle.textContent=full?'↓ 半画面':'↑ 全画面';
-   toggleHandle.setAttribute('aria-label',full?'ビル編集シートを半画面に縮小':'ビル編集シートを全画面に拡大');
-  };
-  handle.append(toggleHandle,grip,closeHandle);
-  toggleHandle.addEventListener('click',event=>{event.stopPropagation();editorMotion?.toggle();});
-  closeHandle.addEventListener('click',event=>{event.stopPropagation();closeEditor();});
-  // The center grip still owns swipe gestures; tapping either button never
-  // starts a drag or pointer capture on the sheet-motion controller.
-  editorMotion=attachSheetMotion(form,handle,closeEditor,()=>{
-   syncHandle();
-   editorKeyboardLayout?.refresh();
-  });
-  syncHandle();
+  grip.style.cssText='display:block;width:44px;height:5px;border-radius:99px;background:#a9b8b0;pointer-events:none;';
+  handle.appendChild(grip);
+  handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();editorMotion?.toggle();}else if(event.key==='Escape'){event.preventDefault();closeEditor();}});
+  // Motion controller owns grip dragging, fling velocity and sheet transitions.
+  editorMotion=attachSheetMotion(form,handle,closeEditor,()=>editorKeyboardLayout?.refresh());
   form.appendChild(handle);
   const title=document.createElement('h3');
   title.textContent=item.name||'OSMの建物';
