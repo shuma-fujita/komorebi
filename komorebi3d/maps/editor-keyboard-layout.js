@@ -25,6 +25,14 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
   surfaceMaxWidth:surface.style.maxWidth,surfaceFlex:surface.style.flex};
  let focused=false,active=false,frame=0,gameHeight=0,previewHeight=0;
  let sheetAtFocus=null;
+ let diagnostic=null,disposed=false;
+ // Optional device-only trace; the normal game never loads this module.
+ if(window.location?.search&&new URLSearchParams(window.location.search).get('editorDiag')==='1'){
+  import('./editor-keyboard-diagnostics.js?v=trace-20261121').then(mod=>{
+   if(disposed||!mask.isConnected)return;
+   diagnostic=mod.attachEditorKeyboardDiagnostics({game,host,mask,sheet});
+  }).catch(error=>console.warn('editor trace unavailable',error));
+ }
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
  function restore(){
   if(!active)return;
@@ -116,6 +124,8 @@ export function attachEditorKeyboardLayout({host,mask,sheet,previewTouch,getShee
  vv.addEventListener('scroll',schedule);
  window.addEventListener('resize',schedule);
  return {refresh:schedule,destroy(){
+  disposed=true;
+  diagnostic?.destroy();
   sheet.removeEventListener('focusin',onFocusIn);
   sheet.removeEventListener('focusout',onFocusOut);
   vv.removeEventListener('resize',schedule);
