@@ -9,7 +9,7 @@ import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO}
 assert.equal(keyboardSheetHeight(313,210,488),103);
 assert.equal(keyboardSheetHeight(641,210,488),431);
 assert.equal(keyboardSheetHeight(313,210,488,40),63);
-assert.equal(focusedTagRowScrollDelta(210,313,230,290),-7.5);
+assert.equal(focusedTagRowScrollDelta(600,800,680,760),2);
 assert.deepEqual(sheetGeometry(700,'half'),{top:210,height:490});
 assert.deepEqual(sheetGeometry(700,'half',313),{top:210,height:103});
 assert.deepEqual(sheetGeometry(700,'full',313),{top:0,height:313});
