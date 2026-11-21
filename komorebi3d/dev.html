@@ -676,9 +676,8 @@ import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-init
 import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=matsudo-2km-ab-20261120";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=building-preview-source-20261120";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels} from "./maps/map-labels.js?v=keyboard-preview-intersection-20261121";
-import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=keyboard-preview-slice-20261121";
-import {BUILDING_PREVIEW_RATIO} from "./maps/building-editor-layout.js?v=ratio-centered-20261121";
+import {createMapLabels} from "./maps/map-labels.js?v=tag-focus-scroll-only-20261121";
+import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=tag-focus-scroll-only-20261121";
 window.__komorebiModuleStarted=true;
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
 
@@ -1124,14 +1123,6 @@ function setEditorDraftChange(draft){
  });
 }
 let editorPreviewView={yaw:0,zoom:1};
-let editorPreviewRegion=null;
-function setEditorPreviewRegion(region){
- // This describes the visible slice of the UNCHANGED game canvas.
- // It affects only the isolated building-preview camera.
- editorPreviewRegion=region&&Number.isFinite(region.startRatio)&&Number.isFinite(region.heightRatio)
-  ?{startRatio:Math.max(0,region.startRatio),heightRatio:Math.max(0,region.heightRatio)}
-  :null;
-}
 function setEditorPreviewGesture({yaw,zoom}){
  if(activeOsmEditors===0||!editorBuildingPreview)return;
  if(Number.isFinite(yaw))editorPreviewView.yaw=yaw;
@@ -1165,7 +1156,6 @@ function setOsmEditorOpen(open,details=null){
   editorPreviewContext=null;
   editorBuildingPreview=null;
   editorPreviewView={yaw:0,zoom:1};
-  editorPreviewRegion=null;
   for(const screen of ['A','B'])matsudoLabels[screen]?.setPreviewActive(false);
   if(modeBeforeOsmEditor!==null){
    const restoreMode=modeBeforeOsmEditor;
@@ -1753,8 +1743,7 @@ function productRenderSnapshot(screen,frameId){
   // Use identical camera target and distance even when the right building grows.
   const sharedCameraPreview={...editorBuildingPreview.before,
    height:Math.max(editorBuildingPreview.before.height,editorBuildingPreview.after.height)};
-  const camera=buildingEditorCamera(sharedCameraPreview,aspect,editorPreviewView,
-   editorPreviewRegion?.heightRatio||BUILDING_PREVIEW_RATIO,editorPreviewRegion?.startRatio||0);
+  const camera=buildingEditorCamera(sharedCameraPreview,aspect,editorPreviewView);
   const objects=preview.geometry.map((geometry,i)=>({
    id:'editor-building:'+screen+':'+i,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true
   }));
@@ -2129,7 +2118,7 @@ function applyMatsudoScreenLabels(screen){
  matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;
  const data=matsudoMaps[screenConfigs[screen].map];
  if(data&&gameView?.surface){
-  matsudoLabels[screen]=createMapLabels(gameView.surface,{screen,onEditorStateChange:setOsmEditorOpen,onEditorPreviewGesture:setEditorPreviewGesture,onEditorDraftChange:setEditorDraftChange,onEditorPreviewRegionChange:setEditorPreviewRegion});
+  matsudoLabels[screen]=createMapLabels(gameView.surface,{screen,onEditorStateChange:setOsmEditorOpen,onEditorPreviewGesture:setEditorPreviewGesture,onEditorDraftChange:setEditorDraftChange});
   matsudoLabels[screen].setLabels(data.labels);
   matsudoLabels[screen].setBuildingFeatures(data.mapFeatures);
   matsudoLabels[screen].setDebugAnchors(labelDebugVisible);
