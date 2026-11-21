@@ -2,7 +2,7 @@
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=lazy-oauth-config-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=tag-focus-scroll-only-20261121';
-import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=tag-focus-scroll-only-20261121';
+import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=safari-focus-prevent-scroll-20261121';
 import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
@@ -137,7 +137,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   handle.appendChild(grip);
   handle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();editorMotion?.toggle();}else if(event.key==='Escape'){event.preventDefault();closeEditor();}});
   // Motion controller owns grip dragging, fling velocity and sheet transitions.
-  editorMotion=attachSheetMotion(form,handle,closeEditor,()=>editorKeyboardLayout?.refresh());
+  editorMotion=attachSheetMotion(form,handle,closeEditor);
   form.appendChild(handle);
   const title=document.createElement('h3');
   title.textContent=item.name||'OSMの建物';
@@ -295,7 +295,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
    v.readOnly=!editable;
    // Existing OSM keys cannot be renamed. Tapping the key focuses its value
    // immediately so a single tap opens the iPhone software keyboard.
-   if(key&&editable)k.addEventListener('click',()=>v.focus());
+   if(key&&editable)k.addEventListener('click',()=>v.focus({preventScroll:true}));
    row.append(k,v);rows.appendChild(row);
   }
   const tagsHeader=document.createElement('p');
@@ -304,7 +304,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   tagsHeader.style.cssText='font-weight:700;margin:12px 0 4px;';
   const add=document.createElement('button');add.type='button';add.textContent='＋ タグを追加';
   add.className='komo-add-tag';
-  add.addEventListener('click',()=>{addRow('','',true);rows.lastElementChild?.firstElementChild?.focus();});
+  add.addEventListener('click',()=>{addRow('','',true);rows.lastElementChild?.firstElementChild?.focus({preventScroll:true});});
   const error=document.createElement('p');
   error.style.cssText='color:#a52f2f;font-size:12px;min-height:1em;';
   const review=document.createElement('div');review.hidden=true;review.className='komo-review';
@@ -545,7 +545,7 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   setSource(linkedTestTarget?'test':'production');
   form.style.zIndex='2';
   mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
-  editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form,handle});
+  editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form});
   editorScrollGuard=guardSheetScroll(mask,form,handle);
   const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
   const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
