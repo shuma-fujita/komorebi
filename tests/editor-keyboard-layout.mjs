@@ -39,7 +39,7 @@ const vv=emitter({height:530,offsetTop:0});
 globalThis.window=emitter({visualViewport:vv,scrollY:450,matchMedia:()=>({matches:true}),location:{search:''}});
 const body=new Node();body.style.position='';body.style.overflow='';
 globalThis.document={body,activeElement:null};
-const game=new Node();
+const game=new Node();game.style.position='';game.style.top='';
 const slot=new Node();slot.style.overflow='hidden';
 game.getBoundingClientRect=()=>({top:160,height:800});
 game.closest=sel=>sel==='.panel-slot-main'?slot:null;
