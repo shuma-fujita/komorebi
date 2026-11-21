@@ -1,5 +1,15 @@
 // Temporary opt-in geometry trace: activate with ?editorDiag=1.
-// Records only layout numbers and focus state; never reads tag values.
+// Records layout numbers and tag row/column focus targets, never tag values.
+// Values and key names are intentionally never inspected. Row numbers are 1-based.
+export function tagFieldLocation(target,sheet){
+ if(!(target instanceof Element)||!sheet.contains(target))return '-';
+ const row=target.closest('.komo-tag-row');
+ if(!row||!sheet.contains(row))return 'other';
+ const siblings=row.parentElement?.children;
+ const rowNumber=siblings?Array.prototype.indexOf.call(siblings,row)+1:0;
+ const column=target===row.children[0]?'left-key':target===row.children[1]?'right-value':'other';
+ return `row${rowNumber||'?'}:${column}`;
+}
 export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
  const vv=window.visualViewport,slot=game.closest('.panel-slot-main');
  if(!vv)return {destroy(){}};
@@ -20,23 +30,29 @@ export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
  const trace=[];let shown=false,raf=0,disposed=false;
  const postInputTimers=new Set();
  const toNum=n=>Number.isFinite(n)?Math.round(n):'-';
- const snap=event=>{
+ const snap=(event,target=null)=>{
   if(disposed)return;
   const g=game.getBoundingClientRect(),sl=slot?.getBoundingClientRect(),sh=sheet.getBoundingClientRect();
   const active=document.activeElement;
   const field=active&&sheet.contains(active)&&active.getBoundingClientRect?active.getBoundingClientRect():null;
   const t=toNum(performance.now());
-  trace.push(`${t} ${event} | page=${toNum(window.scrollY)}, vvTop=${toNum(vv.offsetTop)}, vvH=${toNum(vv.height)}, winH=${toNum(window.innerHeight)} | slotTop=${toNum(sl?.top)}, gameTop=${toNum(g.top)}, gameH=${toNum(g.height)}, sheetTop=${toNum(sh.top)}, sheetH=${toNum(sh.height)}, sheetScroll=${toNum(sheet.scrollTop)}, sheetScrollMax=${toNum(Math.max(0,sheet.scrollHeight-sheet.clientHeight))}, fieldTop=${toNum(field?.top)}, fieldBottom=${toNum(field?.bottom)}, htmlScroll=${toNum(document.documentElement.scrollTop)}, vvPageTop=${toNum(vv.pageTop)}, gamePos=${getComputedStyle(game).position}, bodyPos=${getComputedStyle(document.body).position}`);
+  trace.push(`${t} ${event} | target=${tagFieldLocation(target,sheet)}, active=${tagFieldLocation(active,sheet)} | page=${toNum(window.scrollY)}, vvTop=${toNum(vv.offsetTop)}, vvH=${toNum(vv.height)}, winH=${toNum(window.innerHeight)} | slotTop=${toNum(sl?.top)}, gameTop=${toNum(g.top)}, gameH=${toNum(g.height)}, sheetTop=${toNum(sh.top)}, sheetH=${toNum(sh.height)}, sheetScroll=${toNum(sheet.scrollTop)}, sheetScrollMax=${toNum(Math.max(0,sheet.scrollHeight-sheet.clientHeight))}, fieldTop=${toNum(field?.top)}, fieldBottom=${toNum(field?.bottom)}, htmlScroll=${toNum(document.documentElement.scrollTop)}, vvPageTop=${toNum(vv.pageTop)}, gamePos=${getComputedStyle(game).position}, bodyPos=${getComputedStyle(document.body).position}`);
   if(trace.length>120)trace.shift();
   if(shown){pre.textContent=trace.slice(-32).join('\n');pre.scrollTop=pre.scrollHeight;}
  };
- const sample=event=>{
-  snap(event);
-  if(!raf)raf=requestAnimationFrame(()=>{raf=0;snap(event+':frame');});
+ const sample=(event,target=null)=>{
+  snap(event,target);
+  if(!raf)raf=requestAnimationFrame(()=>{raf=0;snap(event+':frame',target);});
  };
- const onFocusIn=()=>{sample('focusin');};
- const onFocusOut=()=>{
-  sample('focusout');
+ // Capture the original touched column BEFORE the key's click handler
+ // can redirect focus to the value input. Never preventDefault or focus.
+ const onPointerDown=event=>{
+  if(event.target instanceof Element&&event.target.closest('.komo-tag-row'))
+   sample('pointerdown',event.target);
+ };
+ const onFocusIn=event=>{sample('focusin',event.target);};
+ const onFocusOut=event=>{
+  sample('focusout',event.target);
   for(const delay of [100,350,750,1500])
    setTimeout(()=>{if(!disposed)snap('after-done+'+delay);},delay);
   if(!shown){shown=true;pre.style.display='block';expand.textContent='閉じる';pre.textContent=trace.slice(-32).join('\n');}
@@ -70,6 +86,7 @@ export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
   try{await navigator.clipboard.writeText(trace.join('\n'));copy.textContent='コピー済み';}
   catch{copy.textContent='コピー不可・スクショでOK';}
  });
+ sheet.addEventListener('pointerdown',onPointerDown,true);
  sheet.addEventListener('focusin',onFocusIn);
  sheet.addEventListener('focusout',onFocusOut);
  sheet.addEventListener('beforeinput',onBeforeInput);
@@ -82,6 +99,7 @@ export function attachEditorKeyboardDiagnostics({game,host,mask,sheet}){
  snap('editor-open');
  return {destroy(){
   disposed=true;
+  sheet.removeEventListener('pointerdown',onPointerDown,true);
   sheet.removeEventListener('focusin',onFocusIn);
   sheet.removeEventListener('focusout',onFocusOut);
   sheet.removeEventListener('beforeinput',onBeforeInput);
