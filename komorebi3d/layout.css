@@ -5,6 +5,8 @@
 .panel-slot-top>.build-info{margin:0}
 .panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
 .panel-slot-bottom{margin-top:var(--ui-panel-gap)}
+.panel-slot-storage{margin-top:var(--ui-panel-gap);min-height:180px}
+.panel-slot-storage[data-panel="empty"]{min-height:80px}
 .panel-slot-bottom>[data-panel-id]{margin-top:0}
 
 /* Shared responsive geometry. The nearest inline-size container is

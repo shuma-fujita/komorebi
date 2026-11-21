@@ -44,38 +44,43 @@ assert.equal(reconcilePendingOsmTagChanges(map(2,17,next),{source:'new'}),1);
 assert.equal(data.size,0);
 assert.equal(getSavedOsmTagChange('way',2),null);
 
+// Old-format keys are visible to the administrator but never moved or
+// silently deleted by current OSM code.
 const oldProduction='komorebi3d:osm-production-pending:v1:';
 const oldReview='komorebi3d:osm-review-storage-check:v1:';
 data.set(oldReview+'way/3',JSON.stringify({
  type:'way',id:'3',version:null,changes:next,tags:next,baseTags:base
 }));
-assert.equal(getSavedOsmTagChange('way',3).osmVersion,null);
-assert.equal(data.size,1);
-assert.equal(data.has(oldReview+'way/3'),false);
-assert.equal(data.has(osmTagChangeStorageKey('way','3')),true);
-data.clear();
 data.set(oldProduction+'way/4',JSON.stringify({
  type:'way',id:'4',version:13,changes:next
 }));
-assert.equal(getSavedOsmTagChange('way',4).osmVersion,13);
-assert.equal(data.size,1);
-assert.equal(data.has(oldProduction+'way/4'),false);
-data.clear();
-data.set(oldProduction+'way/5',JSON.stringify({
- type:'way',id:'5',version:17,changes:{name:'sent'}
-}));
-data.set(oldReview+'way/5',JSON.stringify({
- type:'way',id:'5',version:null,changes:next,
- tags:{...next,name:'local'},baseTags:{...base,name:'original'}
-}));
-const merged=getSavedOsmTagChange('way',5);
-assert.equal(merged.osmVersion,null);
-assert.equal(merged.confirmedOsm.osmVersion,17);
-assert.equal(data.size,1,'Two legacy sources must merge to one key without losing either');
-assert.equal(getAllSavedOsmTagChanges().length,1);
-assert.equal(reconcilePendingOsmTagChanges(map(5,18,{name:'sent'}),{source:'new'}),1);
-assert.equal(getSavedOsmTagChange('way',5).confirmedOsm,null);
-assert.equal(data.size,1,'A local draft survives reconciling its nested confirmed write');
-releaseStoredOsmTagChange('way',5);
+assert.equal(getSavedOsmTagChange('way',3),null,'Legacy review must never be migrated');
+assert.equal(getSavedOsmTagChange('way',4),null,'Legacy production must never be migrated');
+assert.equal(getAllSavedOsmTagChanges().length,0,'Only canonical v2 keys are active');
+assert.equal(data.size,2,'No old data should be removed without an explicit delete');
+releaseStoredOsmTagChange('way',3);
+assert.equal(data.size,2,'Releasing v2 never removes the old key');
+
+const {listLocalStorage,deleteLocalStorageKey,keyDescription}
+ =await import('../komorebi3d/local-storage-panel.js');
+assert.deepEqual(listLocalStorage().map(entry=>entry.key).sort(),
+ [oldProduction+'way/4',oldReview+'way/3'].sort());
+assert.match(keyDescription(oldProduction+'way/4'),/旧形式/);
+const reviewed=data.get(oldReview+'way/3');
+assert.throws(()=>deleteLocalStorageKey(oldReview+'way/3','stale'),/変更されました/);
+assert.equal(data.size,2,'Failed confirmation must preserve data');
+const removed=deleteLocalStorageKey(oldReview+'way/3',reviewed);
+assert.equal(removed.key,oldReview+'way/3');
+assert.equal(data.size,1,'Only the selected legacy key is deleted');
+deleteLocalStorageKey(oldProduction+'way/4',data.get(oldProduction+'way/4'));
 assert.equal(data.size,0);
-console.log('OSM unified storage: test save/release, confirmed reconciliation, and migration PASS');
+
+// Removing a canonical key through the manager invokes the same release API.
+saveStoredOsmTagChange(draft(6));
+const key=osmTagChangeStorageKey('way','6');
+const snapshotValue=data.get(key);
+const administrative=deleteLocalStorageKey(key,snapshotValue);
+assert.deepEqual(administrative.osm,{type:'way',id:'6'});
+assert.equal(data.has(key),false);
+assert.equal(getSavedOsmTagChange('way',6),null);
+console.log('OSM unified storage + localStorage manager: save, release, reconciliation, no migration, individual deletion PASS');

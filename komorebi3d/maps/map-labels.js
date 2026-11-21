@@ -7,11 +7,11 @@ import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-lay
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
-import {getSavedOsmTagChange,getAllSavedOsmTagChanges} from './osm-pending-changes.js?v=unified-osm-storage-v2-20261122';
+import {getSavedOsmTagChange,getAllSavedOsmTagChanges} from './osm-pending-changes.js?v=storage-manager-v1-20261122';
 import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=unified-osm-storage-v2-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
-import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=unified-osm-storage-v2-20261122';
+import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=storage-manager-v1-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
@@ -548,7 +548,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   let pending=null;
   // Both save sources now use one per-element storage key.
   // A local review writes osmVersion=null, never a confirmed OSM version.
-  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending?{...pending,originalTags:baseTags}:pending,onChange:onReviewStorageChange,showInventory:true});
+  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending?{...pending,originalTags:baseTags}:pending,onChange:onReviewStorageChange});
   reviewStorageCheck.section.hidden=true;
   confirm.addEventListener('click',()=>{
    try{
@@ -561,7 +561,6 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     productionReviewNotice.hidden=isTestReview;
     reviewStorageCheck.section.hidden=isTestReview;
     reviewStorageCheck.clearStatus();
-    if(!isTestReview)reviewStorageCheck.refreshInventory();
     testPane.hidden=!isTestReview||!eligible;
     if(isTestReview){
      loaded=null;consent.checked=false;testDetails.hidden=true;

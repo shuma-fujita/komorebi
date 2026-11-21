@@ -1,10 +1,11 @@
-// Live four-slot editor for the development page. Never imports Engine or Game API.
+// Live five-slot editor for the development page. Never imports Engine or Game API.
 // Panels are retained as DOM nodes (including their canvases and event subscriptions).
-export const PANEL_IDS=Object.freeze(['build','game','test','runtime']);
-export const SLOT_IDS=Object.freeze(['top','left','right','bottom']);
+export const PANEL_IDS=Object.freeze(['build','game','test','runtime','storage']);
+export const SLOT_IDS=Object.freeze(['top','left','right','bottom','storage']);
 const LABELS=Object.freeze({
  build:'🧪 開発情報パネル',game:'🎮 ゲーム画面',
- test:'🧪 テスト操作パネル',runtime:'📊 実行ステータス'
+ test:'🧪 テスト操作パネル',runtime:'📊 実行ステータス',
+ storage:'🗄️ localStorage管理'
 });
 
 export function transitionPanelLayout(layout,action){
@@ -220,6 +221,9 @@ export function mountPanelLayoutEditor(doc,initialLayout,{preserveSlotSize=false
   function syncSizes(){
    const grid=main&&doc.defaultView?.getComputedStyle(main).display==='grid';
    for(const [name,slot] of slots){
+    // The fifth panel's localStorage rows load dynamically; do not freeze
+    // its height to an empty initial inventory.
+    if(name==='storage')continue;
     const height=heights.get(name);
     if(!height)continue;
     const flexible=grid&&(name==='left'||name==='right');
@@ -234,7 +238,7 @@ export function mountPanelLayoutEditor(doc,initialLayout,{preserveSlotSize=false
  return {getLayout:()=>({...layout})};
 }
 
-/* Initialize the editor from the panels already placed in the four slots.
+/* Initialize the editor from the panels already placed in the five slots.
    Product's synchronous pre-Engine layout and mock's static layout both work. */
 export function mountDefaultPanelLayoutEditor(doc){
  const initialLayout=Object.fromEntries(SLOT_IDS.map(name=>{

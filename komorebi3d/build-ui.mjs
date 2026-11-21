@@ -18,7 +18,7 @@ const split=css=>{
  const pos=css.indexOf('@media ');
  return pos<0?[css.trim(),'']:[css.slice(0,pos).trim(),css.slice(pos).trim()];
 };
-const cssFiles=['common.css','panels/build.css','panels/game.css','panels/test.css','panels/runtime.css','layout.css'];
+const cssFiles=['common.css','panels/build.css','panels/game.css','panels/test.css','panels/runtime.css','panels/storage.css','layout.css'];
 const cssParts=cssFiles.map(p=>split(read(p)));
 const sharedCSS=[...cssParts.map(x=>x[0]),...cssParts.map(x=>x[1]),read('theme.css').trim()].filter(Boolean).join('\n\n');
 const objectMarker='/* @object:';
@@ -36,7 +36,7 @@ function shell(mock){
  if(mock)build=replaceOnce(build,'id="dev-engine">56bb2bc</code>','id="dev-engine">000000</code>','mock engine placeholder');
  let runtime=fragment('runtime');
  runtime=replaceOnce(runtime,'<!-- @launch-diagnostic -->',mock?'':read('dev-launch-diagnostic.html').trimEnd(),'runtime diagnostic');
- for(const [key,value] of [['build',build],['game',game],['test',fragment('test')],['runtime',runtime]])
+ for(const [key,value] of [['build',build],['game',game],['test',fragment('test')],['runtime',runtime],['storage',fragment('storage')]])
   result=replaceOnce(result,'<!-- @panel:'+key+' -->',value,key+' panel');
  if(/<!-- @panel:|<!-- @game-view -->|<!-- @game-touch -->|@launch-diagnostic|@heading-attrs/.test(result))
   throw Error('Unresolved UI placeholder');
@@ -60,7 +60,7 @@ if((mockShell.match(/id="play-surface"/g)||[]).length!==1)
 const currentDev=dev.slice(0,a+styleOpen.length)+sharedCSS+dev.slice(b,c+bodyOpen.length)+gameShell+dev.slice(script);
 const title='<title>Komorebi 3D DEV｜NPC表示限界テスト</title>';
 let mockHead=dev.slice(0,a+styleOpen.length)+sharedCSS+dev.slice(b,c);
-mockHead=replaceOnce(mockHead,title,'<title>Komorebi 3D｜4パネルモック</title>','mock title');
+mockHead=replaceOnce(mockHead,title,'<title>Komorebi 3D｜5パネルモック</title>','mock title');
 const mockCSS=read('panels/game.mock.css').trim();
 mockHead=replaceOnce(mockHead,styleClose,'\n\n/* Mock-only viewport: replace 3D rendering with a black dummy. */\n'+mockCSS+'\n'+
  '.mock-root .landscape-game .play-surface,.mock-root .play-surface .screen-view{background:#000}\n</style>','mock CSS');

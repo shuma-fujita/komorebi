@@ -1,0 +1,17 @@
+<section id="storage-panel" data-panel-id="storage" class="storage-panel" role="region" aria-label="localStorage管理パネル">
+<div class="storage-panel-header">
+<h2>🗄️ localStorage管理</h2>
+<button id="storage-help-button" type="button" class="panel-help-button storage-help-button" aria-label="このエリアの名前：localStorage管理パネル" aria-describedby="storage-help-overlay"><span>ⓘ</span></button>
+</div>
+<p class="storage-panel-intro">このブラウザで開いているサイトと同じ保存元のlocalStorageを全件表示。キーの確認と個別削除ができます。</p>
+<div class="storage-panel-controls">
+<label for="storage-filter">キーを検索</label>
+<input id="storage-filter" type="search" placeholder="例：osm-tag-changes" autocomplete="off"/>
+<button id="storage-refresh" type="button">↻ 一覧更新</button>
+</div>
+<p id="storage-count" class="storage-count" role="status" aria-live="polite">localStorageを確認中…</p>
+<div id="storage-entries" class="storage-entries" aria-label="保存されているキー一覧"></div>
+<p id="storage-feedback" class="storage-feedback" role="status" aria-live="polite"></p>
+<p class="storage-panel-footer">削除は各キーごとに2段階で確認します。設定やOSMタグ変更のキーを削除すると表示に影響する場合があります。変更が反映されないときはページを再読み込みしてください。</p>
+<div id="storage-help-overlay" class="panel-help-overlay storage-help-overlay" role="tooltip" hidden><div class="panel-help-label storage-help-label">🗄️ localStorage管理</div></div>
+</section>

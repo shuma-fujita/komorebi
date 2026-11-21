@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Komorebi 3D｜4パネルモック</title><style>/* Shared page and panel styles from canonical dev.html. */
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Komorebi 3D｜5パネルモック</title><style>/* Shared page and panel styles from canonical dev.html. */
 /* Mock and product share these game-panel design values. */
 :root{--ui-game-panel-padding:0px;--ui-ab-gap:1px;--ui-ab-inner-radius:6px;--ui-ab-outer-radius:9px;--ui-ab-seam-bg:#edf3eb;--ui-panel-gap:8px;--ui-pc-panel-columns:minmax(0,2fr) minmax(0,1fr);--ui-runtime-columns:repeat(3,minmax(0,1fr));--ui-test-border:#d5c8b6;--ui-test-bg:#f5ede0;--ui-test-text:#554a3f;--ui-test-divider:#dccbb5;--ui-test-button-bg:#fffaf3;--ui-test-button-border:#c4b29c;--ui-test-selected-bg:#d9ebd5;--ui-test-selected-border:#64956c;--ui-test-selected-text:#31563b}
 *{box-sizing:border-box}
@@ -152,6 +152,34 @@ button.slider-step:active{background:#c4dec1}
 .runtime-status{position:relative;--help-button-color:#455a49;--help-overlay-bg:rgba(29,52,35,.42);--help-label-bg:#fffdf3;--help-label-color:#30533b;--help-focus-outline:2px solid #397452;--help-focus-offset:-4px}
 .runtime-status-heading{display:block;min-height:36px;margin:0 0 8px;padding-right:43px;font-size:13px}
 
+/* Fifth panel: origin-wide localStorage inspector and per-key deletion. */
+.storage-panel{position:relative;margin-top:0;padding:12px;border:1px solid var(--g-border,#314c37);border-radius:9px;background:var(--g-surface,#0c1a11);color:var(--g-text,#d3ead7);font:12px/1.6 system-ui,-apple-system,sans-serif;--help-button-color:var(--g-text-dim,#8fac90);--help-overlay-bg:rgba(29,52,35,.6);--help-label-bg:#15241b;--help-label-color:#d3ead7;--help-focus-outline:2px solid #3ee07f;--help-focus-offset:1px}
+.storage-panel-header{position:relative;min-height:38px;padding-right:47px;display:flex;align-items:center}
+.storage-panel-header h2{margin:0;font-size:13px;line-height:1.4;font-weight:750}
+.storage-panel-intro,.storage-panel-footer{margin:5px 0 10px;color:var(--g-text-dim,#9bad9d);font-size:11px;overflow-wrap:anywhere}
+.storage-panel-footer{margin:10px 0 0;font-size:10px}
+.storage-panel-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 8px;align-items:end}
+.storage-panel-controls label{grid-column:1/-1;font-weight:700;font-size:11px}
+.storage-panel-controls input{min-width:0;width:100%;height:43px;padding:9px 11px;font:16px system-ui;border:1px solid var(--g-border-2,#45654b);border-radius:9px;background:#0f2117;color:#e9ffee}
+.storage-panel-controls button{flex:none;width:auto;min-height:43px;padding:8px 12px;touch-action:manipulation;cursor:pointer;font-size:11px}
+.storage-count,.storage-feedback{margin:9px 0 7px;color:var(--g-text-dim,#9bad9d);font-size:11px;overflow-wrap:anywhere}
+.storage-feedback:empty{display:none}
+.storage-entries{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:8px;max-height:440px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px}
+.storage-entry{min-width:0;padding:10px;border:1px solid var(--g-border-2,#395941);border-radius:9px;background:var(--g-surface-2,#13261a);overflow-wrap:anywhere}
+.storage-entry-key{font:700 11px/1.5 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere;white-space:normal;color:#d7ffe5}
+.storage-entry-about{margin:5px 0;color:#afc6b7;font-size:11px}
+.storage-entry-meta{font-size:10px;color:#92b19a;margin:4px 0}
+.storage-entry details{margin-top:6px}
+.storage-entry summary{cursor:pointer;color:#a6efbe;font-size:11px;touch-action:manipulation}
+.storage-entry pre{max-height:170px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:8px;margin:5px 0;border:1px solid #294a35;border-radius:7px;background:#07140b;font:11px/1.5 ui-monospace,monospace}
+.storage-entry .storage-delete{width:auto;min-height:40px;margin-top:8px;padding:8px 12px;border:1px solid #b96d60;background:rgba(193,78,55,.13);color:#ffb5a7;font-size:11px;touch-action:manipulation;cursor:pointer}
+.storage-entry .storage-confirm{padding:9px;margin-top:8px;border:1px solid #d39a65;border-radius:8px;background:#33241a;color:#ffdfb1;font-size:11px}
+.storage-confirm p{margin:0 0 8px;overflow-wrap:anywhere}
+.storage-confirm-actions{display:flex;flex-wrap:wrap;gap:7px}
+.storage-confirm-actions button{flex:none;width:auto;min-height:40px;padding:7px 12px;touch-action:manipulation;cursor:pointer}
+.storage-confirm-actions button.storage-confirm-delete{background:#8c3027;border-color:#ce7061;color:white}
+.storage-entry-empty{padding:12px;border:1px dashed #536c55;border-radius:8px;color:#a9c6af}
+
 /* Shared baseline layout for mock and product.
    Breakpoint-specific rules remain separate until verified on real devices. */
 .landscape-hero{display:flex;flex-direction:column;gap:var(--ui-panel-gap);min-height:0;height:auto;overflow:visible}
@@ -159,6 +187,8 @@ button.slider-step:active{background:#c4dec1}
 .panel-slot-top>.build-info{margin:0}
 .panel-slot-top>[data-panel-id]:not(.build-info){margin:0}
 .panel-slot-bottom{margin-top:var(--ui-panel-gap)}
+.panel-slot-storage{margin-top:var(--ui-panel-gap);min-height:180px}
+.panel-slot-storage[data-panel="empty"]{min-height:80px}
 .panel-slot-bottom>[data-panel-id]{margin-top:0}
 
 /* Shared responsive geometry. The nearest inline-size container is
@@ -290,7 +320,7 @@ button{background:var(--g-surface-2);border-color:var(--g-border-2);color:var(--
 button:hover{border-color:var(--g-accent)}
 
 /* Panel chrome */
-.build-info,.landscape-game,.test-panel,.runtime-status,
+.build-info,.landscape-game,.test-panel,.runtime-status,.storage-panel,
 .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{
  background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text);
  box-shadow:inset 0 1px 0 rgba(62,224,127,.06),0 0 0 1px rgba(0,0,0,.4)}
@@ -398,7 +428,7 @@ button.panel-add-button{color:var(--g-accent)}
 .mock-root .site-heading strong{font-weight:800;letter-spacing:.02em}
 
 /* Panel surfaces: rounder, lighter borders, soft depth */
-.build-info,.landscape-game,.test-panel,.runtime-status,
+.build-info,.landscape-game,.test-panel,.runtime-status,.storage-panel,
 .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{border-radius:var(--m-r);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 30px rgba(0,0,0,.35)}
 .landscape-game .play-surface,.mock-root .landscape-game .play-surface.ab-compare{border-radius:calc(var(--m-r) - 1px)}
 
@@ -537,4 +567,20 @@ button.panel-add-button{color:var(--g-accent)}
 <div class="test-separator"></div><div class="test-section-title">📍 テスト位置へ移動</div>
 <div class="test-locations"><button type="button" data-spot="front">🏡 家の前</button><button type="button" data-spot="tree">🌳 木の近く</button><button type="button" data-spot="side">↔ 壁沿い</button><button type="button" data-spot="cafe">☕ カフェ前</button><button type="button" data-spot="west">西端</button><button type="button" data-spot="east">東端</button><button type="button" data-spot="north">奥端</button><button type="button" data-spot="south">手前端</button></div>
 </div>
-<div id="test-help-overlay" class="panel-help-overlay test-help-overlay" role="tooltip" hidden><div class="panel-help-label test-help-label">🧪 テスト操作パネル</div></div></section></div></div></div><div class="panel-slot panel-slot-bottom" data-panel-slot="bottom"><section data-panel-id="runtime" class="runtime-status" aria-label="実行ステータス"><h2 class="runtime-status-heading">📊 実行ステータス</h2><button type="button" id="runtime-help-button" class="panel-help-button runtime-help-button" aria-label="このエリアの名前：実行ステータス" aria-describedby="runtime-help-overlay"><span>ⓘ</span></button><div id="ea" aria-live="polite"></div><div id="eb" aria-live="polite"></div><div id="collision-status" style="margin-top:6px;font-weight:700">衝突判定：待機中</div><div id="sync-status">A/B：共通game座標</div><div id="map-source-status" aria-live="polite">🗺️ 地図：未読込</div><div id="label-status" style="font-size:11px;color:#436d73;margin-top:4px">🏙️ 屋上名：松戸ワープ後に診断表示</div><div class="stats"><span id="pos">X 0.0 / Z 4.5</span><span id="fps">FPS --</span><span id="edge">境界内</span><span id="npc-status">🐹 お散歩AI準備中</span></div><p id="status">描画準備中…</p><p id="input-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎮 Engine Input読み込み中…</p><p id="camera-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">📷 Engine Camera読み込み中…</p><p id="renderer-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎨 Engine Renderer読み込み中…</p><p id="core-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🧩 Engine Core・Collision読み込み中…</p><p style="font-size:10px;color:#8a765b">描画方式はAのみ・Bのみ・比較から変更できます。Bの初回起動にはThree.jsの読み込みが必要です。</p><div id="runtime-help-overlay" class="panel-help-overlay runtime-help-overlay" role="tooltip" hidden><div class="panel-help-label runtime-help-label">📊 実行ステータス</div></div></section></div></div></div></div><script type="module" src="./mock-ui.js"></script></body></html>
+<div id="test-help-overlay" class="panel-help-overlay test-help-overlay" role="tooltip" hidden><div class="panel-help-label test-help-label">🧪 テスト操作パネル</div></div></section></div></div></div><div class="panel-slot panel-slot-bottom" data-panel-slot="bottom"><section data-panel-id="runtime" class="runtime-status" aria-label="実行ステータス"><h2 class="runtime-status-heading">📊 実行ステータス</h2><button type="button" id="runtime-help-button" class="panel-help-button runtime-help-button" aria-label="このエリアの名前：実行ステータス" aria-describedby="runtime-help-overlay"><span>ⓘ</span></button><div id="ea" aria-live="polite"></div><div id="eb" aria-live="polite"></div><div id="collision-status" style="margin-top:6px;font-weight:700">衝突判定：待機中</div><div id="sync-status">A/B：共通game座標</div><div id="map-source-status" aria-live="polite">🗺️ 地図：未読込</div><div id="label-status" style="font-size:11px;color:#436d73;margin-top:4px">🏙️ 屋上名：松戸ワープ後に診断表示</div><div class="stats"><span id="pos">X 0.0 / Z 4.5</span><span id="fps">FPS --</span><span id="edge">境界内</span><span id="npc-status">🐹 お散歩AI準備中</span></div><p id="status">描画準備中…</p><p id="input-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎮 Engine Input読み込み中…</p><p id="camera-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">📷 Engine Camera読み込み中…</p><p id="renderer-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🎨 Engine Renderer読み込み中…</p><p id="core-status" style="padding:8px;border-radius:8px;background:#e2eddf;color:#3d6445">🧩 Engine Core・Collision読み込み中…</p><p style="font-size:10px;color:#8a765b">描画方式はAのみ・Bのみ・比較から変更できます。Bの初回起動にはThree.jsの読み込みが必要です。</p><div id="runtime-help-overlay" class="panel-help-overlay runtime-help-overlay" role="tooltip" hidden><div class="panel-help-label runtime-help-label">📊 実行ステータス</div></div></section></div><div class="panel-slot panel-slot-storage" data-panel-slot="storage"><section id="storage-panel" data-panel-id="storage" class="storage-panel" role="region" aria-label="localStorage管理パネル">
+<div class="storage-panel-header">
+<h2>🗄️ localStorage管理</h2>
+<button id="storage-help-button" type="button" class="panel-help-button storage-help-button" aria-label="このエリアの名前：localStorage管理パネル" aria-describedby="storage-help-overlay"><span>ⓘ</span></button>
+</div>
+<p class="storage-panel-intro">このブラウザで開いているサイトと同じ保存元のlocalStorageを全件表示。キーの確認と個別削除ができます。</p>
+<div class="storage-panel-controls">
+<label for="storage-filter">キーを検索</label>
+<input id="storage-filter" type="search" placeholder="例：osm-tag-changes" autocomplete="off"/>
+<button id="storage-refresh" type="button">↻ 一覧更新</button>
+</div>
+<p id="storage-count" class="storage-count" role="status" aria-live="polite">localStorageを確認中…</p>
+<div id="storage-entries" class="storage-entries" aria-label="保存されているキー一覧"></div>
+<p id="storage-feedback" class="storage-feedback" role="status" aria-live="polite"></p>
+<p class="storage-panel-footer">削除は各キーごとに2段階で確認します。設定やOSMタグ変更のキーを削除すると表示に影響する場合があります。変更が反映されないときはページを再読み込みしてください。</p>
+<div id="storage-help-overlay" class="panel-help-overlay storage-help-overlay" role="tooltip" hidden><div class="panel-help-label storage-help-label">🗄️ localStorage管理</div></div>
+</section></div></div></div></div><script type="module" src="./mock-ui.js"></script></body></html>

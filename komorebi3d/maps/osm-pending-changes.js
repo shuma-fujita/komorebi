@@ -1,10 +1,10 @@
 // Canonical local OSM tag-change cache: one key per OSM element.
+// Legacy v1 keys are never migrated or automatically removed. Manage them
+// explicitly through the localStorage administration panel.
 // osmVersion=null: unsent local review; positive integer: confirmed OSM write.
 // The map-source version (element.version) is independent of osmVersion.
 // This module never sends changes to an OSM API.
 const PREFIX='komorebi3d:osm-tag-changes:v2:';
-const OLD_PRODUCTION='komorebi3d:osm-production-pending:v1:';
-const OLD_REVIEW='komorebi3d:osm-review-storage-check:v1:';
 const TYPES=new Set(['node','way','relation']);
 const memoryFallback=new Map();
 const releasedThisSession=new Set();
@@ -54,14 +54,7 @@ function normalizeRecord(value){
  const tags=normalizeTags(value.tags);
  const baseTags=normalizeTags(value.baseTags);
  if(osmVersion!==null&&(tags!==null||baseTags!==null))throw Error('本番確定記録にテスト用タグ一覧は保存できません。');
- let confirmedOsm=null;
- if(value.confirmedOsm!==null&&value.confirmedOsm!==undefined){
-  if(osmVersion!==null)throw Error('本番確定情報が重複しています。');
-  confirmedOsm={osmVersion:normalizeVersion(value.confirmedOsm.osmVersion),
-   changes:normalizeChanges(value.confirmedOsm.changes)};
-  if(confirmedOsm.osmVersion===null)throw Error('本番確定情報にバージョンがありません。');
- }
- return {type,id,osmVersion,changes,tags,baseTags,confirmedOsm};
+ return {type,id,osmVersion,changes,tags,baseTags};
 }
 function readKey(key,onWarning){
  try{
@@ -72,83 +65,24 @@ function readKey(key,onWarning){
   return entry;
  }catch(error){warn(onWarning,'OSMタグ変更の読み取り失敗: '+String(error.message||error));return null;}
 }
-function legacyRecord(text,type,id,prefix){
- const value=JSON.parse(text);
- if(value?.type!==type||String(value?.id??'')!==id)throw Error('旧保存キーとOSM IDが一致しません。');
- if(prefix===OLD_PRODUCTION){
-  const version=Number(value.version);
-  return normalizeRecord({type,id,osmVersion:version,changes:value.changes});
- }
- return normalizeRecord({type,id,osmVersion:null,changes:value.changes,
-  tags:value.tags??null,baseTags:value.baseTags??null});
-}
-function migrate(type,id,{onWarning}={}){
- const key=osmTagChangeStorageKey(type,id),prodKey=OLD_PRODUCTION+type+'/'+id,
-  reviewKey=OLD_REVIEW+type+'/'+id;
- let current=readKey(key,onWarning);
- let prodText=null,reviewText=null;
- try{prodText=localStorage.getItem(prodKey);reviewText=localStorage.getItem(reviewKey);}
- catch(error){warn(onWarning,'旧localStorageの取得失敗: '+String(error.message||error));return current;}
- if(prodText===null&&reviewText===null)return current;
- let prod=null,review=null;
- try{
-  if(prodText!==null)prod=legacyRecord(prodText,type,id,OLD_PRODUCTION);
-  if(reviewText!==null)review=legacyRecord(reviewText,type,id,OLD_REVIEW);
- }catch(error){
-  warn(onWarning,'旧OSMタグ変更の形式が不正なため自動移行しません: '+String(error.message||error));
-  return current;
- }
- if(current){
-  // A user may have saved a new v2 record before an interrupted migration.
-  // Do not clobber the new record with an older legacy copy.
-  if(review||prod)warn(onWarning,'旧OSMタグ変更が残っています。v2の保存データを優先し、旧データは保護します。');
-  return current;
- }
- // When both old namespaces exist for one OSM element, preserve BOTH in
- // one v2 record. The active local review is the visible overlay, while its
- // prior confirmed OSM write remains nested for Geofabrik reconciliation.
- const incoming=review?
-  {...review,confirmedOsm:prod?{osmVersion:prod.osmVersion,changes:prod.changes}:null}:prod;
- if(!incoming)return null;
- const payload=JSON.stringify(incoming);
- try{
-  localStorage.setItem(key,payload);
-  if(localStorage.getItem(key)!==payload)throw Error('書き込み確認失敗');
- }catch(error){
-  warn(onWarning,'旧OSMタグ変更を移行できません。旧キーは保持します: '+String(error.message||error));
-  return incoming; // still render the preserved legacy data
- }
- // New key verified; remove only the successfully migrated old keys.
- try{if(prodText!==null)localStorage.removeItem(prodKey);}
- catch(error){warn(onWarning,'旧本番キーの削除失敗: '+String(error.message||error));}
- try{if(reviewText!==null)localStorage.removeItem(reviewKey);}
- catch(error){warn(onWarning,'旧動作確認キーの削除失敗: '+String(error.message||error));}
- return normalizeRecord(incoming);
-}
 export function getSavedOsmTagChange(type,id,{onWarning}={}){
  const key=osmTagChangeStorageKey(type,id);
  if(releasedThisSession.has(key))return null;
- const entry=memoryFallback.get(key)||migrate(type,String(id),{onWarning});
+ const entry=memoryFallback.get(key)||readKey(key,onWarning);
  return entry?normalizeRecord(entry):null;
 }
 export function getAllSavedOsmTagChanges({onWarning}={}){
- const ids=new Set();
+ const keys=new Set();
  try{
   for(let i=0;i<localStorage.length;i++){
    const key=localStorage.key(i);
-   for(const prefix of [PREFIX,OLD_PRODUCTION,OLD_REVIEW]){
-    if(!key?.startsWith(prefix))continue;
-    const suffix=key.slice(prefix.length);
-    const slash=suffix.indexOf('/');
-    if(slash>0)ids.add(suffix);
-    break;
-   }
+   if(key?.startsWith(PREFIX))keys.add(key);
   }
  }catch(error){warn(onWarning,'保存済みOSMタグ変更一覧の読み取り失敗: '+String(error.message||error));}
- for(const key of memoryFallback.keys())ids.add(key.slice(PREFIX.length));
+ for(const key of memoryFallback.keys())keys.add(key);
  const result=[];
- for(const suffix of ids){
-  const slash=suffix.indexOf('/');
+ for(const key of keys){
+  const suffix=key.slice(PREFIX.length),slash=suffix.indexOf('/');
   if(slash<1)continue;
   try{
    const record=getSavedOsmTagChange(suffix.slice(0,slash),suffix.slice(slash+1),{onWarning});
@@ -170,12 +104,8 @@ export function saveStoredOsmTagChange(value,{onWarning}={}){
   throw Error('新しい差分より古いOSM versionは登録できません。');
  const record=normalizeRecord(incoming.osmVersion!==null?{
   ...incoming,
-  changes:{...(previous?.osmVersion!==null&&previous?.osmVersion!==undefined?previous.changes:{}),...incoming.changes},
-  confirmedOsm:null
- }:{
-  ...incoming,
-  confirmedOsm:previous?.confirmedOsm??null
- });
+  changes:{...(previous?.osmVersion!==null&&previous?.osmVersion!==undefined?previous.changes:{}),...incoming.changes}
+ }:incoming);
  const payload=JSON.stringify(record);
  try{
   localStorage.setItem(key,payload);
@@ -191,18 +121,13 @@ export function saveStoredOsmTagChange(value,{onWarning}={}){
   return {entry:record,key,persisted:false};
  }
 }
-export function releaseStoredOsmTagChange(type,id,{onWarning}={}){
+export function releaseStoredOsmTagChange(type,id){
  const key=osmTagChangeStorageKey(type,id);
- const suffix=type+'/'+String(id);
- // Delete the active v2 key and legacy keys left by an interrupted migration.
- const keys=[key,OLD_PRODUCTION+suffix,OLD_REVIEW+suffix];
- for(const candidate of keys){
-  localStorage.removeItem(candidate);
-  if(localStorage.getItem(candidate)!==null)throw Error('保存データを開放できません: '+candidate);
- }
+ localStorage.removeItem(key);
+ if(localStorage.getItem(key)!==null)throw Error('保存データを開放できません: '+key);
  memoryFallback.delete(key);
  releasedThisSession.add(key);
- return {key,removedKeys:keys};
+ return {key,removedKeys:[key]};
 }
 export function recordConfirmedOsmTagChanges(value,{onWarning}={}){
  const version=Number(value?.version);
@@ -213,19 +138,14 @@ export function recordConfirmedOsmTagChanges(value,{onWarning}={}){
  // contains only osmVersion, while the scene patcher expects entry.version.
  return {...result,entry:{...result.entry,version:result.entry.osmVersion}};
 }
-function confirmedPart(entry){
- if(entry.osmVersion!==null)return {osmVersion:entry.osmVersion,changes:entry.changes};
- return entry.confirmedOsm;
-}
 export function getPendingOsmTagChange(type,id,options={}){
- const entry=getSavedOsmTagChange(type,id,options),confirmed=entry&&confirmedPart(entry);
- return confirmed?{type:entry.type,id:entry.id,version:confirmed.osmVersion,changes:confirmed.changes}:null;
+ const entry=getSavedOsmTagChange(type,id,options);
+ return entry?.osmVersion===null||!entry?null:
+  {type:entry.type,id:entry.id,version:entry.osmVersion,changes:entry.changes};
 }
 export function getAllPendingOsmTagChanges(options={}){
- return getAllSavedOsmTagChanges(options).flatMap(entry=>{
-  const confirmed=confirmedPart(entry);
-  return confirmed?[{type:entry.type,id:entry.id,version:confirmed.osmVersion,changes:confirmed.changes}]:[];
- });
+ return getAllSavedOsmTagChanges(options).filter(entry=>entry.osmVersion!==null)
+  .map(entry=>({type:entry.type,id:entry.id,version:entry.osmVersion,changes:entry.changes}));
 }
 function absorbed(entry,element){
  const version=Number(element.version);
@@ -242,22 +162,10 @@ export function reconcilePendingOsmTagChanges(map,{source,onWarning}={}){
  const sourceById=new Map(map.elements.map(el=>[el.type+'/'+el.id,el]));
  let released=0;
  for(const entry of getAllSavedOsmTagChanges({onWarning})){
-  const confirmed=confirmedPart(entry),el=sourceById.get(entry.type+'/'+entry.id);
-  if(!confirmed||!el||!absorbed(confirmed,el))continue;
-  if(entry.osmVersion!==null){
-   const key=osmTagChangeStorageKey(entry.type,entry.id);
-   try{releaseStoredOsmTagChange(entry.type,entry.id,{onWarning});released++;}
-   catch(error){warn(onWarning,'Geofabrik反映済み記録の開放失敗: '+String(error.message||error));}
-  }else{
-   // Local review remains, but the nested production-confirmation escrow ends.
-   const updated={...entry,confirmedOsm:null};
-   try{
-    const key=osmTagChangeStorageKey(entry.type,entry.id);
-    localStorage.setItem(key,JSON.stringify(updated));
-    if(localStorage.getItem(key)!==JSON.stringify(updated))throw Error('保存確認失敗');
-    released++;
-   }catch(error){warn(onWarning,'本番反映済み情報の更新失敗: '+String(error.message||error));}
-  }
+  const el=sourceById.get(entry.type+'/'+entry.id);
+  if(entry.osmVersion===null||!el||!absorbed(entry,el))continue;
+  try{releaseStoredOsmTagChange(entry.type,entry.id);released++;}
+  catch(error){warn(onWarning,'Geofabrik反映済み記録の開放失敗: '+String(error.message||error));}
  }
  return released;
 }
@@ -274,11 +182,10 @@ export function applySavedOsmTagChangesToMap(map,{source,onWarning}={}){
   const key=element.type+'/'+element.id,entry=records.get(key);
   if(!entry)continue;
   const mapVersion=Number(element.version);
-  const confirmed=confirmedPart(entry);
-  if(confirmed&&Number.isSafeInteger(mapVersion)&&mapVersion>confirmed.osmVersion)continue;
+  if(entry.osmVersion!==null&&Number.isSafeInteger(mapVersion)&&mapVersion>entry.osmVersion)continue;
   originals.set(key,{...(element.tags||{})});
   let tags={...(element.tags||{})};
-  if(confirmed)for(const [tag,val] of Object.entries(confirmed.changes)){
+  if(entry.osmVersion!==null)for(const [tag,val] of Object.entries(entry.changes)){
    if(val===null)delete tags[tag];else tags[tag]=val;
   }
   if(entry.osmVersion===null){

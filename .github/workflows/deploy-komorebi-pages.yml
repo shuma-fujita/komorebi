@@ -34,7 +34,10 @@ jobs:
           node --check komorebi3d/maps/map-loader.js
           node --check komorebi3d/maps/map-labels.js
           node --check komorebi3d/maps/osm-pending-tag-visual.js
+          node --check komorebi3d/local-storage-panel.js
+          node --check komorebi3d/dev-panel-layout.js
           node tests/osm-tag-changes-v2.mjs
+          node tests/local-storage-panel-structure.mjs
           node tests/editor-keyboard-layout.mjs
           node tests/sheet-gesture-ownership.mjs
           node tests/editor-preview-camera-window.mjs

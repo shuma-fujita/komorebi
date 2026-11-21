@@ -20,7 +20,7 @@ button{background:var(--g-surface-2);border-color:var(--g-border-2);color:var(--
 button:hover{border-color:var(--g-accent)}
 
 /* Panel chrome */
-.build-info,.landscape-game,.test-panel,.runtime-status,
+.build-info,.landscape-game,.test-panel,.runtime-status,.storage-panel,
 .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{
  background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text);
  box-shadow:inset 0 1px 0 rgba(62,224,127,.06),0 0 0 1px rgba(0,0,0,.4)}
@@ -128,7 +128,7 @@ button.panel-add-button{color:var(--g-accent)}
 .mock-root .site-heading strong{font-weight:800;letter-spacing:.02em}
 
 /* Panel surfaces: rounder, lighter borders, soft depth */
-.build-info,.landscape-game,.test-panel,.runtime-status,
+.build-info,.landscape-game,.test-panel,.runtime-status,.storage-panel,
 .mock-root .panel-slot[data-slot-size-fixed]>.landscape-game{border-radius:var(--m-r);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 30px rgba(0,0,0,.35)}
 .landscape-game .play-surface,.mock-root .landscape-game .play-surface.ab-compare{border-radius:calc(var(--m-r) - 1px)}
 

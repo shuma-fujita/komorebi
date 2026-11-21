@@ -46,7 +46,7 @@ function renderFauxGame(state){
 import {applyBuildingTagEditorTheme} from './maps/building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
 import {applyPendingTagVisualStyle,syncPendingTagRows} from './maps/osm-pending-tag-visual.js?v=geofabrik-wait-only-20261122';
 import {hasOsmTagChanges,buildOsmTagReview} from './maps/osm-tag-review.js?v=production-preview-20261122';
-import {prependOsmReviewStorageCheck} from './maps/osm-review-storage-check.js?v=shared-save-workflow-20261122';
+import {prependOsmReviewStorageCheck} from './maps/osm-review-storage-check.js?v=storage-manager-v1-20261122';
 
 (function mountPendingTagPreview(){
  const panel=document.querySelector('#test-ops-panel .test-panel-body');
@@ -221,7 +221,9 @@ import {prependOsmReviewStorageCheck} from './maps/osm-review-storage-check.js?v
  });
 })();
 
-import {mountDefaultPanelLayoutEditor} from './dev-panel-layout.js?v=shared-initializer-20261117';
+import {mountDefaultPanelLayoutEditor} from './dev-panel-layout.js?v=fifth-storage-panel-20261122';
+import {mountLocalStorageManager} from './local-storage-panel.js?v=fifth-storage-panel-20261122';
 mountDefaultPanelLayoutEditor(document);
+mountLocalStorageManager(document);
 mountMockTouchInput(document.querySelector('.landscape-game'));
 
