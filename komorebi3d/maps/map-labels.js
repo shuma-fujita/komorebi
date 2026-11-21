@@ -1,8 +1,8 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=lazy-oauth-config-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
-import {attachSheetMotion} from './sheet-motion.js?v=ratio-centered-20261121';
-import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=editor-session-pinned-20261121';
+import {attachSheetMotion} from './sheet-motion.js?v=panel-local-sheet-20261121';
+import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=panel-local-sheet-20261121';
 import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
@@ -545,8 +545,8 @@ export function createMapLabels(host,{screen=null,onEditorStateChange=null,onEdi
   setSource(linkedTestTarget?'test':'production');
   form.style.position='relative';form.style.zIndex='2';
   mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
-  editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form,previewTouch,getSheetMode:()=>editorMotion?.getMode()});
-  editorScrollGuard=guardSheetScroll(mask,form);
+  editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form,onViewportChange:(height,gameTop)=>editorMotion?.setKeyboardViewport(height,gameTop)});
+  editorScrollGuard=guardSheetScroll(mask,form,handle);
   const selectedKey=item.kind==='building'?item.osmType+':'+item.osmId:displayedSelection().key;
   const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
   onEditorStateChange?.(true,{building:selectedFeature,shops:selectedFeature?shopsForFocus(selectedKey):[],screen});
