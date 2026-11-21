@@ -8,7 +8,7 @@ import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
 import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
-import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=shared-save-workflow-20261122';
+import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=unified-pending-wait-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
 import {prependOsmReviewStorageCheck,getOsmReviewStorageCheck,getAllOsmReviewStorageChecks} from './osm-review-storage-check.js?v=shared-save-workflow-20261122';
@@ -25,33 +25,23 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
  let buildings=[];
  // Cache both pending sources outside the animation loop. A local review
  // has never been sent to production OSM.
- let pendingProductionKeys=new Set(),pendingLocalKeys=new Set();
+ let pendingTenantKeys=new Set();
  function refreshPendingTenants(){
-  if(mapSource!=='new'){
-   pendingProductionKeys=new Set();pendingLocalKeys=new Set();return;
+  const keys=new Set();
+  if(mapSource==='new'){
+   try{
+    for(const entry of getAllPendingOsmTagChanges())keys.add(entry.type+'/'+entry.id);
+   }catch(error){console.warn('OSM本番反映待ちの読み取り失敗',error);}
+   try{
+    for(const entry of getAllOsmReviewStorageChecks({onWarning:message=>console.warn(message)}))
+     keys.add(entry.type+'/'+entry.id);
+   }catch(error){console.warn('OSM保存確認の読み取り失敗',error);}
   }
-  try{
-   pendingProductionKeys=new Set(getAllPendingOsmTagChanges()
-    .map(entry=>entry.type+'/'+entry.id));
-  }catch(error){
-   console.warn('OSM本番反映待ちの読み取り失敗',error);
-   pendingProductionKeys=new Set();
-  }
-  try{
-   pendingLocalKeys=new Set(getAllOsmReviewStorageChecks({
-    onWarning:message=>console.warn(message)
-   }).map(entry=>entry.type+'/'+entry.id));
-  }catch(error){
-   console.warn('OSM動作確認の読み取り失敗',error);
-   pendingLocalKeys=new Set();
-  }
+  pendingTenantKeys=keys;
  }
  refreshPendingTenants();
- const pendingFlags=item=>{
-  const key=item.osmType+'/'+item.osmId;
-  return {official:mapSource==='new'&&pendingProductionKeys.has(key),
-   local:mapSource==='new'&&pendingLocalKeys.has(key)};
- };
+ const tenantIsPending=item=>mapSource==='new'&&
+  pendingTenantKeys.has(item.osmType+'/'+item.osmId);
  let cachedShops=[],lastShopKey=null,shopIndexDirty=true;
  function shopsForFocus(key){
   if(shopIndexDirty||lastShopKey!==key){
@@ -681,10 +671,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     // Building tag edits should be visible in the 3D directory even if
     // none of the tenant nodes changed.
     if(item.kind==='building'){
-     const flags=pendingFlags(item);
-     if(flags.official||flags.local){
+     if(tenantIsPending(item)){
       const note=document.createElement('div');
-      note.style.cssText='margin:5px 0 2px;padding:4px 6px;border-left:3px solid #ffbd62;background:rgba(255,176,68,.16);border-radius:3px;color:#ffd08a;font:600 10px/1.5 system-ui,-apple-system,sans-serif';
+      note.style.cssText='margin:5px 0 2px;padding:4px 6px;border-left:3px solid #ffbd62;background:rgba(255,176,68,.16);border-radius:3px;color:#ffd08a;font:600 10px/1.5 system-ui,-apple-system,sans-serif;white-space:normal;overflow-wrap:anywhere;word-break:normal';
       const line=document.createElement('div');
       line.textContent=PENDING_GEOFABRIK_LABEL;
       note.appendChild(line);
@@ -708,20 +697,20 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
       row.style.cssText='padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
       const prefix=shop.tags?.level!==undefined?'[level='+shop.tags.level+'] ':'';
       row.textContent=prefix+shop.name;
-      const pending=pendingFlags(shop);
-      if(shop.outsideFootprint||pending.official||pending.local){
+      const pending=tenantIsPending(shop);
+      if(shop.outsideFootprint||pending){
        // The existing exterior 1m warning and both pending states can coexist.
        row.style.background='rgba(255,176,68,.16)';
        row.style.borderLeft='3px solid #ffbd62';
        row.style.paddingLeft='6px';
        const addWarning=message=>{
         const warning=document.createElement('span');
-        warning.style.cssText='display:block;color:#ffd08a;font:600 10px/1.5 system-ui,-apple-system,sans-serif';
+        warning.style.cssText='display:block;color:#ffd08a;font:600 10px/1.5 system-ui,-apple-system,sans-serif;white-space:normal;overflow-wrap:anywhere;word-break:normal';
         warning.textContent=message;
         row.appendChild(warning);
        };
        if(shop.outsideFootprint)addWarning('⚠ 建物外（外周1m以内・位置要確認）');
-       if(pending.official||pending.local)addWarning(PENDING_GEOFABRIK_LABEL);
+       if(pending)addWarning(PENDING_GEOFABRIK_LABEL);
       }
       row.dataset.osmKey=shop.osmType+':'+shop.osmId;
       row._osmItem=shop;pane.appendChild(row);
@@ -938,13 +927,10 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    const heightLimit=Math.max(1,Math.floor(rect.height-42));
    const topInset=Math.min(28,Math.max(8,Math.floor(rect.height*.06)));
    const {item}=ranked[0];
-   const buildingPending=pendingFlags(item);
-   const signature=selectedKey+'|building:'+Number(buildingPending.official)+':'+Number(buildingPending.local)+'|'+
-    shops.map(shop=>{
-     const pending=pendingFlags(shop);
-     return shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')+':'+
-      (shop.outsideFootprint?'outside':'inside')+':'+Number(pending.official)+':'+Number(pending.local);
-    }).join('|');
+   const signature=selectedKey+'|building:'+Number(tenantIsPending(item))+'|'+
+    shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+
+     (shop.tags?.level??'')+':'+(shop.outsideFootprint?'outside':'inside')+':'+
+     Number(tenantIsPending(shop))).join('|');
    if(viewport.summary?.signature!==signature){
     viewport.summary?.el.remove();
     viewport.summary=createItem(item,widthLimit,heightLimit);

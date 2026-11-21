@@ -25,9 +25,10 @@ export function applyPendingTagVisualStyle(form){
   color:#ffdf9d!important;
  }
  .komo-tags-sheet .komo-pending-tag-note{
-  grid-column:1/-1;display:block;color:#ffd08a;
+  grid-column:1/-1;display:block;min-width:0;color:#ffd08a;
   font:600 11px/1.5 system-ui,-apple-system,sans-serif;
   padding:1px 2px 0;
+  white-space:normal;overflow-wrap:anywhere;word-break:normal;
  }
  `;
  form.appendChild(style);
