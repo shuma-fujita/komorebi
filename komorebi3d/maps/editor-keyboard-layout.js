@@ -55,12 +55,16 @@ export function attachEditorKeyboardLayout({host,mask,sheet,onViewportChange}){
   // Page scrolling is allowed: retain the original panel DOM/layout and
   // bring its top into view instead of changing the game's CSS position.
   const rect=game.getBoundingClientRect();
-  onViewportChange?.(vv.height,rect.top);
-  if(Math.abs(rect.top)>3){
-   // Safari can scroll to the field before its keyboard animation finishes.
-   // The panel is in normal flow, so moving the document (not the game) keeps
-   // its A/B preview and the sheet in the same coordinate system.
-   window.scrollTo(window.scrollX||0,Math.max(0,window.scrollY+rect.top));
+  // Element bounds are in layout-viewport coordinates. The keyboard can pan
+  // the *visual* viewport within it, so subtract visualViewport.offsetTop
+  // before testing visibility or choosing the normal document scroll target.
+  const topInVisibleViewport=rect.top-vv.offsetTop;
+  onViewportChange?.(vv.height,topInVisibleViewport);
+  if(Math.abs(topInVisibleViewport)>3){
+   // Scroll the document, never move the game's element out of its panel.
+   // The visible document top is scrollY + visualViewport.offsetTop.
+   window.scrollTo(window.scrollX||0,
+    Math.max(0,window.scrollY+topInVisibleViewport));
   }
   updateFocusedRow();
  }
