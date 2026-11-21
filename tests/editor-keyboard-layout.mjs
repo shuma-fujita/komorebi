@@ -41,7 +41,7 @@ const scrollCalls=[];
 globalThis.window=emitter({
  innerHeight:641,visualViewport:vv,scrollX:0,scrollY:372,
  location:{search:''},
- matchMedia:query=>({matches:query.includes('reduced-motion')}),
+ matchMedia:query=>({matches:query.includes('reduced-motion')||query.includes('pointer:coarse')}),
  scrollTo(x,y){scrollCalls.push([x,y]);this.scrollX=x;this.scrollY=y;}
 });
 globalThis.document={activeElement:null,body:new Node()};
