@@ -19,6 +19,21 @@ assert.deepEqual(sheetGeometry(700,'half',313,30),{top:187,height:96});
 assert.deepEqual(sheetGeometry(700,'half',220,-90),{top:214,height:96});
 // A very small visible area gives input at least 96px by reducing preview.
 assert.deepEqual(sheetGeometry(700,'half',180,-350),{top:434,height:96});
+// For every visible panel intersection, the sheet must end precisely at
+// the keyboard boundary (or the panel's natural end if it is shorter).
+for(const [panelH,vvH,panelTop] of [
+ [700,313,0],[700,313,-200],[700,313,-328],[700,313,-389],
+ [700,313,30],[700,180,-350],[700,500,-100]
+]){
+ const visible=panelVisibleRange(panelH,vvH,panelTop);
+ const g=sheetGeometry(panelH,'half',vvH,panelTop);
+ assert.ok(Math.abs(g.top+g.height-visible.end)<1e-9,
+  'input sheet has no uncovered gap to keyboard for '+panelTop);
+ if(visible.height>=panelH*BUILDING_PREVIEW_RATIO+96){
+  assert.ok(Math.abs(g.top-visible.start-panelH*BUILDING_PREVIEW_RATIO)<1e-9,
+   'game keeps full 30% preview where space permits');
+ }
+}
 
 function emitter(object={}){
  const handlers=new Map();
