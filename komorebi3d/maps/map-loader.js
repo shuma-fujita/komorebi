@@ -1,3 +1,4 @@
+import {reconcilePendingOsmTagChanges} from './osm-pending-changes.js?v=storage-step1-20261122';
 // Two independent 2km Matsudo snapshots. No 500m or live Overpass fetch.
 const TILE_ROOTS=Object.freeze({
  old:'./maps/data/tiles-2km/',
@@ -32,6 +33,8 @@ export async function loadMap({onLog=()=>{},signal,source='old'}={}){
  const map=verify(await response.json());
  if(map.tile?.id!==TEST_TILE_ID||map.tile?.sizeM!==2000||map.tile?.gridX!==0||map.tile?.gridY!==0)
   throw Error(label+' タイルID/サイズ/原点が不正: '+TEST_TILE_ID);
+ // Only the validated NEW Geofabrik map may release absorbed local edits.
+ if(source==='new')reconcilePendingOsmTagChanges(map,{source,onWarning:msg=>onLog('OSM差分: '+msg)});
  onLog('JSON: '+label+' 検証PASS / 要素 '+map.elements.length+'件 / '+Math.round(performance.now()-start)+'ms');
  return map;
 }

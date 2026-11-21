@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-22 OSM差分localStorage管理 Step 1（main反映／実行確認なし）：** `maps/osm-pending-changes.js` を新設。本番OSM APIで保存成功済みの編集についてのみ呼び出す登録API `recordConfirmedOsmTagChanges({type,id,version,changes})`、取得API、同一OSM要素の差分統合・新version保持、localStorage保存失敗時のメモリ保持＋通知コールバック、Geofabrik新2kmタイル読み込み成功時だけの差分吸収判定と個別削除を追加。`map-loader.js` の新地図検証後にクリーンアップを接続し、旧2kmには適用しない。新JSONのversionが古い／該当要素がない／version一致でも変更タグが一致しない場合は差分を保持。地図JSON全体や形状は保存しない。ストレージ使用件数・容量は表示しない。今回はStep 1のみで、OSM本番書き込み・3D即時反映・タグ行／テナント一覧の黄色警告は未接続。ユーザー希望により専用模擬テストは実施せず。Actions・Pages・iPhone Safari実機は未確認。
+
 
 
 > **2026-11-21 キーボード時のJSスクロール補助と終了後のページ位置復元を撤去（main反映／iPhone Safari実機未確認）：** ユーザーの明示指示により、前工程で撤去した「フォーカス時のゲーム画面上端への自動ページスクロール」に加え、`editor-keyboard-layout.js` 内の **キーボード表示時の入力欄シート内自動スクロール、末尾の透明スクロール余白、終了後または編集画面破棄時の `window.scrollTo` によるページ位置復元**を全撤去した。関連する `coveredFieldScrollDelta`、`keyboardTrailingSpace`、`visualViewport.resize` イベント、`focusin/focusout` 管理およびタイマーも撤去。**維持：タッチ入力の `focus({preventScroll:true})`、既存のシート手動スクロール、30/70サイズ・つまみ操作、`?editorDiag=1` の読み取り専用診断。** Safariのキーボード表示・文字入力中のブラウザ標準スクロールをアプリから打ち消したり補正したりしない。関連模擬テスト3件PASS（フォーカス時のスクロール禁止、キーボード開閉時のJSスクロール／末尾余白なし、シート操作、A/Bカメラ）。モジュールキャッシュ更新済み、GitHub Actions／Pages反映・Safari実機検証は未確認。以後のゲーム位置合わせは保留。
