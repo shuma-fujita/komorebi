@@ -475,7 +475,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    if(activeSource==='test'&&testReady)testDraft=captureDraft();
    if(activeSource==='production'&&rows.children.length)productionDraft=captureDraft();
    activeSource=source;
-   refreshPendingTags(); // Remove yellow immediately when switching to test OSM.
+   // While the new source's tags are loading, the rows still belong to the
+   // previous source. Clear highlights first; only renderTags may reapply them.
+   syncPendingTagRows(rows,{pending:null,mapSource,dataSource:activeSource});
    const request=++sourceRequest;
    for(const [name,button] of Object.entries(sourceButtons))
     button.setAttribute('aria-pressed',String(name===source));
