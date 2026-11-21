@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "iPhoneのname入力でSafariスクロール座標が高速往復する原因を模擬再現して修正。パネル内シート・ゲーム非固定を維持（両ブラウザ実機再確認待ち）",
-  "common": "mock先行のUI共通部品管理へ移行。build-ui.mjsでmock生成・devのUI限定同期・両ページ整合確認を分離（実機再確認待ち）"
+  "common": "GitHub Pagesの同一run内artifact検出競合と再実行時の重複をログで確認。ビルド完了後に別ジョブで公開する構造へ分離（新run結果待ち）"
 }
