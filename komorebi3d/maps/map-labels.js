@@ -11,7 +11,7 @@ import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-c
 import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=geofabrik-wait-only-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
-import {prependOsmReviewStorageCheck,getOsmReviewStorageCheck,getAllOsmReviewStorageChecks} from './osm-review-storage-check.js?v=shared-save-workflow-20261122';
+import {prependOsmReviewStorageCheck,getOsmReviewStorageCheck,getAllOsmReviewStorageChecks} from './osm-review-storage-check.js?v=storage-inventory-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
@@ -554,7 +554,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   let pending=null;
   // Same two buttons as the approved mock. Keep a separate test-only storage
   // namespace: this never signals a successful production OSM save.
-  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending?{...pending,originalTags:baseTags}:pending,onChange:onReviewStorageChange});
+  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending?{...pending,originalTags:baseTags}:pending,onChange:onReviewStorageChange,showInventory:true});
   reviewStorageCheck.section.hidden=true;
   confirm.addEventListener('click',()=>{
    try{
@@ -567,6 +567,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     productionReviewNotice.hidden=isTestReview;
     reviewStorageCheck.section.hidden=isTestReview;
     reviewStorageCheck.clearStatus();
+    if(!isTestReview)reviewStorageCheck.refreshInventory();
     testPane.hidden=!isTestReview||!eligible;
     if(isTestReview){
      loaded=null;consent.checked=false;testDetails.hidden=true;

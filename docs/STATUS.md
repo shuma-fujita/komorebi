@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-22 ビルタグ確認画面：localStorage一覧（ゲーム直接実装／実機未確認）：** ユーザーがmock先行を取りやめ、直接プロダクト`dev.html`への追加を指定した。既存の`osm-review-storage-check.js`の`prependOsmReviewStorageCheck`に任意オプション`showInventory`を追加し、本番OSMタグ確認画面の呼出しだけ有効化。保存・開放ボタン直下に「保存されているlocalStorage（全件）」を表示し、現在のページと同じ保存元（オリジン）の全キーを一覧、文字数と安全な値のみ展開可能、認証情報らしい値は伏せる。対象となる`komorebi3d:osm-review-storage-check:v1:<type>/<id>`の既存キー1件だけ黄色の「開放で削除」ラベルで強調し、未保存なら「まだ保存されていません」と表示。ボタン後は一覧を再取得し、手動更新ボタンもある。開放は以前と同様`removeItem(reviewKey)`だけで、`localStorage.clear()`は絶対呼ばず、ほかのキーは保持。本番OSMや認証の送信処理、固定Engine、mock.html、mock-ui.jsは変更しない。静的構文の確認とGitHub Actionsを別途確認する。
+
 > **2026-11-22 反映待ち警告文言の完全統一（Safari実機未確認）：** ユーザーより「反映待ち（動作確認OSM送信待ち）」等の長い動作確認表示は不要、「⚠ Geofabrik反映待ち」の1種類だけと再指定。直近mainの共通UIは既に後者のみだったが、旧モジュールのキャッシュ可能性を考慮し、`osm-pending-tag-visual.js` の旧 `PENDING_LOCAL_REVIEW_LABEL` エクスポートを削除、`map-labels.js` / `mock-ui.js` と dev.html の参照URLを一斉更新。画面上で本番と動作確認を表示分岐せず、内部保存のみ区別する。mock.htmlはビルダー生成ファイルのため変更しない。固定Engine、本番OSM送信なしは維持。
 
 > **2026-11-22 黄色い警告表示の統一・省略防止：** ユーザー希望は localStorage 保存も本番保存も同じ「⚠ Geofabrik反映待ち」。`osm-pending-tag-visual.js` の単一文言は維持し、タグ行の警告に折り返しCSSを追加。`map-labels.js` の建物/テナントの判定を二系統フラグから一つの統合キー集合へ簡素化し、表示文言の分岐・重複は行わない。建物/テナントの警告にも折り返しCSSを明記。保存データの実体は本番成功と動作確認用で引き続き分離し、本番OSMへ送信しない。前回のActions失敗要因だった自動生成 `mock.html` は変更しない。今回の実機PASS・Pages配信は未確認。
