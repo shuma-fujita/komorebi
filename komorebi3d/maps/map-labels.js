@@ -11,7 +11,7 @@ import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-c
 import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=step3-mock-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
-import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=preview-storage-check-20261122';
+import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=3d-review-sync-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
