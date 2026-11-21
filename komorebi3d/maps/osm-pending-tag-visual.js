@@ -2,9 +2,9 @@
 // OSM but not yet absorbed by the published Geofabrik map.
 // This module does not read localStorage or write to OSM.
 export const PENDING_GEOFABRIK_LABEL='⚠ Geofabrik反映待ち';
-// A local-only review has NOT been sent to OSM. Never label it as an actual
-// Geofabrik publication delay, even though it shares the yellow UI treatment.
-export const PENDING_LOCAL_REVIEW_LABEL='⚠ 反映待ち（動作確認・OSM未送信）';
+// Legacy export retained for older callers; the on-screen warning is uniform.
+// Review-only entries still never go to the production-success storage.
+export const PENDING_LOCAL_REVIEW_LABEL=PENDING_GEOFABRIK_LABEL;
 
 export function applyPendingTagVisualStyle(form){
  if(form.querySelector('[data-pending-osm-style]'))return;
@@ -33,9 +33,9 @@ export function applyPendingTagVisualStyle(form){
  form.appendChild(style);
 }
 
-// Production-confirmed changes and local-only review checks are distinct.
-// Both use the approved yellow row style, but keep truthful warning labels.
-// The mock's existing pending-only call remains backward compatible.
+// Both proven production writes and review-only localStorage writes reach
+// the same visible pending-row presentation. Their storage/provenance remains
+// separate; no review-only operation is treated as a remote OSM save.
 export function syncPendingTagRows(rows,{pending=null,localReview=null,mapSource='new',dataSource='production'}={}){
  const enabled=mapSource==='new'&&dataSource==='production';
  const official=enabled&&pending?.changes&&typeof pending.changes==='object'&&!Array.isArray(pending.changes)?
@@ -45,23 +45,21 @@ export function syncPendingTagRows(rows,{pending=null,localReview=null,mapSource
  for(const row of rows.children){
   if(!row.classList?.contains('komo-tag-row'))continue;
   const key=row.children[0]?.value?.trim()||'';
-  const isOfficial=!!key&&!!official&&Object.prototype.hasOwnProperty.call(official,key);
-  const isLocal=!!key&&!!local&&Object.prototype.hasOwnProperty.call(local,key);
-  row.classList.toggle('komo-pending-tag-row',isOfficial||isLocal);
-  for(const [kind,show,labelText] of [
-   ['production',isOfficial,PENDING_GEOFABRIK_LABEL],
-   ['local',isLocal,PENDING_LOCAL_REVIEW_LABEL]
-  ]){
-   let note=row.querySelector('.komo-pending-tag-note[data-pending-kind="'+kind+'"]');
-   if(show){
-    if(!note){
-     note=document.createElement('span');
-     note.className='komo-pending-tag-note';
-     note.dataset.pendingKind=kind;
-     row.appendChild(note);
-    }
-    note.textContent=labelText;
-   }else note?.remove();
+  const highlighted=!!key&&(
+   (!!official&&Object.prototype.hasOwnProperty.call(official,key))||
+   (!!local&&Object.prototype.hasOwnProperty.call(local,key))
+  );
+  row.classList.toggle('komo-pending-tag-row',highlighted);
+  const existing=[...row.querySelectorAll('.komo-pending-tag-note')];
+  if(!highlighted){
+   for(const note of existing)note.remove();
+   continue;
   }
+  const note=existing.shift()||document.createElement('span');
+  note.className='komo-pending-tag-note';
+  note.dataset.pendingKind='combined';
+  note.textContent=PENDING_GEOFABRIK_LABEL;
+  if(!note.isConnected)row.appendChild(note);
+  for(const duplicate of existing)duplicate.remove();
  }
 }

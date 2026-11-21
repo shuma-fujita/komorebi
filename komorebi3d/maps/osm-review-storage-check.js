@@ -13,13 +13,26 @@ function reviewKey(review){
  return TEST_PREFIX+osm.type+'/'+id;
 }
 function testPayload(review){
- const key=reviewKey(review);
- const changes=review?.changes;
- if(!changes||typeof changes!=='object'||Array.isArray(changes)||!Object.keys(changes).length)
-  throw Error('保存できる変更内容がありません。');
+ const key=reviewKey(review),previous=getOsmReviewStorageCheck(review.osm.type,review.osm.id);
+ const current=review?.changes;
+ if(!current||typeof current!=='object'||Array.isArray(current))
+  throw Error('保存する変更内容が不正です。');
+ const baseTags=previous?.baseTags||review.originalTags||null;
+ const tags=review.tags;
+ // Recalculate ALL still-pending keys from the pre-edit base. When the same
+ // OSM element is edited twice, older changes remain highlighted as well.
+ let changes={...current};
+ if(baseTags&&tags){
+  changes={};
+  for(const tag of new Set([...Object.keys(baseTags),...Object.keys(tags)])){
+   if(baseTags[tag]!==tags[tag])
+    changes[tag]=own(tags,tag)?tags[tag]:null;
+  }
+ }
+ if(!Object.keys(changes).length)throw Error('保存する変更がありません。');
  return {key,payload:JSON.stringify({
   type:review.osm.type,id:String(review.osm.id),version:review.osm.version??null,
-  changes,tags:review.tags
+  changes,tags,baseTags
  })};
 }
 function decodeStored(text,key){
@@ -42,7 +55,16 @@ function decodeStored(text,key){
    tags[tag]=v;
   }
  }
- return {type:value.type,id:String(value.id),version:value.version,changes,tags};
+ let baseTags=null;
+ if(value.baseTags&&typeof value.baseTags==='object'&&!Array.isArray(value.baseTags)){
+  baseTags=Object.create(null);
+  for(const [tag,v] of Object.entries(value.baseTags)){
+   if(!tag||/[\u0000-\u001f=]/.test(tag)||typeof v!=='string')
+    throw Error('保存した変更前のタグが不正です。');
+   baseTags[tag]=v;
+  }
+ }
+ return {type:value.type,id:String(value.id),version:value.version,changes,tags,baseTags};
 }
 export function getOsmReviewStorageCheck(type,id){
  const key=reviewKey({osm:{type,id}});

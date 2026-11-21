@@ -673,13 +673,13 @@ import { CollisionWorld2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komor
 import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/core/CharacterMotionCore2D.js";
 import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=matsudo-2km-ab-20261120";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=shared-initializer-20261117";
-import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=local-review-pending-20261122";
+import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=shared-save-workflow-20261122";
 import {recordConfirmedOsmTagChanges} from "./maps/osm-pending-changes.js?v=live-overlay-step2-20261122";
 import {patchLiveGeofabrikMap} from "./maps/map-live-osm-changes.js?v=live-overlay-step2-20261122";
-import {getOsmReviewStorageCheck} from "./maps/osm-review-storage-check.js?v=local-review-pending-20261122";
+import {getOsmReviewStorageCheck} from "./maps/osm-review-storage-check.js?v=shared-save-workflow-20261122";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=live-overlay-step2-20261122";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels} from "./maps/map-labels.js?v=local-review-pending-20261122";
+import {createMapLabels} from "./maps/map-labels.js?v=shared-save-workflow-20261122";
 import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=tag-focus-scroll-only-20261121";
 window.__komorebiModuleStarted=true;
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
@@ -1830,6 +1830,25 @@ function addMapDebug(line){
  publishRuntimeStatus('map-debug-full-log',mapDebugLog.join('\n'));
  publishRuntimeStatus('map-debug-log',mapDebugLog.slice(-MAP_DEBUG_RECENT_LIMIT).join('\n'));
 }
+// Both save flows reuse this visual update path. The localStorage review
+// action never calls the production OSM API success gate.
+function refreshSavedOsmPresentation(){
+ for(const screen of ['A','B']){
+  matsudoLabels[screen]?.refreshPendingTags?.();
+  matsudoLabels[screen]?.refreshPendingTenants?.();
+ }
+}
+function renderSavedOsmChange(world,entry){
+ const result=patchLiveGeofabrikMap(world,entry,createMeshGeometry);
+ if(result.applied){
+  for(const screen of ['A','B'])if(screenConfigs[screen].map==='new'){
+   matsudoLabels[screen]?.reconcileLabels(world.labels);
+   matsudoLabels[screen]?.setBuildingFeatures(world.mapFeatures);
+  }
+  if(miniMapVisible)paintDebugMap();
+ }
+ return result;
+}
 // Future production OSM writer calls this only after the API confirms success.
 // The existing test OSM writer never calls it.
 function onConfirmedProductionOsmSaved(value){
@@ -1838,24 +1857,15 @@ function onConfirmedProductionOsmSaved(value){
   publishRuntimeStatus('status',message);
  };
  const result=recordConfirmedOsmTagChanges(value,{onWarning});
- // Refresh open production editors without replacing input values or closing sheets.
- for(const screen of ['A','B']){
-  matsudoLabels[screen]?.refreshPendingTags?.();
-  matsudoLabels[screen]?.refreshPendingTenants?.();
- }
+ // Also used after localStorage confirmation saves.
+ refreshSavedOsmPresentation();
  const world=matsudoMaps.new;
  if(activeWorld==='matsudo'&&world){
   if(!world.ready)world.deferredEdits.set(result.entry.type+'/'+result.entry.id,result.entry);
   else{
    try{
-    const applied=patchLiveGeofabrikMap(world,result.entry,createMeshGeometry);
-    if(applied.applied){
-     for(const screen of ['A','B'])if(screenConfigs[screen].map==='new'){
-      matsudoLabels[screen]?.reconcileLabels(world.labels);
-      matsudoLabels[screen]?.setBuildingFeatures(world.mapFeatures);
-     }
-     if(miniMapVisible)paintDebugMap();
-    }else addMapDebug('OSM差分: 画面への即時反映を保留 / '+applied.reason);
+    const applied=renderSavedOsmChange(world,result.entry);
+    if(!applied.applied)addMapDebug('OSM差分: 画面への即時反映を保留 / '+applied.reason);
    }catch(error){
     onWarning('OSM差分の3D反映に失敗しました。保存済み差分は次回地図読み込み時に反映します: '+String(error.message||error));
    }
@@ -1892,38 +1902,26 @@ function synchronizeReviewStorageWithScene(world,type,id){
   }
  }
  if(!Object.keys(changes).length)return {applied:true,rebuiltBuildings:0};
- const result=patchLiveGeofabrikMap(world,{type,id,version:element.version,changes},createMeshGeometry);
- if(!result.applied)return result;
- for(const screen of ['A','B'])if(screenConfigs[screen].map==='new'){
-  matsudoLabels[screen]?.reconcileLabels(world.labels);
-  matsudoLabels[screen]?.setBuildingFeatures(world.mapFeatures);
- }
- if(miniMapVisible)paintDebugMap();
- return result;
+ return renderSavedOsmChange(world,{type,id,version:element.version,changes});
 }
 function onReviewStorageChange({kind,review}){
  // The reviewing UI has already changed ONLY its separate test storage key.
  // Update both visible pending UIs after every successful storage operation,
  // even if a map is still building or its 3D patch fails.
- const refreshPendingUi=()=>{
-  for(const screen of ['A','B']){
-   matsudoLabels[screen]?.refreshPendingTags?.();
-   matsudoLabels[screen]?.refreshPendingTenants?.();
-  }
- };
+ // Source-specific storage is separate; presentation after save is shared.
  const type=review.osm.type,id=String(review.osm.id);
  const world=matsudoMaps.new;
  if(!world){
-  refreshPendingUi();
+  refreshSavedOsmPresentation();
   return {applied:false,reason:'新2km地図が未読み込み。次回の地図読み込みで反映します'};
  }
  try{
   const result=synchronizeReviewStorageWithScene(world,type,id);
-  refreshPendingUi();
+  refreshSavedOsmPresentation();
   addMapDebug('OSM動作確認: '+kind+' / '+type+'/'+id+' / '+(result.applied?'3D更新':'3D保留: '+result.reason));
   return result;
  }catch(error){
-  refreshPendingUi();
+  refreshSavedOsmPresentation();
   addMapDebug('OSM動作確認: 3D更新失敗 / '+String(error.message||error));
   throw error;
  }
@@ -2163,7 +2161,7 @@ async function loadMatsudoMapInBackground(){
     displayed.ready=true;
     if(source==='new'&&displayed.deferredEdits.size){
      for(const entry of displayed.deferredEdits.values()){
-      try{patchLiveGeofabrikMap(displayed,entry,createMeshGeometry);}
+      try{renderSavedOsmChange(displayed,entry);}
       catch(error){onLog('OSM差分: 読み込み中に受け取った編集の再反映失敗 / '+String(error.message||error));}
      }
      displayed.deferredEdits.clear();

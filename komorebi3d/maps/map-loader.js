@@ -1,5 +1,5 @@
 import {reconcilePendingOsmTagChanges,applyPendingOsmTagChangesToMap} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
-import {applyOsmReviewStorageChecksToMap} from './osm-review-storage-check.js?v=local-review-pending-20261122';
+import {applyOsmReviewStorageChecksToMap} from './osm-review-storage-check.js?v=shared-save-workflow-20261122';
 // Two independent 2km Matsudo snapshots. No 500m or live Overpass fetch.
 const TILE_ROOTS=Object.freeze({
  old:'./maps/data/tiles-2km/',

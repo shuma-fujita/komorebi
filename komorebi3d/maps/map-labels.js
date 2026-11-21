@@ -8,10 +8,10 @@ import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
 import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
-import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL,PENDING_LOCAL_REVIEW_LABEL} from './osm-pending-tag-visual.js?v=local-review-pending-20261122';
+import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=shared-save-workflow-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
-import {prependOsmReviewStorageCheck,getOsmReviewStorageCheck,getAllOsmReviewStorageChecks} from './osm-review-storage-check.js?v=local-review-pending-20261122';
+import {prependOsmReviewStorageCheck,getOsmReviewStorageCheck,getAllOsmReviewStorageChecks} from './osm-review-storage-check.js?v=shared-save-workflow-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
@@ -564,7 +564,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   let pending=null;
   // Same two buttons as the approved mock. Keep a separate test-only storage
   // namespace: this never signals a successful production OSM save.
-  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending,onChange:onReviewStorageChange});
+  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending?{...pending,originalTags:baseTags}:pending,onChange:onReviewStorageChange});
   reviewStorageCheck.section.hidden=true;
   confirm.addEventListener('click',()=>{
    try{
@@ -685,10 +685,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
      if(flags.official||flags.local){
       const note=document.createElement('div');
       note.style.cssText='margin:5px 0 2px;padding:4px 6px;border-left:3px solid #ffbd62;background:rgba(255,176,68,.16);border-radius:3px;color:#ffd08a;font:600 10px/1.5 system-ui,-apple-system,sans-serif';
-      for(const [enabled,message] of [[flags.official,PENDING_GEOFABRIK_LABEL],[flags.local,PENDING_LOCAL_REVIEW_LABEL]]){
-       if(!enabled)continue;
-       const line=document.createElement('div');line.textContent=message;note.appendChild(line);
-      }
+      const line=document.createElement('div');
+      line.textContent=PENDING_GEOFABRIK_LABEL;
+      note.appendChild(line);
       card.appendChild(note);
      }
     }
@@ -722,8 +721,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
         row.appendChild(warning);
        };
        if(shop.outsideFootprint)addWarning('⚠ 建物外（外周1m以内・位置要確認）');
-       if(pending.official)addWarning(PENDING_GEOFABRIK_LABEL);
-       if(pending.local)addWarning(PENDING_LOCAL_REVIEW_LABEL);
+       if(pending.official||pending.local)addWarning(PENDING_GEOFABRIK_LABEL);
       }
       row.dataset.osmKey=shop.osmType+':'+shop.osmId;
       row._osmItem=shop;pane.appendChild(row);
