@@ -5,6 +5,12 @@
 export function coveredFieldScrollDelta(fieldBottom,visibleBottom,margin=24){
  return Math.max(0,fieldBottom-(visibleBottom-margin));
 }
+// Extra space is content inside the sheet, not a resize of the sheet itself.
+// The full sheet bottom can be below the keyboard; reserve that hidden part
+// as scrollable trailing space so even the last tag can rise above it.
+export function keyboardTrailingSpace(sheetBottom,visibleBottom,margin=24){
+ return Math.max(0,Math.ceil(sheetBottom-visibleBottom+margin));
+}
 export function attachEditorKeyboardLayout({host,mask,sheet}){
  const game=host.closest('.landscape-game');
  const vv=window.visualViewport;
@@ -14,14 +20,34 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
  const isField=el=>el instanceof Element&&Boolean(el.closest('input,textarea,select,[contenteditable="true"]'));
  let focusedField=null,focusOrigin=null,keyboardSeen=false,pendingBlur=false;
  let blurFrame=0,revealFrame=0,blurTimer=0,disposed=false,diagnostic=null;
+ let trailingSpace=null;
  const keyboardOpen=()=>Boolean(vv)&&vv.height<baselineHeight-KEYBOARD_THRESHOLD;
  const viewportRecovered=()=>!vv||!keyboardOpen();
  function restorePagePosition(point){
   if(point&&(window.scrollX!==point.x||window.scrollY!==point.y))
    window.scrollTo(point.x,point.y);
  }
+ function removeTrailingSpace(){
+  trailingSpace?.remove();
+  trailingSpace=null;
+ }
+ function syncTrailingSpace(){
+  if(!mobile||!keyboardOpen()||!focusedField)return;
+  const visibleBottom=vv.offsetTop+vv.height;
+  const height=keyboardTrailingSpace(sheet.getBoundingClientRect().bottom,visibleBottom);
+  if(height===0){removeTrailingSpace();return;}
+  if(!trailingSpace){
+   trailingSpace=document.createElement('div');
+   trailingSpace.setAttribute('aria-hidden','true');
+   trailingSpace.style.cssText='box-sizing:border-box;display:block;width:100%;min-height:0;pointer-events:none;user-select:none;';
+   sheet.appendChild(trailingSpace);
+  }
+  const value=height+'px';
+  if(trailingSpace.style.height!==value)trailingSpace.style.height=value;
+ }
  function finishBlur(){
   pendingBlur=false;
+  removeTrailingSpace();
   if(blurTimer){clearTimeout(blurTimer);blurTimer=0;}
   if(keyboardSeen)restorePagePosition(focusOrigin);
   keyboardSeen=false;focusOrigin=null;
@@ -31,6 +57,9 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
   if(disposed||!mask.isConnected||!mobile||!keyboardOpen()||
    !focusedField||document.activeElement!==focusedField||
    !sheet.contains(focusedField))return;
+  // First extend the scrollable content; then reveal the covered part.
+  // Do not change the panel/sheet geometry or scroll the document.
+  syncTrailingSpace();
   // The rect is in layout-viewport coordinates. visualViewport.offsetTop
   // is the origin of the portion actually visible above the keyboard.
   const field=focusedField.getBoundingClientRect();
@@ -113,6 +142,7 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
   if(blurFrame)cancelAnimationFrame(blurFrame);
   if(revealFrame)cancelAnimationFrame(revealFrame);
   if(blurTimer)clearTimeout(blurTimer);
+  removeTrailingSpace();
   if(!keyboardSeen||!focusOrigin)return;
   if(viewportRecovered()){restorePagePosition(focusOrigin);return;}
   // Once the keyboard has fully closed, restore the page just once.
