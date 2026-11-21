@@ -19,7 +19,7 @@ assert.deepEqual(sheetGeometry(700,'half',313,-300),{top:510,height:103});
 assert.deepEqual(sheetGeometry(700,'full',313,-300),{top:300,height:313});
 assert.deepEqual(sheetGeometry(700,'half',313,-389),{top:599,height:101});
 assert.deepEqual(sheetGeometry(700,'half',313,30),{top:187,height:96});
-assert.deepEqual(sheetGeometry(700,'half',220,90,-90),{top:90,height:90});
+assert.deepEqual(sheetGeometry(700,'half',220,-90),{top:214,height:96});
 // A very small visible area gives input at least 96px by reducing preview.
 assert.deepEqual(sheetGeometry(700,'half',180,-350),{top:434,height:96});
 
@@ -92,9 +92,9 @@ host.closest=sel=>sel==='.landscape-game'?game:null;
 host.getBoundingClientRect=()=>game.getBoundingClientRect();
 const mask=new Node();
 mask.getBoundingClientRect=()=>({
- top:gameDocumentTop-window.scrollY+vv.offsetTop,
+ top:gameDocumentTop-window.scrollY,
  height:gameHeight,
- bottom:gameDocumentTop-window.scrollY+vv.offsetTop+gameHeight
+ bottom:gameDocumentTop-window.scrollY+gameHeight
 });
 const handle=new Node();
 handle.parentElement=mask;
