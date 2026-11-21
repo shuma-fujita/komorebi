@@ -1,14 +1,11 @@
 import assert from 'node:assert/strict';
-import {keyboardSheetHeight,focusedTagRowScrollDelta,attachEditorKeyboardLayout}
+import {focusedTagRowScrollDelta,attachEditorKeyboardLayout}
  from '../komorebi3d/maps/editor-keyboard-layout.js';
 import {sheetGeometry,panelVisibleRange,attachSheetMotion}
  from '../komorebi3d/maps/sheet-motion.js';
 import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO}
  from '../komorebi3d/maps/building-editor-layout.js';
 
-assert.equal(keyboardSheetHeight(313,210,488),103);
-assert.equal(keyboardSheetHeight(641,210,488),431);
-assert.equal(keyboardSheetHeight(313,210,488,40),63);
 assert.equal(focusedTagRowScrollDelta(600,800,680,760),2);
 assert.equal(Math.round(sheetGeometry(700,'half').height),490);
 assert.deepEqual(sheetGeometry(700,'half',313),{top:210,height:103});
