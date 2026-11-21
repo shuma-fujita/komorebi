@@ -2,9 +2,6 @@
 // OSM but not yet absorbed by the published Geofabrik map.
 // This module does not read localStorage or write to OSM.
 export const PENDING_GEOFABRIK_LABEL='⚠ Geofabrik反映待ち';
-// Legacy export retained for older callers; the on-screen warning is uniform.
-// Review-only entries still never go to the production-success storage.
-export const PENDING_LOCAL_REVIEW_LABEL=PENDING_GEOFABRIK_LABEL;
 
 export function applyPendingTagVisualStyle(form){
  if(form.querySelector('[data-pending-osm-style]'))return;
