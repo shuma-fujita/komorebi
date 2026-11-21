@@ -8,10 +8,10 @@ import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
 import {getPendingOsmTagChange,getAllPendingOsmTagChanges} from './osm-pending-changes.js?v=live-overlay-step2-20261122';
-import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=step3-mock-20261122';
+import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL,PENDING_LOCAL_REVIEW_LABEL} from './osm-pending-tag-visual.js?v=local-review-pending-20261122';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
-import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=3d-review-sync-20261122';
+import {prependOsmReviewStorageCheck,getOsmReviewStorageCheck,getAllOsmReviewStorageChecks} from './osm-review-storage-check.js?v=local-review-pending-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
@@ -23,22 +23,35 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
  let buildings=[];
- // Tenant warning IDs are snapshotted on layer creation and on confirmed
- // production saves. Do not query browser storage during animation frames.
- let pendingTenantKeys=new Set();
+ // Cache both pending sources outside the animation loop. A local review
+ // has never been sent to production OSM.
+ let pendingProductionKeys=new Set(),pendingLocalKeys=new Set();
  function refreshPendingTenants(){
-  if(mapSource!=='new'){pendingTenantKeys=new Set();return;}
+  if(mapSource!=='new'){
+   pendingProductionKeys=new Set();pendingLocalKeys=new Set();return;
+  }
   try{
-   pendingTenantKeys=new Set(getAllPendingOsmTagChanges()
+   pendingProductionKeys=new Set(getAllPendingOsmTagChanges()
     .map(entry=>entry.type+'/'+entry.id));
   }catch(error){
-   console.warn('OSMテナント反映待ちの読み取り失敗',error);
-   pendingTenantKeys=new Set();
+   console.warn('OSM本番反映待ちの読み取り失敗',error);
+   pendingProductionKeys=new Set();
+  }
+  try{
+   pendingLocalKeys=new Set(getAllOsmReviewStorageChecks({
+    onWarning:message=>console.warn(message)
+   }).map(entry=>entry.type+'/'+entry.id));
+  }catch(error){
+   console.warn('OSM動作確認の読み取り失敗',error);
+   pendingLocalKeys=new Set();
   }
  }
  refreshPendingTenants();
- const tenantIsPending=shop=>mapSource==='new'&&
-  pendingTenantKeys.has(shop.osmType+'/'+shop.osmId);
+ const pendingFlags=item=>{
+  const key=item.osmType+'/'+item.osmId;
+  return {official:mapSource==='new'&&pendingProductionKeys.has(key),
+   local:mapSource==='new'&&pendingLocalKeys.has(key)};
+ };
  let cachedShops=[],lastShopKey=null,shopIndexDirty=true;
  function shopsForFocus(key){
   if(shopIndexDirty||lastShopKey!==key){
@@ -425,12 +438,14 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   // Only production OSM tags from the NEW Geofabrik map can be pending.
   // A test OSM copy or an unsaved draft must never acquire this warning.
   function refreshPendingTags(){
-   let pending=null;
+   let pending=null,localReview=null;
    if(mapSource==='new'&&activeSource==='production'){
     try{pending=getPendingOsmTagChange(item.osmType,String(item.osmId));}
-    catch(error){console.warn('OSM反映待ちの読み取り失敗',error);}
+    catch(error){console.warn('OSM本番反映待ちの読み取り失敗',error);}
+    try{localReview=getOsmReviewStorageCheck(item.osmType,String(item.osmId));}
+    catch(error){console.warn('OSM動作確認の読み取り失敗',error);}
    }
-   syncPendingTagRows(rows,{pending,mapSource,dataSource:activeSource});
+   syncPendingTagRows(rows,{pending,localReview,mapSource,dataSource:activeSource});
   }
   refreshEditorPending=refreshPendingTags;
   const sourceRow=document.createElement('div');
@@ -663,6 +678,20 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     title.style.cssText='max-width:186px;overflow:hidden;text-overflow:ellipsis;color:#fff;font:600 13px/1.4 system-ui,-apple-system,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.28);';
     title.textContent=item.name;
     card.append(title);
+    // Building tag edits should be visible in the 3D directory even if
+    // none of the tenant nodes changed.
+    if(item.kind==='building'){
+     const flags=pendingFlags(item);
+     if(flags.official||flags.local){
+      const note=document.createElement('div');
+      note.style.cssText='margin:5px 0 2px;padding:4px 6px;border-left:3px solid #ffbd62;background:rgba(255,176,68,.16);border-radius:3px;color:#ffd08a;font:600 10px/1.5 system-ui,-apple-system,sans-serif';
+      for(const [enabled,message] of [[flags.official,PENDING_GEOFABRIK_LABEL],[flags.local,PENDING_LOCAL_REVIEW_LABEL]]){
+       if(!enabled)continue;
+       const line=document.createElement('div');line.textContent=message;note.appendChild(line);
+      }
+      card.appendChild(note);
+     }
+    }
     if(item.kind==='poi'&&item.tags?.level!==undefined){
      const floor=document.createElement('span');floor.textContent=' / level='+item.tags.level;floor.style.cssText='font-size:10px;color:#7bead8';title.appendChild(floor);
     }
@@ -680,9 +709,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
       row.style.cssText='padding:7px 3px;border-top:1px solid #6f908577;font:12px/1.4 system-ui';
       const prefix=shop.tags?.level!==undefined?'[level='+shop.tags.level+'] ':'';
       row.textContent=prefix+shop.name;
-      const pendingGeofabrik=tenantIsPending(shop);
-      if(shop.outsideFootprint||pendingGeofabrik){
-       // Same yellow treatment as the existing 1m warning. Both can coexist.
+      const pending=pendingFlags(shop);
+      if(shop.outsideFootprint||pending.official||pending.local){
+       // The existing exterior 1m warning and both pending states can coexist.
        row.style.background='rgba(255,176,68,.16)';
        row.style.borderLeft='3px solid #ffbd62';
        row.style.paddingLeft='6px';
@@ -693,7 +722,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
         row.appendChild(warning);
        };
        if(shop.outsideFootprint)addWarning('⚠ 建物外（外周1m以内・位置要確認）');
-       if(pendingGeofabrik)addWarning(PENDING_GEOFABRIK_LABEL);
+       if(pending.official)addWarning(PENDING_GEOFABRIK_LABEL);
+       if(pending.local)addWarning(PENDING_LOCAL_REVIEW_LABEL);
       }
       row.dataset.osmKey=shop.osmType+':'+shop.osmId;
       row._osmItem=shop;pane.appendChild(row);
@@ -910,7 +940,13 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    const heightLimit=Math.max(1,Math.floor(rect.height-42));
    const topInset=Math.min(28,Math.max(8,Math.floor(rect.height*.06)));
    const {item}=ranked[0];
-   const signature=selectedKey+'|'+shops.map(shop=>shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')+':'+(shop.outsideFootprint?'outside':'inside')+':'+(tenantIsPending(shop)?'pending':'synced')).join('|');
+   const buildingPending=pendingFlags(item);
+   const signature=selectedKey+'|building:'+Number(buildingPending.official)+':'+Number(buildingPending.local)+'|'+
+    shops.map(shop=>{
+     const pending=pendingFlags(shop);
+     return shop.osmType+':'+shop.osmId+':'+shop.name+':'+(shop.tags?.level??'')+':'+
+      (shop.outsideFootprint?'outside':'inside')+':'+Number(pending.official)+':'+Number(pending.local);
+    }).join('|');
    if(viewport.summary?.signature!==signature){
     viewport.summary?.el.remove();
     viewport.summary=createItem(item,widthLimit,heightLimit);
