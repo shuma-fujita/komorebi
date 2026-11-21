@@ -81,6 +81,9 @@ export function attachEditorKeyboardLayout({host,mask,sheet,onViewportChange}){
   focused=true;pendingBlur=false;revealField=null;
   if(blurTimer){clearTimeout(blurTimer);blurTimer=0;}
   schedule();
+  // Switching to a different tag field while the keyboard is already open
+  // also needs one native reveal, even without a new viewport resize.
+  if(keyboardSeen&&vv.height<initialVisualHeight-KEYBOARD_THRESHOLD)scheduleReveal();
  }
  function onFocusOut(){
   if(!mobile)return;
