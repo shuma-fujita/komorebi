@@ -43,7 +43,10 @@ export function attachEditorKeyboardLayout({host,mask,sheet,onViewportChange}){
    }
    if(revealField!==input){
     revealField=input;
-    input.scrollIntoView?.({block:'center',inline:'nearest',behavior:'instant'});
+    const fieldBounds=input.getBoundingClientRect();
+    const visibleTop=vv.offsetTop+8,visibleBottom=vv.offsetTop+vv.height-8;
+    if(fieldBounds.top<visibleTop||fieldBounds.bottom>visibleBottom)
+     input.scrollIntoView?.({block:'center',inline:'nearest',behavior:'auto'});
    }
   },KEYBOARD_SETTLE_MS);
  }
