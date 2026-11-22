@@ -33,6 +33,8 @@ export async function loadMap({onLog=()=>{},signal,source='old'}={}){
  const map=verify(await response.json());
  if(map.tile?.id!==TEST_TILE_ID||map.tile?.sizeM!==2000||map.tile?.gridX!==0||map.tile?.gridY!==0)
   throw Error(label+' タイルID/サイズ/原点が不正: '+TEST_TILE_ID);
+ // Retain the exact filename chosen by this map's index.json, not a guessed timestamp.
+ map.tileFilename=filename;
  // Only the validated NEW Geofabrik map may release absorbed local edits.
  if(source==='new'){
   const options={source,onWarning:msg=>onLog('OSM差分: '+msg)};

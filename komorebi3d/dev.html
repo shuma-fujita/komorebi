@@ -698,7 +698,8 @@ import { CharacterMotionCore2D } from "https://cdn.jsdelivr.net/gh/shuma-fujita/
 import {createGameView,mountRuntimeStatusPanel,mountTestControlsPanel} from "./dev-panel-components.js?v=matsudo-2km-ab-20261120";
 import {mountDefaultPanelLayoutEditor} from "./dev-panel-layout.js?v=storage-four-slots-20261122";
 import {mountLocalStorageManager} from "./local-storage-panel.js?v=storage-search-clear-20261122";
-import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=storage-manager-v1-20261122";
+import {loadMap,TEST_TILE_ID} from "./maps/map-loader.js?v=json-filename-indicator-20261122";
+import {createMapFilenameIndicator} from "./maps/map-filename-indicator.js?v=json-filename-indicator-20261122";
 import {recordConfirmedOsmTagChanges} from "./maps/osm-pending-changes.js?v=storage-manager-v1-20261122";
 import {patchLiveGeofabrikMap} from "./maps/map-live-osm-changes.js?v=live-overlay-step2-20261122";
 import {getOsmReviewStorageCheck} from "./maps/osm-review-storage-check.js?v=storage-manager-v1-20261122";
@@ -712,6 +713,10 @@ window.__komorebiModuleStarted=true;
 const $=id=>document.getElementById(id);
 // Panel display logic is imported; game simulation remains here.
 const gameView=createGameView(document.querySelector('.landscape-game'));
+const mapFilenameIndicators={
+ A:createMapFilenameIndicator(gameView?document.getElementById('panel-a'):null),
+ B:createMapFilenameIndicator(gameView?document.getElementById('panel-b'):null)
+};
 
 // Game-to-panel boundary: status events are buffered even when no status panel is mounted.
 const runtimeStatusValues=new Map();
@@ -1760,6 +1765,13 @@ function setLabelDebugVisible(visible){
  publishGameState();
 }
 const matsudoMaps={old:null,new:null};
+function refreshMapFilenameIndicators(){
+ for(const screen of ['A','B']){
+  const filename=activeWorld==='matsudo'
+   ?matsudoMaps[screenConfigs[screen].map]?.tileFilename:null;
+  mapFilenameIndicators[screen].setFilename(filename);
+ }
+}
 let flightAltitude=0;
 function productRenderSnapshot(screen,frameId){
  // The tenant editor renders just the selected building, not the helicopter or city.
@@ -1996,9 +2008,11 @@ async function loadMatsudoMapInBackground(){
      halfSize:1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
     });
     const displayed={meshes:[],mapFeatures:[],labels:[],mapSpan:2000,
-     sourceMap:source==='new'?map:null,buildingSlices:new Map(),liveMeshes:new Map(),
+     sourceMap:source==='new'?map:null,tileFilename:map.tileFilename,
+     buildingSlices:new Map(),liveMeshes:new Map(),
      ready:false,deferredEdits:new Map(),deferredReviewKeys:new Set()};
     matsudoMaps[source]=displayed;
+    refreshMapFilenameIndicators();
     const workStart=performance.now();
     let result=builder.next(),batchIndex=0,processedInSlice=0;
     let sliceStart=performance.now(),maxSliceMs=0,maxFeaturesInSlice=0,totalSlices=0;
@@ -2321,6 +2335,7 @@ async function setWorld(name){
    initialState:name==='forest'?{x:0,z:4.5,angle:.55,spin:0}:{x:-42,z:28,angle:-Math.PI/2,spin:0},
    tapRadians:.14,spinRadiansPerFrame:.025,moveUnitsPerFrame:.095,deadzone:.06});
   activeWorld=name;
+  refreshMapFilenameIndicators();
   resetHouse();engineInputAdapter?.resetZoom();
   flightAltitude=name==='matsudo'?20:0;
   cameraRig.targetY=flightAltitude+1.65;
@@ -2357,6 +2372,7 @@ function setScreenConfig({screen,setting,value}={}){
     !(setting==='map'?['old','new']:['A','B']).includes(value))return false;
  if(screenConfigs[screen][setting]===value)return true;
  screenConfigs={...screenConfigs,[screen]:{...screenConfigs[screen],[setting]:value}};
+ if(setting==='map')refreshMapFilenameIndicators();
  if(setting==='engine')void reconfigureScreenRenderer(screen);
  if(setting==='map'&&activeWorld==='matsudo'){
    if(matsudoMaps[value])try{applyMatsudoScreenLabels(screen);}catch(error){addMapDebug('ラベル切替失敗: '+error.message);}
