@@ -168,7 +168,8 @@ assert.notStrictEqual(liveWorld.texturedFaces[0],built.texturedFaces[0],
 assert.ok(liveWorld.texturedFaces[0].positions.every((n,i)=>i%3!==1||
   n>=floor-1e-8&&n<=2*floor+1e-8),'Live level change should move PNG down to 2F');
 const update2=patchLiveGeofabrikMap(liveWorld,{type:'node',id:poi.id,
- version:1,changes:{name:'他の店'}},createGeometry);
+ version:1,changes:{name:'他の店',brand:'他の店',
+ 'brand:ja':null,'brand:en':null,'name:ja':null,'name:en':null}},createGeometry);
 assert.equal(update2.applied,true);
 assert.equal(liveWorld.texturedFaces.length,0,'Removing McDonalds name clears the UV wall');
 const asset=readFileSync(join('komorebi3d','assets','textures','brands','mcdonalds.png'));
