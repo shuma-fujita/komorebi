@@ -43,13 +43,17 @@ assert.equal(paintMatsudoMcDonaldsSign((mesh,a,b,c,d,color)=>simple.push({a,b,c,
  rectangle,27,{levels:9}),true);
 assert.equal(simple.filter(q=>q.color===MC_SIGN_BG).length,4);
 assert.equal(simple.filter(q=>q.color===MC_SIGN_GOLD).length,144);
-for(let wall=0;wall<4;wall++){
- const redPanel=simple[wall];
- const logo=simple.slice(4+wall*36,4+(wall+1)*36);
- const center=axis=>[redPanel.a,redPanel.b,redPanel.c,redPanel.d].reduce((s,p)=>s+p[axis],0)/4;
- const avg=axis=>logo.flatMap(q=>[q.a,q.b,q.c,q.d]).reduce((s,p)=>s+p[axis],0)/(logo.length*4);
- const axis=Math.abs(redPanel.a[0]-redPanel.b[0])>Math.abs(redPanel.a[2]-redPanel.b[2])?0:2;
- assert.ok(Math.abs(avg(axis)-center(axis))<.5,'M is horizontally centered on each facade');
+const redCenters=simple.filter(q=>q.color===MC_SIGN_BG).map(q=>
+ [0,2].map(axis=>[q.a,q.b,q.c,q.d].reduce((s,p)=>s+p[axis],0)/4));
+const logoCenters=Array.from({length:4},(_,i)=>{
+ const logo=simple.slice(4+i*36,4+(i+1)*36);
+ return [0,2].map(axis=>logo.flatMap(q=>[q.a,q.b,q.c,q.d])
+  .reduce((s,p)=>s+p[axis],0)/(logo.length*4));
+});
+for(const redCenter of redCenters){
+ const matches=logoCenters.filter(goldCenter=>
+  Math.hypot(goldCenter[0]-redCenter[0],goldCenter[1]-redCenter[1])<.2);
+ assert.equal(matches.length,1,'One centered M on each of the four facades');
 }
 assert.equal(paintMatsudoMcDonaldsSign(paint,{},points,5,{levels:9}),false);
 assert.equal(paintMatsudoMcDonaldsSign(paint,{},[[0,0],[10,0],[5,5]],27,{levels:9}),false);
