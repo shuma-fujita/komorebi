@@ -3,7 +3,9 @@
 // surfaces on the building wall, not free-standing sign boards.
 const TEXTURE_URLS=Object.freeze({
  mcdonalds:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
- daiso:new URL('../assets/textures/brands/daiso.png',import.meta.url).href
+ daiso:new URL('../assets/textures/brands/daiso.png',import.meta.url).href,
+ gusto:new URL('../assets/textures/brands/gusto.png',import.meta.url).href,
+ torikizoku:new URL('../assets/textures/brands/torikizoku.png',import.meta.url).href
 });
 
 function perspective(fov,aspect,near,far){
@@ -128,7 +130,7 @@ export function createMapFacadeTextureLayer(renderer){
      }finally{gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);}
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-     // Both logos are NPOT in WebGL1: no mipmaps and CLAMP_TO_EDGE.
+     // The store logos are NPOT-compatible in WebGL1: no mipmaps, CLAMP_TO_EDGE.
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
     }
