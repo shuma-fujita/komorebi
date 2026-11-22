@@ -24,6 +24,10 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
  const viewports=[...host.querySelectorAll('.view-panel > canvas')].map((canvas,i)=>({canvas,screen:i===0?'A':'B',items:[]})).filter(viewport=>screen===null||viewport.screen===screen);
  let entries=[];
  let buildings=[];
+ // Cache OSM tag ordering while showing the map, before opening the editor.
+ const tagOrderPromise=loadOsmTagOrder();
+ let cachedTagOrderRules=[];
+ tagOrderPromise.then(rules=>{cachedTagOrderRules=rules;});
  // Cache saved OSM tag keys outside the animation loop; one record per element.
  let pendingTenantKeys=new Set();
  function refreshPendingTenants(){
@@ -135,8 +139,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   const baseTags={...(item.originalTags||item.tags||{})};
   const initial={...baseTags};
   const editTarget={osmType:item.osmType,osmId:item.osmId};
-  const tagOrderPromise=loadOsmTagOrder();
-  let tagOrderRules=[];
+  let tagOrderRules=cachedTagOrderRules;
   const mask=document.createElement('div');
   mask.style.cssText='position:absolute;inset:0;z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(8,18,25,.18);pointer-events:auto;';
   // Gesture surface covers only the visible upper-half building preview.
@@ -284,6 +287,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     copyCreated=true;
     const saved=saveOsmTestLink(item.osmType,String(item.osmId),result.type,result.id);
     linkedTestTarget={type:result.type,id:String(result.id)};
+    testPrefetchPromise=null;testPrefetchResult=null;
     copyButton.textContent='コピー済み';
     copyStatus.textContent=saved?'':'※ IDの端末保存に失敗しました。今回のIDを控えてください。';
     copySuccessText.textContent='✅ コピー完了！\nテスト用 '+result.type+'/'+result.id+'\nchangeset '+result.changesetId;
@@ -294,6 +298,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     targetType.value=result.type;targetId.value=result.id;
     loaded=null;testDetails.hidden=true;syncTestControls();
     testTags=null;testDraft=null;
+    preloadTestOsm();
     await setSource('test');
    }catch(e){copySuccess.hidden=true;copyStatus.textContent='コピー作成エラー: '+e.message;}
    finally{copyBusy=false;refreshCopyButtons();}
@@ -439,6 +444,10 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    busy=true;syncTestControls();testStatus.textContent='テストサーバーへ送信中…';
    try{
     const result=await sendOsmTestLevel(loaded,levelValue,selectedChangesetSource());
+    // After an actual test write, discard the old snapshot and refresh silently.
+    testPrefetchPromise=null;testPrefetchResult=null;
+    testTags=null;testDraft=null;testReady=false;
+    preloadTestOsm();
     testStatus.textContent='テスト送信成功！ changeset: '+result.changesetId+' / 新version: '+result.newVersion;
     const resultLink=document.createElement('a');resultLink.href=result.elementUrl;resultLink.target='_blank';resultLink.rel='noopener noreferrer';resultLink.textContent='テスト環境で更新された要素を見る';
     testStatus.append(document.createTextNode('\n'),resultLink);
@@ -453,6 +462,19 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   confirm.className='komo-action';back.className='komo-action komo-action-secondary';
   confirm.hidden=true;
   let activeSource='production',testTags=null,testDraft=null,productionDraft=null,testReady=false,sourceRequest=0;
+  // Only an in-memory cache scoped to this editor. Fetched tags never enter localStorage.
+  let testPrefetchPromise=null,testPrefetchResult=null;
+  function preloadTestOsm(){
+   if(!linkedTestTarget)return null;
+   if(!testPrefetchPromise){
+    const target={...linkedTestTarget};
+    const task=osmTestOAuthReturn.then(()=>getOsmTestElement(target.type,target.id))
+     .then(data=>({data}),error=>({error}));
+    testPrefetchPromise=task;
+    task.then(result=>{if(testPrefetchPromise===task)testPrefetchResult=result;});
+   }
+   return testPrefetchPromise;
+  }
   // Only production OSM tags from the NEW Geofabrik map can be pending.
   // A test OSM copy or an unsaved draft must never acquire this warning.
   function refreshPendingTags(){
@@ -544,41 +566,45 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    if(activeSource==='production'&&rows.children.length)productionDraft=captureDraft();
    activeSource=source;
    refreshOsmPageLink();
-   // While the new source's tags are loading, the rows still belong to the
-   // previous source. Clear highlights first; only renderTags may reapply them.
+   // Pending highlights must belong to the chosen source, not the previous one.
    syncPendingTagRows(rows,{pending:null,mapSource,dataSource:activeSource});
    const request=++sourceRequest;
    for(const [name,button] of Object.entries(sourceButtons))
     button.setAttribute('aria-pressed',String(name===source));
-   sourceStatus.textContent='タグ表示順を読み込み中…';
-   tagOrderRules=await tagOrderPromise;
-   if(request!==sourceRequest||!editor)return;
    if(source==='production'){
+    // Use the already loaded game-map tags; do not clear or fetch them.
+    tagOrderRules=cachedTagOrderRules;
     testReady=false;
     renderTags(productionDraft??baseTags,true);
     sourceStatus.textContent='本番OSMのタグを編集・追加して変更内容を確認できます。この画面から本番OSMへの送信・保存は行いません。';
     return;
    }
+   sourceStatus.textContent='タグ表示順を読み込み中…';
+   tagOrderRules=await tagOrderPromise;
+   if(request!==sourceRequest||editor!==mask)return;
    if(!linkedTestTarget){
     testReady=false;renderTags({},false);
     sourceStatus.textContent='テストOSMにコピーがまだありません。右上の「テスト環境へコピー」で複製してください。';
     return;
    }
-   testReady=false;renderTags({},false);
-   sourceStatus.textContent='テストOSMから実際のタグを読み込み中…';
-   try{
-    await osmTestOAuthReturn;
-    const data=await getOsmTestElement(linkedTestTarget.type,linkedTestTarget.id);
-    if(request!==sourceRequest||!editor)return;
-    testTags={...data.tags};
-    testReady=true;
-    renderTags(testDraft??testTags,true);
-    sourceStatus.textContent='テストOSM '+data.type+'/'+data.id+' を表示中。変更の送信は現在levelタグの追加だけに対応しています。';
-   }catch(error){
-    if(request!==sourceRequest||!editor)return;
+   // Switch to a prefetched test copy without flashing an empty tag list.
+   const ready=testPrefetchResult?.data?testPrefetchResult:null;
+   if(!ready){
     testReady=false;renderTags({},false);
-    sourceStatus.textContent='テストOSMの読み込み失敗：'+error.message+'。本番OSMのタグは代わりに表示しません。';
+    sourceStatus.textContent='テストOSMから実際のタグを読み込み中…';
    }
+   const result=ready??await preloadTestOsm();
+   if(request!==sourceRequest||editor!==mask)return;
+   if(result?.error){
+    testReady=false;renderTags({},false);
+    sourceStatus.textContent='テストOSMの読み込み失敗：'+String(result.error.message||result.error)+'。本番OSMのタグは代わりに表示しません。';
+    return;
+   }
+   const data=result.data;
+   testTags={...data.tags};
+   testReady=true;
+   renderTags(testDraft??testTags,true);
+   sourceStatus.textContent='テストOSM '+data.type+'/'+data.id+' を表示中。変更の送信は現在levelタグの追加だけに対応しています。';
   }
   function collect(){
    if(activeSource==='test'&&(!testReady||!testTags||!linkedTestTarget))
@@ -645,7 +671,6 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   applyPendingTagVisualStyle(form); // Same approved yellow design as the mock.
   // Use actual test data when an element has already been copied; never
   // mislabel local production tags as test data.
-  setSource(linkedTestTarget?'test':'production');
   form.style.zIndex='2';
   mask.append(previewTouch,form);host.appendChild(mask);editor=mask;
   editorKeyboardLayout=attachEditorKeyboardLayout({host,mask,sheet:form});
@@ -654,6 +679,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   const selectedFeature=buildings.find(b=>b.osmType+':'+b.osmId===selectedKey)||null;
   onEditorStateChange?.(true,{building:selectedFeature,shops:selectedFeature?shopsForFocus(selectedKey):[],screen});
   if(selectedFeature)editorPreviewGestures?.startAutoRotate();
+  setSource('production');
+  // Prepare the test view in the background; do not change the visible source.
+  if(linkedTestTarget)preloadTestOsm();
  }
  // Add only newly completed feature labels; preserve the existing HTML
  // cards and their OSM editing callbacks between progressive display batches.
