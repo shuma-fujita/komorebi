@@ -69,7 +69,7 @@ for(const index of logos){
   'Image wall patch must remain square');
 }
 const noShop=render({name:'DAISO',level:'1'});
-assert.equal(noShop.texturedFaces.length,0,'Only shop POIs are DAISO');
+assert.equal(noShop.texturedFaces.length,1,'Logo identity is independent of shop/amenity categories');
 assert.equal(render({shop:'variety_store',name:'別の百円ショップ',level:'1'})
  .texturedFaces.length,0);
 assert.equal(render({shop:'variety_store',name:'ダイソー'})
