@@ -60,10 +60,45 @@ assert.equal(paintMatsudoMcDonaldsSign(paint,{},[[0,0],[10,0],[5,5]],27,{levels:
 const map={source:'OpenStreetMap contributors',elements:[node,building]};
 const rendered=buildMap(map,{latitude:lat,longitude:lon,halfSize:1000});
 assert.equal(rendered.counts.buildings,1);
-assert.ok(rendered.meshes.some(mesh=>mesh.colors.some((v,i)=>i%3===0&&Math.abs(v-(MC_SIGN_GOLD>>16)/255)<1e-6)),
- 'Yellow logo triangles must reach shared A/B mesh outputs');
+assert.equal(rendered.texturedFaces.length,1,'One UV facade descriptor for the Matsudo building');
+assert.equal(rendered.texturedFaces[0].texture,'mcdonalds');
+assert.ok(rendered.texturedFaces[0].positions.length>=18*walls.length,
+ 'The second-floor perimeter has UV triangles');
+assert.equal(rendered.displayBatches.flatMap(b=>b.texturedFaces||[]).length,1,
+ 'UV facade belongs to exactly one generated display batch');
 const withoutLogo=buildMap({...map,elements:[building]}, {latitude:lat,longitude:lon,halfSize:1000});
 const vertexCount=result=>result.meshes.reduce((n,m)=>n+m.positions.length,0);
-assert.equal(vertexCount(rendered)-vertexCount(withoutLogo),quads.length*18,
- 'Only the target building receives extra colored quads');
-console.log('McDonalds 2F facade PASS: perimeter red, 4 centered M logos, other buildings unchanged');
+assert.equal(withoutLogo.texturedFaces.length,0);
+assert.equal(vertexCount(rendered)-vertexCount(withoutLogo),red.length*18,
+ 'The fixed Engine receives only red fallback quads, not baked-in yellow arch polygons');
+const uvFaces=[],uvQuads=[];
+assert.equal(paintMatsudoMcDonaldsSign(
+ (mesh,a,b,c,d,color)=>uvQuads.push({vertices:[a,b,c,d],color}),{},
+ points,height,{levels:9,texturedFaces:uvFaces}),true);
+assert.equal(uvFaces.length,1);
+assert.equal(uvQuads.length,red.length);
+const surface=uvFaces[0];
+assert.equal(surface.positions.length/3*2,surface.uvs.length);
+assert.ok(surface.positions.every(Number.isFinite));
+assert.ok(surface.uvs.every(Number.isFinite));
+const logoBlocks=[];
+for(let i=0;i<surface.uvs.length;i+=12){
+ const block=surface.uvs.slice(i,i+12);
+ if(block.join(',')==='0,0,1,0,1,1,0,0,1,1,0,1')
+  logoBlocks.push(i/12);
+ else assert.ok(block.every(v=>v===.04),'Non-logo areas sample the original PNG red corner');
+}
+assert.equal(logoBlocks.length,4,'Four square UV logo areas on the four main facades');
+for(const i of logoBlocks){
+ const p=surface.positions.slice(i*18,i*18+18);
+ const vertices=Array.from({length:6},(_,j)=>p.slice(j*3,j*3+3));
+ assert.ok(vertices.every(v=>v[1]>floor&&v[1]<2*floor));
+ const a=vertices[0],b=vertices[1],c=vertices[2];
+ const width=Math.hypot(b[0]-a[0],b[2]-a[2]),height=c[1]-b[1];
+ assert.ok(Math.abs(width-height)<.0001,'Square image does not distort on the facade');
+}
+const asset=readFileSync(join('komorebi3d','assets','textures','brands','mcdonalds.png'));
+assert.equal(asset.subarray(1,4).toString(),'PNG');
+assert.equal(asset.readUInt32BE(16),554);
+assert.equal(asset.readUInt32BE(20),554);
+console.log('McDonalds PNG UV facade PASS: 4 centered square logos, red perimeter, A/B-independent map data');
