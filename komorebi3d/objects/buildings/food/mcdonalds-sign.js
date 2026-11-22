@@ -1,36 +1,9 @@
-// Single-site McDonald's second-floor facade for Matsudo station.
-// Colored polygon artwork instead of external images or textures: both
-// fixed A/B renderers support positions/normals/colors, but not image UVs.
-// This changes neither OSM data nor any other McDonald's location.
-export const MATSUDO_MCDONALDS_POI_ID=2992364618;
-export const MATSUDO_MCDONALDS_BUILDING_ID=72709443;
+// McDonald's PNG UV facade. Level/position/owner are decided by OSM POI
+// matching and the shared food floor resolver, never hard-coded here.
+// The fixed Engine receives ordinary red fallback polygons; A/B app texture
+// layers draw the same PNG on wall-aligned zero-thickness UV triangles.
 export const MC_SIGN_BG=0xdb0007;
 export const MC_SIGN_GOLD=0xffcf16;
-export const MC_SIGN_WIDTH_M=3.6;
-export const MC_SIGN_HEIGHT_M=2.25;
-
-function pointInside(point,polygon){
- const [x,z]=point;
- let result=false;
- for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
-  const [ax,az]=polygon[j],[bx,bz]=polygon[i];
-  if((az>z)!==(bz>z)&&x<(bx-ax)*(z-az)/(bz-az)+ax)result=!result;
- }
- return result;
-}
-export function findMatsudoMcDonaldsBuilding(elements,project){
- const store=elements.find(e=>e.type==='node'&&String(e.id)===String(MATSUDO_MCDONALDS_POI_ID)&&
-  e.tags?.amenity==='fast_food'&&
-  (e.tags['brand:wikidata']==='Q38076'||
-   /(?:mcdonald|マクドナルド)/i.test(String(e.tags.brand||e.tags.name||''))));
- const building=elements.find(e=>e.type==='way'&&String(e.id)===String(MATSUDO_MCDONALDS_BUILDING_ID)&&
-  e.tags?.building&&e.tags.building!=='no'&&e.geometry?.length>=4);
- if(!store||!building||!Number.isFinite(store.lat)||!Number.isFinite(store.lon))return null;
- const polygon=building.geometry.map(project);
- if(!polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
-    !pointInside(project(store),polygon))return null;
- return MATSUDO_MCDONALDS_BUILDING_ID;
-}
 const curve=(a,b,c,d,t)=>{
  const k=1-t;return k*k*k*a+3*k*k*t*b+3*k*t*t*c+t*t*t*d;
 };
@@ -53,7 +26,7 @@ function goldenArch(quad,controls){
   previous={left,right};
  }
 }
-// A single texture descriptor covers the whole second-floor perimeter.
+// A texture descriptor covers the selected OSM level's whole perimeter.
 // Its logo sections use the full image UVs; every other section samples
 // the PNG's solid-red corner. No protruding sign board is created.
 function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
@@ -62,11 +35,10 @@ function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
   surface.uvs.push(...uv);
  }
 }
-export function paintMatsudoMcDonaldsSign(quad,mesh,polygon,height,{levels=9,texturedFaces=null}={}){
- if(!Array.isArray(polygon)||polygon.length<4||!Number.isFinite(height)||
-  !Number.isFinite(levels)||levels<2||!polygon.every(p=>p.length===2&&p.every(Number.isFinite)))return false;
- const floor=height/levels;
- if(floor<1.5)return false;
+export function paintMcDonaldsFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null}={}){
+ if(!Array.isArray(polygon)||polygon.length<4||
+  !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
+  !polygon.every(p=>p.length===2&&p.every(Number.isFinite)))return false;
  let twiceArea=0;
  for(let i=0;i<polygon.length;i++){
   const p=polygon[i],q=polygon[(i+1)%polygon.length];
@@ -85,7 +57,7 @@ export function paintMatsudoMcDonaldsSign(quad,mesh,polygon,height,{levels=9,tex
   .sort((a,b)=>b.length-a.length||a.i-b.i).slice(0,4);
  if(logoWalls.length!==4)return false;
  const useTexture=Array.isArray(texturedFaces);
- const surface={texture:'mcdonalds',positions:[],uvs:[]};
+ const surface={texture:'mcdonalds',ownerKey,positions:[],uvs:[]};
  const red=[.04,.04]; // PNG corner: flat red, away from the yellow M.
  const place=(wall,u,y,offset)=>{
   const {a,dx,dz,length}=wall;
@@ -99,28 +71,28 @@ export function paintMatsudoMcDonaldsSign(quad,mesh,polygon,height,{levels=9,tex
  }
  for(const wall of walls){
   // The red polygon is also the safe fallback while the PNG loads.
-  quad(mesh,place(wall,0,floor,.07),place(wall,wall.length,floor,.07),
-   place(wall,wall.length,2*floor,.07),place(wall,0,2*floor,.07),MC_SIGN_BG);
+  quad(mesh,place(wall,0,bottom,.07),place(wall,wall.length,bottom,.07),
+   place(wall,wall.length,top,.07),place(wall,0,top,.07),MC_SIGN_BG);
   const isLogoWall=logoWalls.includes(wall);
   if(!isLogoWall){
-   if(useTexture)face(wall,0,wall.length,floor,2*floor);
+   if(useTexture)face(wall,0,wall.length,bottom,top);
    continue;
   }
-  const size=Math.min(2.65,floor-.28,wall.length-.35);
+  const size=Math.min(2.65,top-bottom-.28,wall.length-.35);
   const left=(wall.length-size)/2,right=(wall.length+size)/2;
-  const bottom=1.5*floor-size/2,top=1.5*floor+size/2;
+  const logoBottom=(bottom+top)/2-size/2,logoTop=(bottom+top)/2+size/2;
   if(useTexture){
    // One continuous UV-mapped wall surface: red bands plus a square
    // logo, preserving image aspect ratio and each facade's center.
-   face(wall,0,left,floor,2*floor);
-   face(wall,right,wall.length,floor,2*floor);
-   face(wall,left,right,floor,bottom);
-   face(wall,left,right,top,2*floor);
-   face(wall,left,right,bottom,top,[0,0],[1,0],[1,1],[0,1]);
+   face(wall,0,left,bottom,top);
+   face(wall,right,wall.length,bottom,top);
+   face(wall,left,right,bottom,logoBottom);
+   face(wall,left,right,logoTop,top);
+   face(wall,left,right,logoBottom,logoTop,[0,0],[1,0],[1,1],[0,1]);
   }else{
    // Legacy/editor preview compatibility without changing fixed Engine.
    const imagePoint=(x,y)=>place(wall,wall.length/2+x*size/2.25,
-    1.5*floor+y*size/2.1,.12);
+    (bottom+top)/2+y*size/2.1,.12);
    const logoQuad=(p0,p1,p2,p3,color)=>quad(mesh,
     imagePoint(p0[0],p0[1]),imagePoint(p1[0],p1[1]),
     imagePoint(p2[0],p2[1]),imagePoint(p3[0],p3[1]),color);
