@@ -23,24 +23,43 @@ const points=building.geometry.slice(0,-1).map(xy),quads=[];
 const height=Number(building.tags['building:levels'])*3;
 const paint=(mesh,a,b,c,d,color)=>quads.push({vertices:[a,b,c,d],color});
 assert.equal(paintMatsudoMcDonaldsSign(paint,{},points,height,{levels:9}),true);
-assert.equal(quads.length,37,'One red sign plus 36 golden-arch polygons');
-assert.equal(quads.filter(q=>q.color===MC_SIGN_BG).length,1);
-assert.equal(quads.filter(q=>q.color===MC_SIGN_GOLD).length,36);
-const panel=quads[0].vertices;
-assert.ok(panel.every(p=>p[1]>3&&p[1]<6),'The sign sits entirely on 2F');
-assert.ok(quads.slice(1).every(q=>q.vertices.every(p=>p[1]>3&&p[1]<6)),
- 'Golden arches stay within the second floor');
-const centerZ=panel.reduce((acc,p)=>acc+p[2],0)/panel.length;
-const northMost=Math.min(...points.map(p=>p[1]));
-assert.ok(centerZ<northMost+15,'Logo should be placed on the station-facing northern facade');
+const floor=height/9;
+const walls=points.filter((a,i)=>Math.hypot(points[(i+1)%points.length][0]-a[0],points[(i+1)%points.length][1]-a[1])>.1);
+const red=quads.filter(q=>q.color===MC_SIGN_BG);
+const gold=quads.filter(q=>q.color===MC_SIGN_GOLD);
+assert.equal(red.length,walls.length,'Entire 2F outer perimeter is red');
+assert.equal(gold.length,4*36,'Exactly four M logos, 36 gold polygons each');
+for(const panel of red){
+ assert.equal(panel.vertices[0][1],floor);
+ assert.equal(panel.vertices[1][1],floor);
+ assert.equal(panel.vertices[2][1],2*floor);
+ assert.equal(panel.vertices[3][1],2*floor);
+}
+assert.ok(gold.every(q=>q.vertices.every(p=>p[1]>floor&&p[1]<2*floor)),
+ 'All gold arches stay completely inside the second floor');
+// A simple four-wall building receives one centered M on each wall.
+const rectangle=[[0,0],[18,0],[18,12],[0,12]],simple=[];
+assert.equal(paintMatsudoMcDonaldsSign((mesh,a,b,c,d,color)=>simple.push({a,b,c,d,color}),{},
+ rectangle,27,{levels:9}),true);
+assert.equal(simple.filter(q=>q.color===MC_SIGN_BG).length,4);
+assert.equal(simple.filter(q=>q.color===MC_SIGN_GOLD).length,144);
+for(let wall=0;wall<4;wall++){
+ const redPanel=simple[wall];
+ const logo=simple.slice(4+wall*36,4+(wall+1)*36);
+ const center=axis=>[redPanel.a,redPanel.b,redPanel.c,redPanel.d].reduce((s,p)=>s+p[axis],0)/4;
+ const avg=axis=>logo.flatMap(q=>[q.a,q.b,q.c,q.d]).reduce((s,p)=>s+p[axis],0)/(logo.length*4);
+ const axis=Math.abs(redPanel.a[0]-redPanel.b[0])>Math.abs(redPanel.a[2]-redPanel.b[2])?0:2;
+ assert.ok(Math.abs(avg(axis)-center(axis))<.5,'M is horizontally centered on each facade');
+}
 assert.equal(paintMatsudoMcDonaldsSign(paint,{},points,5,{levels:9}),false);
+assert.equal(paintMatsudoMcDonaldsSign(paint,{},[[0,0],[10,0],[5,5]],27,{levels:9}),false);
 const map={source:'OpenStreetMap contributors',elements:[node,building]};
 const rendered=buildMap(map,{latitude:lat,longitude:lon,halfSize:1000});
 assert.equal(rendered.counts.buildings,1);
 assert.ok(rendered.meshes.some(mesh=>mesh.colors.some((v,i)=>i%3===0&&Math.abs(v-(MC_SIGN_GOLD>>16)/255)<1e-6)),
- 'Yellow logo triangles must reach the shared A/B mesh outputs');
+ 'Yellow logo triangles must reach shared A/B mesh outputs');
 const withoutLogo=buildMap({...map,elements:[building]}, {latitude:lat,longitude:lon,halfSize:1000});
 const vertexCount=result=>result.meshes.reduce((n,m)=>n+m.positions.length,0);
 assert.equal(vertexCount(rendered)-vertexCount(withoutLogo),quads.length*18,
- 'Only the target building receives 37 extra colored quads');
-console.log('McDonalds sign PASS: exact OSM node+building, 2F north facade, 37 colored quads, no other building');
+ 'Only the target building receives extra colored quads');
+console.log('McDonalds 2F facade PASS: perimeter red, 4 centered M logos, other buildings unchanged');
