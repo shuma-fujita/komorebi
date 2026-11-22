@@ -99,7 +99,6 @@ assert.ok(manager.includes("searchButton.addEventListener('click'"),'OSM ID butt
 assert.ok(manager.includes('filter.value=id'),'ID tap populates the search field');
 assert.ok(manager.includes("feedback.textContent='OSM ID '"),'Product ID search provides feedback');
 assert.ok(manager.includes("row.appendChild(searchButton)"),'Product adds the ID shortcut to the item');
-assert.ok(dev.includes('storage-id-search-product-20261122'),'Product loads the updated localStorage module');
 assert.ok(mockScript.includes('mountLocalStorageManager(document);'),'Mock uses unified ID search');
 assert.ok(dev.includes('mountLocalStorageManager(document);'),'Game uses unified ID search');
 assert.ok(dev.includes('storage-id-search-unified-20261122'),'Game loads the unified ID-search module');
