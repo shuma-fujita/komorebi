@@ -272,8 +272,19 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    building(buildingMesh,p,height,tint,convenienceSpans,roadSegments,tags,pinkSpans,foodSpans);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
-   // Avoid covering another store's facade on a conflicting level.
-   const otherStoreSpans=[...convenienceSpans,...foodSpans];
+   // Only explicit tenant levels can reserve a floor against a PNG logo.
+   // Legacy convenience/food painting deliberately falls back to the WHOLE
+   // building when a tenant lacks level. Treating that speculative fallback
+   // as a real occupancy block would hide correctly tagged McD / DAISO floors.
+   const otherStoreSpans=[];
+   for(const stores of [convenienceBuildings.get(e.id),foodBuildings.get(e.id)])
+    for(const store of stores||[]){
+     if(store.brand?.id==='mcdonalds')continue; // Image pass owns this brand.
+     const levels=String(store.level??'').split(';').map(s=>s.trim());
+     if(!levels.length||levels.some(s=>!/^\d+$/.test(s)||!Number.isSafeInteger(Number(s))))
+      continue;
+     otherStoreSpans.push(...resolveConveniencePaint([store],tags,height,inferredLevels));
+    }
    const available=span=>!otherStoreSpans.some(other=>
     span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8);
    // Independent images use the same matching, floor and wall-UV rules.
