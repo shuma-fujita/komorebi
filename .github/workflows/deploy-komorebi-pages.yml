@@ -50,6 +50,10 @@ jobs:
           node --check komorebi3d/objects/buildings/food/osm-adapter.js
           node --check komorebi3d/objects/buildings/food/mcdonalds.js
           node --check komorebi3d/objects/buildings/food/mcdonalds-sign.js
+          node --check komorebi3d/objects/buildings/food/gusto.js
+          node --check komorebi3d/objects/buildings/food/gusto-sign.js
+          node --check komorebi3d/objects/buildings/food/torikizoku.js
+          node --check komorebi3d/objects/buildings/food/torikizoku-sign.js
           node --check komorebi3d/objects/parking/const.js
           node --check komorebi3d/objects/parking/osm-adapter.js
           node --check komorebi3d/objects/parking/common.js
@@ -58,6 +62,7 @@ jobs:
           node tests/parking-areas.mjs
           node tests/mcdonalds-sign.mjs
           node tests/daiso-sign.mjs
+          node tests/restaurant-image-facades.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs
           node tests/osm-tag-changes-v2.mjs
