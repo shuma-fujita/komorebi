@@ -703,7 +703,8 @@ import {createMapFilenameIndicator} from "./maps/map-filename-indicator.js?v=jso
 import {recordConfirmedOsmTagChanges} from "./maps/osm-pending-changes.js?v=storage-manager-v1-20261122";
 import {patchLiveGeofabrikMap} from "./maps/map-live-osm-changes.js?v=live-overlay-step2-20261122";
 import {getOsmReviewStorageCheck} from "./maps/osm-review-storage-check.js?v=storage-manager-v1-20261122";
-import {createMapBuildSteps} from "./maps/map-builder.js?v=matsudo-mcdonalds-four-faces-v2-20261122";
+import {createMapBuildSteps} from "./maps/map-builder.js?v=matsudo-png-uv-wall-v3-20261122";
+import {createMapFacadeTextureLayer} from "./maps/map-facade-textures.js?v=matsudo-png-uv-wall-v1-20261122";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
 import {createMapLabels} from "./maps/map-labels.js?v=production-first-test-prefetch-20261122-v2";
 import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=tag-focus-scroll-only-20261121";
@@ -1765,6 +1766,20 @@ function setLabelDebugVisible(visible){
  publishGameState();
 }
 const matsudoMaps={old:null,new:null};
+const facadeTextureLayers={A:null,B:null};
+function disposeFacadeTextureLayer(screen){
+ facadeTextureLayers[screen]?.dispose();
+ facadeTextureLayers[screen]=null;
+}
+function renderFacadeTextureLayer(screen,renderer,snapshot){
+ if(activeWorld!=='matsudo'||(activeOsmEditors>0&&editorBuildingPreview))return;
+ const source=activeOsmEditors>0&&matsudoMaps.new?'new':screenConfigs[screen].map;
+ const faces=matsudoMaps[source]?.texturedFaces;
+ if(!faces?.length)return;
+ if(!facadeTextureLayers[screen])
+  facadeTextureLayers[screen]=createMapFacadeTextureLayer(renderer);
+ facadeTextureLayers[screen].render(faces,snapshot.camera);
+}
 function refreshMapFilenameIndicators(){
  for(const screen of ['A','B']){
   const filename=activeWorld==='matsudo'
@@ -2007,7 +2022,7 @@ async function loadMatsudoMapInBackground(){
     const builder=createMapBuildSteps(map,{
      halfSize:1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
     });
-    const displayed={meshes:[],mapFeatures:[],labels:[],mapSpan:2000,
+    const displayed={meshes:[],texturedFaces:[],mapFeatures:[],labels:[],mapSpan:2000,
      sourceMap:source==='new'?map:null,tileFilename:map.tileFilename,
      buildingSlices:new Map(),liveMeshes:new Map(),
      ready:false,deferredEdits:new Map(),deferredReviewKeys:new Set()};
@@ -2093,6 +2108,7 @@ async function loadMatsudoMapInBackground(){
         positions:mesh.positions,normals:mesh.normals,colors:mesh.colors
        }));
       }
+      displayed.texturedFaces.push(...(batch.texturedFaces||[]));
       if(source==='new')for(const slice of batch.buildingSlices||[])
        displayed.buildingSlices.set(slice.osmKey,{
         meshIndex:meshOffset+slice.meshIndex,start:slice.start,end:slice.end
@@ -2323,6 +2339,7 @@ async function setWorld(name){
   // Reinitialize the common renderer to release the previous world's GPU meshes.
   rendererGenerationA++;rendererGenerationB++;
   await Promise.allSettled([loadingA,loadingB].filter(Boolean));
+  disposeFacadeTextureLayer('A');disposeFacadeTextureLayer('B');
   rendererA?.dispose?.();rendererB?.dispose?.();
   rendererA=null;rendererB=null;loadingA=null;loadingB=null;okA=false;okB=false;
   for(const screen of ['A','B']){matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;}
@@ -2428,6 +2445,7 @@ async function reconfigureScreenRenderer(screen){
  if(pending)await Promise.allSettled([pending]);
  if(generation!==(isA?rendererGenerationA:rendererGenerationB))return;
  const renderer=isA?rendererA:rendererB;
+ disposeFacadeTextureLayer(screen);
  renderer?.dispose?.();
  // A fresh canvas is needed when switching WebGL1 and Three.js/WebGL2 backends.
  const nextCanvas=gameView?.replaceCanvas(screen);
@@ -2522,8 +2540,16 @@ function frame(t){
  if(gameView?.canvasB.isConnected){
   try{
    const frameId=++renderFrameId;
-   if(renderMode!=='B'&&okA)rendererA.render(productRenderSnapshot('A',frameId));
-   if(renderMode!=='A'&&okB)rendererB.render(productRenderSnapshot('B',frameId));
+   if(renderMode!=='B'&&okA){
+    const snapshot=productRenderSnapshot('A',frameId);
+    rendererA.render(snapshot);
+    renderFacadeTextureLayer('A',rendererA,snapshot);
+   }
+   if(renderMode!=='A'&&okB){
+    const snapshot=productRenderSnapshot('B',frameId);
+    rendererB.render(snapshot);
+    renderFacadeTextureLayer('B',rendererB,snapshot);
+   }
    const a=renderMode!=='B'&&okA?rendererA.lastFrameId:'―';
    const b=renderMode!=='A'&&okB?rendererB.lastFrameId:'―';
    publishRuntimeStatus('sync-status','共通Snapshot #'+frameId+' / 画面A(Engine '+screenConfigs.A.engine+'):'+a+' / 画面B(Engine '+screenConfigs.B.engine+'):'+b+
