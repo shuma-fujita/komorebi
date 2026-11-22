@@ -3,6 +3,6 @@
 // The PNG texture is resolved by the application-side UV facade renderer.
 export const mcdonalds={
  id:'mcdonalds',
- names:['マクドナルド',"McDonald's",'McDonalds','マック'],
+ names:['マクドナルド',"McDonald's",'McDonald’s','McDonalds','マック'],
  texture:'mcdonalds'
 };
