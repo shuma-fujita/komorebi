@@ -11,7 +11,7 @@
 - **次の確認：** Aの次回自動実行が成功するか、Aのartifact生成→BのJSON生成→Cのコミット・Pages公開→配信中`index.json`とタイルJSONの更新をそれぞれ検証する。**URL修正後のA実行・自動更新はまだPASS扱いしない。** GitHubの`schedule`は遅延・スキップされ得るため予定時刻直後の不在だけで断定しない。
 
 ### ② 直近の地図・OSM編集変更を実機で確認
-- **新規・マクドナルド2階PNG壁面（実機未確認）：** 松戸駅前のOSM node `2992364618` → ピアザ松戸ビル way `72709443` の2階外壁に `assets/textures/brands/mcdonalds.png` をUVマッピング。壁全周を画像の赤で覆い、主要4面の中央に正方形ロゴを1つずつ表示する。頂点色の赤壁はPNG読込前のフォールバック、編集プレビューの黄Mは従来ポリゴン。固定Engineには触れず、アプリ側の独立したA(WebGL1)/B(Three.js)テクスチャ描画レイヤーを使用。1階・3階以上・他のビルは対象外。Safariで両エンジン、ロゴの向き・縦横比・境界の継ぎ目・読み込み失敗時の表示を確認する。
+- **マクドナルドPNG壁面（name/level化・新方式は実機未確認）：** 前回の固定ID・固定階PNG方式はユーザーからSafari実機PASS報告あり。今回 `objects/buildings/food/mcdonalds.js` を食品POIの名前／ブランド識別に追加し、吉野家・日高屋と共通の店舗→建物マッチングを使用。POIの `level` は0始まりで `2` → 3階（建物の `building:levels`・高さから範囲計算）。ピアザ松戸ビルのOSM ID固定・2階固定は廃止。**`level` は建物wayではなく店舗nodeに必要**。レベル欠損・不正なら全館を塗らない。新Geofabrik地図のみ従来の `osm-tag-changes:v2` を重畳して描画し、保存／開放直後の建物再生成時もPNG UV壁面を更新する。既存の `assets/textures/brands/mcdonalds.png`、四面中央ロゴと赤壁、固定Engineを変更しないA/B用描画レイヤーは維持。新方式のSafari実機確認では、地図JSON／localStorageの `level:2` により3階表示、3階以外を塗らないこと、保存・開放による移動、A/B描画を確認する。
 - **地図表示：** A/B各画面右下の読み込み済み `tile_0_0_*.json` ファイル名が、選択した旧／新2km地図に正しく追従するか。`index.json` の選択値を表示し、追加取得はしない。コード実装済み・Safari実機確認待ち。
 - **タグ編集・localStorage：** 保存・開放から3Dビル／タグ行／テナント一覧への反映、黄色の「⚠ Geofabrik反映待ち」、再読み込み後の維持・開放後の復帰、統一した `osm-tag-changes:v2` の一連の動作をSafariで確認する。静的・自動テストと実機結果は分ける。
 - **テストOSM送信：** 任意のchangeset `source`（未指定／`survey`／`local knowledge`／自由入力）、`created_by=Komorebi Builder`、本番／テストのOSM要素ページリンクを、既に実機PASS済みの範囲と未確認の変更を区別して確認する。要素ページリンクは2026-11-22にユーザー実機PASS済み。
