@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "ダイソーのピンクPNGも店舗POI name/brand・levelで壁面へ貼付。マックとUVを共通化（Safari実機確認待ち）",
+  "matsudo": "ダイソーの左右反転ロゴを修正、マック共通UVも正方向に統一（修正後Safari実機確認待ち）",
   "common": "Geofabrik関東PBFの取得URLを公式配布先に修正し一時診断を撤去（次回A自動実行は未確認）"
 }
