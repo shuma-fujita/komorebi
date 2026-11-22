@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-22 GitHubの10:17自動起動の切り分け（診断待ち）：** A（関東PBFダウンロード）は手動実行PASSだが、11/22 10:17 JSTの`schedule`実行がGitHub Actions履歴にない。ユーザー確認では既存Aワークフローは有効（`Disable workflow`表示）、mainのcronは`17 1 * * *`。A/B/Cや製品を変更せず、独立した`.github/workflows/diagnose-schedule-trigger-20261122.yml`を追加。`workflow_dispatch`を付けず、**2026-11-22 JST 12:12/12:22（UTC 03:12/03:22）**の定時トリガーだけを調査。対象は11月22日のみ（翌年同日は再発しうるため検証後に削除）、2回とも未起動でもGitHubの遅延/取りこぼしの可能性は残る。結果確認後に診断ワークフローを撤去すること。自動起動とA本体の成功は別の検証結果。
+
 > **2026-11-22 表示中の松戸地図JSONファイル名を右下に表示（Safari実機確認待ち）：** `maps/map-loader.js` が`index.json`から選んで検証・取得した正確な`tile_0_0_*.json`ファイル名を返却マップの`tileFilename`に保持し、従来の地図生成へ受け渡す。ゲーム画面のA/Bそれぞれの`view-panel`右下に小さな半透明・入力操作を妨げないラベルを追加。旧2km/Geofabrik新2kmの選択と読み込み成功に同期し、未読込・森ワールドでは非表示。表示用にJSONを再取得しない。描画・キャッシュ・固定Engine・OSM API・モックは変更せず、取得ファイル名と画面表示の回帰テストをCIへ追加。Actions・Pages・Safari実機結果を区別する。
 
 > **2026-11-22 本番／テストOSMの対象要素ページリンク追加（Safari実機PASS）：** ビル・店舗のタグ編集画面で「本番OSM」「テストOSM」切り替えのすぐ下に、選択した環境の要素ページを開く常時リンクを追加。本番は`item.osmType/osmId`の`https://www.openstreetmap.org/{type}/{id}`、テストは保存済みコピー対応`linkedTestTarget`の`https://master.apis.dev.openstreetmap.org/{type}/{id}`を開く。テストコピーがないとき、ID/種別が不正なときはリンクを表示せず、新しくコピーした直後は切替とともに表示。確認（review）画面では隠し、編集に戻ると復帰。これは対象要素の最新ページへのリンクで、特定の変更セット履歴ではない。既存のコピー完了／テスト送信完了リンク、編集内容、OSMへの送信処理・保存処理・固定Engine・モックには変更なし。純粋関数のURL判定テストをGitHub Actionsに追加してActions/Pages公開SUCCESS、ユーザーからiPhone Safari実機PASSを受領。
