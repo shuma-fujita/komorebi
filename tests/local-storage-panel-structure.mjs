@@ -77,15 +77,16 @@ for(const [slot,id] of Object.entries(initialPanels)){
 }
 assert.match(canonicalShell,/id="panel-reserve" hidden>.*?@panel:storage/,
  'Shared page shell owns the optional storage reserve');
-assert.doesNotMatch(dev,/\\b(?:const PANEL_LAYOUT|function applyPanelLayout)\\b/,
- 'Product must not redefine panel placement');
-assert.equal((dev.match(/mountDefaultPanelLayoutEditor\\(document\\);/g)||[]).length,1,
+assert.equal(dev.includes('const PANEL_LAYOUT='),false,
+ 'Product must not define a second panel layout');
+assert.equal(dev.includes('function applyPanelLayout('),false,
+ 'Product must not have a second layout bootstrap');
+assert.equal(dev.split('mountDefaultPanelLayoutEditor(document);').length-1,1,
  'Product initializes the shared panel controller exactly once');
-assert.equal((mockScript.match(/mountDefaultPanelLayoutEditor\\(document\\);/g)||[]).length,1,
+assert.equal(mockScript.split('mountDefaultPanelLayoutEditor(document);').length-1,1,
  'Mock initializes the same shared panel controller exactly once');
-assert.doesNotMatch(dev,/\\bpanel\\.remove\\(\\)/,
+assert.equal(dev.includes('panel.remove()'),false,
  'Product must not discard optional panels before the shared controller');
-
 
 const manager=read('komorebi3d/local-storage-panel.js');
 assert.ok(manager.includes("confirm.addEventListener('click'"));
