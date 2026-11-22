@@ -1,11 +1,11 @@
 name: Diagnose GitHub schedule trigger (temporary 2026-11-22)
 
 # Temporary schedule-only probe. No source downloads, artifacts or repository writes.
-# Two checkpoints on Nov 22 JST (03:12 and 03:22 UTC) to observe delays/skips.
+# Nov 22 only: every 15min from 13:07 to 15:52 JST (04:07-06:52 UTC).
 # Remove this workflow after interpreting the scheduled run records.
 on:
   schedule:
-    - cron: '12,22 3 22 11 *'
+    - cron: '7,22,37,52 4-6 22 11 *'
 
 permissions:
   contents: read
