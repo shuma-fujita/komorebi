@@ -44,6 +44,11 @@ jobs:
           node --check komorebi3d/objects/buildings/store-matching.js
           node --check komorebi3d/objects/buildings/store-levels.js
           node --check komorebi3d/objects/buildings/brand-facade.js
+          node --check komorebi3d/objects/buildings/logos/brands/index.js
+          node --check komorebi3d/objects/buildings/logos/matching.js
+          node --check komorebi3d/objects/buildings/logos/levels.js
+          node --check komorebi3d/objects/buildings/logos/facade.js
+          node --check komorebi3d/objects/buildings/logos/osm-adapter.js
           node --check komorebi3d/objects/buildings/variety/daiso.js
           node --check komorebi3d/objects/buildings/variety/osm-adapter.js
           node --check komorebi3d/objects/buildings/variety/daiso-sign.js
@@ -72,6 +77,7 @@ jobs:
           node tests/restaurant-image-facades.mjs
           node tests/kaikatsu-bamiyan-facades.mjs
           node tests/isomaru-wide-facade.mjs
+          node tests/industry-independent-logos.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs
           node tests/osm-tag-changes-v2.mjs

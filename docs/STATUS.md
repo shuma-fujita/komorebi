@@ -4,6 +4,9 @@
 
 ## 1. 次にやること（優先順）
 
+- **ロゴ描画の業種分離（2026-11-22・Safari実機未確認）：** `objects/buildings/logos/` にブランド登録・建物照合・階判定・UV描画を統合。OSM `amenity=pub/restaurant/fast_food`、`shop`、`office`、`leisure` に依存せず、POI `name` / `brand`（マックは識別用wikidataも）で既存7ブランドを認識する。既存の窓ガラス等の外観処理・旧呼び出しAPI・固定Engineは維持。`level` 不明や建物不明では描画しない。磯丸水産の実機表示は未確認、正しい階数/建物タグ要確認。新ブランドには画像と定義の登録が必要。
+
+
 ### ① Geofabrik関東PBFの次回定時更新を確認する（最優先・未検証）
 - **2026-11-22の事実：** A（`.github/workflows/geofabrik-kanto-pbf-manual.yml`）は毎日10:17 JSTに`schedule`指定。11/22は **16:59 JSTにscheduleイベントで実行**されたが、Geofabrik PBFのダウンロードが **HTTP 404 ×5回で失敗**（[run #45000703536](https://github.com/shuma-fujita/komorebi/actions/runs/45000703536)）。BはA失敗によりSKIPPED。GitHubがなぜこの時刻に起動したかは未特定。遅延と推測できても根因確定とは扱わない。
 - **修正済み：** Geofabrik公式の[関東データ配布ページ](https://download.geofabrik.de/asia/japan/kanto/index.html)が案内する`https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf`へ、Aのcurl取得先と`SOURCE.txt`記録の双方を修正した。Aのcron・ジョブ手順・B/Cへの連携は変更しない。

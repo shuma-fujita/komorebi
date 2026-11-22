@@ -3,16 +3,8 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint,resolveGustoPaint,resolveTorikizokuPaint,resolveBamiyanPaint,resolveIsomaruPaint} from '../objects/buildings/food/osm-adapter.js?v=isomaru-wide-v1-20261122';
-import {paintMcDonaldsFacade} from '../objects/buildings/food/mcdonalds-sign.js?v=brand-uv-orientation-v3-20261122';
-import {paintGustoFacade} from '../objects/buildings/food/gusto-sign.js?v=gusto-wall-v1-20261122';
-import {paintTorikizokuFacade} from '../objects/buildings/food/torikizoku-sign.js?v=torikizoku-wall-v1-20261122';
-import {paintBamiyanFacade} from '../objects/buildings/food/bamiyan-sign.js?v=bamiyan-wall-v1-20261122';
-import {paintIsomaruFacade} from '../objects/buildings/food/isomaru-sign.js?v=isomaru-wide-v1-20261122';
-import {matchKaikatsuBuildings,resolveKaikatsuPaint} from '../objects/buildings/leisure/osm-adapter.js?v=kaikatsu-poi-v1-20261122';
-import {paintKaikatsuFacade} from '../objects/buildings/leisure/kaikatsu-sign.js?v=kaikatsu-wall-v1-20261122';
-import {matchDaisoBuildings,resolveDaisoPaint} from '../objects/buildings/variety/osm-adapter.js?v=daiso-poi-level-v1-20261122';
-import {paintDaisoFacade} from '../objects/buildings/variety/daiso-sign.js?v=brand-uv-orientation-v3-20261122';
+import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=isomaru-wide-v1-20261122';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=logos-unified-v1-20261122';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=food-storefront-20261119';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
@@ -191,8 +183,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  }
  const convenienceBuildings=matchConvenienceBuildings(map.elements,xy,HALF);
  const foodBuildings=matchFoodBuildings(map.elements,xy,HALF);
- const daisoBuildings=matchDaisoBuildings(map.elements,xy,HALF);
-  const kaikatsuBuildings=matchKaikatsuBuildings(map.elements,xy,HALF);
+ const logoBuildings=matchLogoBuildings(map.elements,xy,HALF);
  const loveHotelBuildings=matchLoveHotelBuildings(map.elements,xy,HALF);
  const inferredTenantLevels=inferBuildingLevelsFromTenants(map.elements,xy,HALF);
  const roadSegments=[];
@@ -294,49 +285,10 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
     }
    const available=span=>!otherStoreSpans.some(other=>
     span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8);
-   // Independent images use the same matching, floor and wall-UV rules.
-   for(const span of resolveMcDonaldsPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
-    if(!available(span))continue;
-    if(paintMcDonaldsFacade(quad,buildingMesh,p,{
-     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
-    }))otherStoreSpans.push(span);
-   }
-   for(const span of resolveDaisoPaint(daisoBuildings.get(e.id),tags,height,inferredLevels)){
-    if(!available(span))continue;
-    if(paintDaisoFacade(quad,buildingMesh,p,{
-     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
-    }))otherStoreSpans.push(span);
-   }
-   for(const span of resolveKaikatsuPaint(kaikatsuBuildings.get(e.id),tags,height,inferredLevels)){
-    if(!available(span))continue;
-    if(paintKaikatsuFacade(quad,buildingMesh,p,{
-     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
-    }))otherStoreSpans.push(span);
-   }
-   for(const span of resolveGustoPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
-    if(!available(span))continue;
-    if(paintGustoFacade(quad,buildingMesh,p,{
-     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
-    }))otherStoreSpans.push(span);
-   }
-   for(const span of resolveBamiyanPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
-    if(!available(span))continue;
-    if(paintBamiyanFacade(quad,buildingMesh,p,{
-     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
-    }))otherStoreSpans.push(span);
-   }
-   for(const span of resolveIsomaruPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
-    if(!available(span))continue;
-    if(paintIsomaruFacade(quad,buildingMesh,p,{
-     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
-    }))otherStoreSpans.push(span);
-   }
-   for(const span of resolveTorikizokuPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
-    if(!available(span))continue;
-    if(paintTorikizokuFacade(quad,buildingMesh,p,{
-     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
-    }))otherStoreSpans.push(span);
-   }
+   // Industry-independent logo pass; legacy window/glazing paints stay intact.
+   // Only explicitly occupied floors block a logo; no fabricated full-tower owners.
+   paintLogoBuilding(quad,buildingMesh,p,logoBuildings.get(e.id),tags,height,
+    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans);
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.
