@@ -52,6 +52,38 @@ const parsed=spawnSync(process.execPath,['--check','--input-type=module'],{
  input:match[1],encoding:'utf8'
 });
 assert.equal(parsed.status,0,'Inline game JS must parse: '+parsed.stderr);
+
+/* Execute the product's synchronous pre-module panel bootstrap.
+   It must keep the fifth panel in its hidden reserve for the + chooser. */
+import {runInNewContext} from 'node:vm';
+const setupStart=dev.indexOf('const PANEL_LAYOUT=Object.freeze(');
+const setupEnd=dev.indexOf('applyPanelLayout(PANEL_LAYOUT);',setupStart);
+assert.ok(setupStart>0&&setupEnd>setupStart,'Product pre-module panel layout exists');
+const setup=dev.slice(setupStart,setupEnd+'applyPanelLayout(PANEL_LAYOUT);'.length);
+const removedEarly=[];
+const reserve={id:'panel-reserve'};
+const panelNodes=['build','game','test','runtime','storage','obsolete'].map(id=>({
+ dataset:{panelId:id},closest(selector){return id==='storage'&&selector==='#panel-reserve'?reserve:null;},
+ remove(){removedEarly.push(id);}
+}));
+const slotNodes=['top','left','right','bottom'].map(id=>({
+ dataset:{panelSlot:id},children:[],replaceChildren(){this.children=[];},
+ appendChild(panel){this.children.push(panel);}
+}));
+const mainNode={dataset:{}};
+runInNewContext(setup,{document:{
+ querySelectorAll(selector){
+  if(selector==='[data-panel-slot]')return slotNodes;
+  if(selector==='[data-panel-id]')return panelNodes;
+  throw Error('Unexpected selector: '+selector);
+ },
+ querySelector(selector){return selector==='.landscape-main'?mainNode:null;}
+}});
+assert.deepEqual([...removedEarly],['obsolete'],'Only abandoned non-reserve panels may be removed');
+assert.equal(slotNodes.filter(x=>x.children.length===1).length,4,'Four visible slots remain');
+assert.equal(panelNodes.find(x=>x.dataset.panelId==='storage').closest('#panel-reserve'),reserve,
+ 'Hidden storage panel remains registered for the chooser');
+
 const manager=read('komorebi3d/local-storage-panel.js');
 assert.ok(manager.includes("confirm.addEventListener('click'"));
 assert.ok(manager.includes("remove.addEventListener('click'"));

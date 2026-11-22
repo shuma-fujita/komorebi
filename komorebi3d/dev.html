@@ -587,7 +587,9 @@ function applyPanelLayout(layout){
   slot.dataset.panel=panel?key:'empty';
   if(panel)slot.appendChild(panel);
  }
- for(const [key,panel] of panels)if(!used.has(key))panel.remove();
+ // Optional panels in the hidden reserve must survive for the later + menu.
+ for(const [key,panel] of panels)
+  if(!used.has(key)&&!panel.closest('#panel-reserve'))panel.remove();
  const main=document.querySelector('.landscape-main');
  if(main)main.dataset.visiblePanels=String(['left','right'].filter(s=>slots.get(s).dataset.panel!=='empty').length);
 }
