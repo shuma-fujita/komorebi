@@ -2,7 +2,7 @@
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=lazy-oauth-config-20261121';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=tag-focus-scroll-only-20261121';
-import {attachEditorKeyboardLayout} from './editor-keyboard-layout.js?v=native-keyboard-scroll-only-20261121';
+import {attachEditorKeyboardLayout,attachNewTagKeyNext} from './editor-keyboard-layout.js?v=tag-key-next-20261122';
 import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
@@ -314,6 +314,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    const v=document.createElement('input');v.value=value;v.placeholder='値';
    v.setAttribute('aria-label','タグの値');v.style.cssText=inputStyle;
    v.readOnly=!editable;
+   // New key only: the keyboard's Next/Enter advances within this same row.
+   if(!k.readOnly)attachNewTagKeyNext(k,v);
    // Existing OSM keys cannot be renamed. Tapping the key focuses its value
    // immediately so a single tap opens the iPhone software keyboard.
    if(key&&editable)k.addEventListener('click',()=>v.focus({preventScroll:true}));

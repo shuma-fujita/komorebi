@@ -1,6 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
-> **2026-11-22 パネル初期配置の共通化（Safari実機確認待ち）：** モックで選べるlocalStorage管理がプロダクトで選べなかった根本原因は、`dev.html` にのみ残存していた同期前の専用 `applyPanelLayout()` が初期4枠以外のDOMを削除していたこと。前回は隠し領域だけ削除を回避したが、今回はこの旧専用処理そのものを撤去した。**両ページとも共有 `page-shell.html` の初期4枠＋5番目の非表示待機領域を正本として、`dev-panel-layout.js` の `mountDefaultPanelLayoutEditor()` だけが後続のパネル移動・選択を管理する。** 起動前に3D Canvasを別スロットへ移す処理も不要となった。localStorage管理・既存4枠・3D描画・固定Engine・OSM操作には変更なし。静的・構文・共通UI整合・4枠5種類と旧処理不在を検証する回帰チェックを更新。Actionsと実機結果は別途確認する。
+> **2026-11-22 ビルタグ新規追加：項目→値のキーボード移動（Safari実機確認待ち）：** `maps/map-labels.js` の新規追加行に限って、タグ名の入力で✓／Enterを押すと同じ行の値欄へ `focus({preventScroll:true})` でフォーカスを移す。キーボードのNext表示に `enterKeyHint='next'` を指定。日本語変換中のEnter（compositionstart/end・isComposing・229）には反応しない。既存OSMタグの読み取り専用項目、保存・送信・スクロール補正・固定Engineは変更せず、既存 `editor-keyboard-layout.js` に補助処理を集約して回帰テストを追加。自動テスト・公開・実機PASSは別々に確認する。
+
+> **2026-11-22 パネル初期配置の共通化（Safari実機PASS）：** モックで選べるlocalStorage管理がプロダクトで選べなかった根本原因は、`dev.html` にのみ残存していた同期前の専用 `applyPanelLayout()` が初期4枠以外のDOMを削除していたこと。前回は隠し領域だけ削除を回避したが、今回はこの旧専用処理そのものを撤去した。**両ページとも共有 `page-shell.html` の初期4枠＋5番目の非表示待機領域を正本として、`dev-panel-layout.js` の `mountDefaultPanelLayoutEditor()` だけが後続のパネル移動・選択を管理する。** 起動前に3D Canvasを別スロットへ移す処理も不要となった。localStorage管理・既存4枠・3D描画・固定Engine・OSM操作には変更なし。静的・構文・共通UI整合・4枠5種類と旧処理不在を検証する回帰チェックを更新。GitHub Actions・Pages公開SUCCESS、ユーザーからiPhone Safari実機PASSを受領。
 
 > **2026-11-22 localStorage管理の検索ワード×クリア（実機確認待ち）：** ユーザーからパネル表示・検索・旧キー削除の実機PASSを受領。キー名が長いので検索欄右側に専用の「×」ボタンを追加し、文字がある場合だけ表示。押すと検索文字列を一度に消し、全件一覧を表示して入力欄へフォーカスする。空文字時は非表示。iPhone Safariの検索inputの標準クリアボタンとの重複を防ぐCSSを適用。新しい管理・保存・削除機能は追加せず、4表示枠・5種類選択のレイアウトを維持。共通UI元ファイル、生成済みdev/mock、モジュールのキャッシュ用URL、パネル構造のテストを合わせて更新。UIの自動チェック・GitHub Pages公開・iPhone Safari実機はそれぞれ区別して報告。
 

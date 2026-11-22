@@ -29,3 +29,17 @@ export function attachEditorKeyboardLayout({host,mask,sheet}){
   sheet.removeEventListener('pointerdown',onPointerDown,true);
  }};
 }
+
+/* Enter/Done on a newly added tag key advances to that row's value field.
+   Keep iOS keyboard focus changes synchronous and avoid script-driven scrolling. */
+export function attachNewTagKeyNext(keyField,valueField){
+ keyField.enterKeyHint='next';
+ let composing=false;
+ keyField.addEventListener('compositionstart',()=>{composing=true;});
+ keyField.addEventListener('compositionend',()=>{composing=false;});
+ keyField.addEventListener('keydown',event=>{
+  if(event.key!=='Enter'||composing||event.isComposing||event.keyCode===229)return;
+  event.preventDefault();
+  valueField.focus({preventScroll:true});
+ });
+}

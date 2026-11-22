@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import {attachEditorKeyboardLayout} from '../komorebi3d/maps/editor-keyboard-layout.js';
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {dirname,join} from 'node:path';
+import {attachEditorKeyboardLayout,attachNewTagKeyNext} from '../komorebi3d/maps/editor-keyboard-layout.js';
 import {attachSheetMotion} from '../komorebi3d/maps/sheet-motion.js';
 import {tagFieldLocation} from '../komorebi3d/maps/editor-keyboard-diagnostics.js';
 
@@ -122,4 +125,31 @@ assert.deepEqual(scrollCalls,[]);
 motion.destroy();
 verifyUnchanged();
 assert.equal(dismissed,0);
-console.log('touch preventScroll and no keyboard-specific sheet/page scrolling: PASS (Safari real-device unverified)');
+
+const newKey=new Node(),newValue=new Node();
+const focusToValue=[];
+newValue.focus=options=>{focusToValue.push(options);document.activeElement=newValue;};
+attachNewTagKeyNext(newKey,newValue);
+assert.equal(newKey.enterKeyHint,'next','new tag key offers the Next key on iPhone');
+const keydown=(props={})=>{
+ let prevented=false;
+ newKey.emit('keydown',{key:'Enter',preventDefault(){prevented=true;},...props});
+ return prevented;
+};
+assert.equal(keydown({key:'a'}),false,'ordinary typing does not change focus');
+assert.equal(focusToValue.length,0);
+newKey.emit('compositionstart');
+assert.equal(keydown(),false,'Enter to confirm Japanese conversion is not intercepted');
+newKey.emit('compositionend');
+assert.equal(keydown({isComposing:true}),false,'native composition state is respected');
+assert.equal(keydown({keyCode:229}),false,'legacy IME composition code is respected');
+assert.equal(focusToValue.length,0,'conversion does not move focus');
+assert.equal(keydown(),true,'completed Enter is handled');
+assert.deepEqual(focusToValue,[{preventScroll:true}],'value receives focus without scrolling');
+assert.equal(document.activeElement,newValue);
+assert.deepEqual(scrollCalls,[],'tag key navigation never scrolls the page');
+
+const labelsSource=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','komorebi3d','maps','map-labels.js'),'utf8');
+assert.ok(labelsSource.includes('if(!k.readOnly)attachNewTagKeyNext(k,v)'),
+ 'only editable new tag keys get the Enter navigation');
+console.log('touch preventScroll, new tag key Enter navigation, and no JS scrolling: PASS (Safari real-device unverified)');
