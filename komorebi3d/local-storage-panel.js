@@ -73,28 +73,19 @@ export function mountLocalStorageManager(doc=document){
    const row=doc.createElement('article');
    row.className='storage-entry';
    row.dataset.key=item.key;
-   // Keep the full key text visible, with its numeric OSM ID tappable in place.
-   const osmMatch=item.key.match(/(?:^|:)(node|way|relation)\/([1-9]\d*)$/);
-   const displayKey=doc.createElement('code');
-   displayKey.className='storage-entry-key';
-   if(osmMatch){
-    const id=osmMatch[2];
-    displayKey.appendChild(doc.createTextNode(item.key.slice(0,-id.length)));
-    const idTap=text('button',id,'storage-id-tap');
-    idTap.type='button';
-    idTap.title='タップするとこのIDで検索';
-    idTap.setAttribute('aria-label','OSM ID '+id+' で検索');
-    idTap.style.cssText='display:inline-block;max-width:100%;min-height:32px;margin:0;padding:5px 3px;border:0;border-radius:3px;background:transparent;color:#a6efbe;font:inherit;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere;touch-action:manipulation;cursor:pointer;';
-    idTap.addEventListener('click',()=>{
-     filter.value=id;
-     feedback.textContent='OSM ID '+id+' で絞り込みました。';
-     render();
-     // Reveal the populated search without opening the iPhone keyboard.
-     filter.scrollIntoView?.({block:'nearest'});
-    });
-    displayKey.appendChild(idTap);
-   }else displayKey.textContent=item.key;
-   row.appendChild(displayKey);
+   // Any storage key may be tapped to preset its complete text into search.
+   const keyButton=text('button',item.key,'storage-entry-key');
+   keyButton.type='button';
+   keyButton.title='タップするとこのキーで検索';
+   keyButton.setAttribute('aria-label','保存キーで検索：'+item.key);
+   keyButton.style.cssText='display:block;box-sizing:border-box;width:100%;min-height:40px;margin:0;padding:8px 0;border:0;border-radius:0;background:transparent;color:#d7ffe5;font:700 11px/1.5 ui-monospace,SFMono-Regular,monospace;text-align:left;white-space:normal;overflow-wrap:anywhere;touch-action:manipulation;cursor:pointer;';
+   keyButton.addEventListener('click',()=>{
+    filter.value=item.key;
+    feedback.textContent='保存キーを検索欄に設定しました。';
+    render();
+    filter.scrollIntoView?.({block:'nearest'});
+   });
+   row.appendChild(keyButton);
    row.append(
     text('p',keyDescription(item.key),'storage-entry-about'),
     text('p','値 '+(item.value?.length??0).toLocaleString()+'文字','storage-entry-meta'));
