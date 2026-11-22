@@ -54,6 +54,11 @@ jobs:
           node --check komorebi3d/objects/buildings/food/gusto-sign.js
           node --check komorebi3d/objects/buildings/food/torikizoku.js
           node --check komorebi3d/objects/buildings/food/torikizoku-sign.js
+          node --check komorebi3d/objects/buildings/food/bamiyan.js
+          node --check komorebi3d/objects/buildings/food/bamiyan-sign.js
+          node --check komorebi3d/objects/buildings/leisure/osm-adapter.js
+          node --check komorebi3d/objects/buildings/leisure/kaikatsu.js
+          node --check komorebi3d/objects/buildings/leisure/kaikatsu-sign.js
           node --check komorebi3d/objects/parking/const.js
           node --check komorebi3d/objects/parking/osm-adapter.js
           node --check komorebi3d/objects/parking/common.js
@@ -63,6 +68,7 @@ jobs:
           node tests/mcdonalds-sign.mjs
           node tests/daiso-sign.mjs
           node tests/restaurant-image-facades.mjs
+          node tests/kaikatsu-bamiyan-facades.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs
           node tests/osm-tag-changes-v2.mjs

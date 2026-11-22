@@ -5,7 +5,9 @@ const TEXTURE_URLS=Object.freeze({
  mcdonalds:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  daiso:new URL('../assets/textures/brands/daiso.png',import.meta.url).href,
  gusto:new URL('../assets/textures/brands/gusto.png',import.meta.url).href,
- torikizoku:new URL('../assets/textures/brands/torikizoku.png',import.meta.url).href
+ torikizoku:new URL('../assets/textures/brands/torikizoku.png',import.meta.url).href,
+ bamiyan:new URL('../assets/textures/brands/bamiyan.png',import.meta.url).href,
+ kaikatsu:new URL('../assets/textures/brands/kaikatsu.png',import.meta.url).href
 });
 
 function perspective(fov,aspect,near,far){
