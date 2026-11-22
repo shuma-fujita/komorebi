@@ -49,10 +49,19 @@ assert.equal(full.displayBatches.flatMap(b=>b.texturedFaces||[]).length,1);
 const logos=[];
 for(let i=0;i<face.uvs.length;i+=12){
  const group=face.uvs.slice(i,i+12);
- if(group.join(',')==='0,0,1,0,1,1,0,0,1,1,0,1')logos.push(i/12);
+ if(group.join(',')==='1,0,0,0,0,1,1,0,0,1,1,1')logos.push(i/12);
  else assert.ok(group.every(u=>u===.04),'Other walls sample solid pink corner');
 }
 assert.equal(logos.length,4,'One logo per main facade');
+// Physical exterior view of a footprint edge reverses the path direction.
+// Its world-start corner must sample PNG RIGHT (u=1), and its world-end
+// corner PNG LEFT (u=0), otherwise DAISO reads as a mirror image.
+for(const index of logos){
+ const block=face.uvs.slice(index*12,index*12+12);
+ assert.deepEqual(block.slice(0,6),[1,0,0,0,0,1],
+  'The exterior-facing letter orientation must not be mirrored');
+}
+
 for(const index of logos){
  const ps=face.positions.slice(index*18,index*18+18);
  const a=ps.slice(0,3),b=ps.slice(3,6),c=ps.slice(6,9);
