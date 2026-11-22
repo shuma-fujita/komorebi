@@ -1,6 +1,7 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=changeset-source-20261122';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
+import {osmElementPageUrl} from './osm-element-page-url.js?v=element-link-20261122';
 import {attachSheetMotion} from './sheet-motion.js?v=tag-focus-scroll-only-20261121';
 import {attachEditorKeyboardLayout,attachNewTagKeyNext} from './editor-keyboard-layout.js?v=tag-key-next-20261122';
 import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-layout.js?v=ratio-centered-20261121';
@@ -479,6 +480,20 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   sourceRow.append(sourceHeading,sourceSwitch);
   const sourceStatus=document.createElement('p');sourceStatus.className='komo-status';
   sourceStatus.setAttribute('role','status');
+  const osmPageLink=document.createElement('a');
+  osmPageLink.className='komo-osm-element-page-link';
+  osmPageLink.target='_blank';osmPageLink.rel='noopener noreferrer';
+  osmPageLink.style.cssText='display:inline-flex;align-items:center;min-height:36px;margin:0 0 6px;padding:5px 9px;border:1px solid #76988a;border-radius:8px;color:#a6efff;font:700 13px system-ui;text-decoration:underline;';
+  osmPageLink.hidden=true;
+  const refreshOsmPageLink=()=>{
+   const href=osmElementPageUrl(activeSource,
+    {type:item.osmType,id:item.osmId},linkedTestTarget);
+   osmPageLink.hidden=!href;
+   if(href)osmPageLink.href=href;
+   else osmPageLink.removeAttribute('href');
+   osmPageLink.textContent=activeSource==='test'
+    ?'テストOSMのページを見る ↗':'本番OSMのページを見る ↗';
+  };
   const captureDraft=()=>{
    const values={};
    for(const row of rows.children){
@@ -528,6 +543,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    if(activeSource==='test'&&testReady)testDraft=captureDraft();
    if(activeSource==='production'&&rows.children.length)productionDraft=captureDraft();
    activeSource=source;
+   refreshOsmPageLink();
    // While the new source's tags are loading, the rows still belong to the
    // previous source. Clear highlights first; only renderTags may reapply them.
    syncPendingTagRows(rows,{pending:null,mapSource,dataSource:activeSource});
@@ -586,7 +602,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     pending=collect();error.textContent='';
     json.textContent=JSON.stringify({osm:pending.osm,changes:pending.changes,tags:pending.tags},null,2);
     rows.hidden=true;add.hidden=true;tagsHeader.hidden=true;review.hidden=false;
-    sourceRow.hidden=true;sourceStatus.hidden=true;note.hidden=true;
+    sourceRow.hidden=true;sourceStatus.hidden=true;osmPageLink.hidden=true;note.hidden=true;
     // The production-side review cannot display test-server sending controls.
     const isTestReview=activeSource==='test';
     productionReviewNotice.hidden=isTestReview;
@@ -610,7 +626,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   });
   back.addEventListener('click',()=>{
    pending=null;rows.hidden=false;tagsHeader.hidden=false;review.hidden=true;
-   sourceRow.hidden=false;sourceStatus.hidden=false;note.hidden=false;
+   sourceRow.hidden=false;sourceStatus.hidden=false;refreshOsmPageLink();note.hidden=false;
    productionReviewNotice.hidden=true;
    reviewStorageCheck.section.hidden=true;
    reviewStorageCheck.clearStatus();
@@ -624,7 +640,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   controls.append(confirm);
   metadata.style.color='#9bb5a8';
   metadata.style.margin='5px 0 10px';
-  form.append(header,copyPane,sourceRow,sourceStatus,metadata,tagsHeader,rows,add,review,error,controls);
+  form.append(header,copyPane,sourceRow,osmPageLink,sourceStatus,metadata,tagsHeader,rows,add,review,error,controls);
   applyBuildingTagEditorTheme(form);
   applyPendingTagVisualStyle(form); // Same approved yellow design as the mock.
   // Use actual test data when an element has already been copied; never

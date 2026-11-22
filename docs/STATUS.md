@@ -1,5 +1,7 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
+> **2026-11-22 本番／テストOSMの対象要素ページリンク追加（Safari実機確認待ち）：** ビル・店舗のタグ編集画面で「本番OSM」「テストOSM」切り替えのすぐ下に、選択した環境の要素ページを開く常時リンクを追加。本番は`item.osmType/osmId`の`https://www.openstreetmap.org/{type}/{id}`、テストは保存済みコピー対応`linkedTestTarget`の`https://master.apis.dev.openstreetmap.org/{type}/{id}`を開く。テストコピーがないとき、ID/種別が不正なときはリンクを表示せず、新しくコピーした直後は切替とともに表示。確認（review）画面では隠し、編集に戻ると復帰。これは対象要素の最新ページへのリンクで、特定の変更セット履歴ではない。既存のコピー完了／テスト送信完了リンク、編集内容、OSMへの送信処理・保存処理・固定Engine・モックには変更なし。純粋関数のURL判定テストをGitHub Actionsに追加し、公開とSafari実機結果は別に確認する。
+
 > **2026-11-22 テストOSM変更セットsourceの任意選択（Safari実機未確認）：** OSM編集経験者向けのシンプルな操作を維持するA案。既存テストOSMへの`level`送信フォームに変更セット`source`選択を追加（未指定が初期値／`survey`／`local knowledge`／自由入力）。`source`を指定しない場合はXMLからタグそのものを省略し、従来と同じ`created_by=Komorebi Builder`と自動生成`comment`を保持。変更セット専用の追加で、OSM要素のタグ・既存のテストコピー作成処理・本番送信未実装の方針は不変。テスト環境で送るときにだけ指定値を使い、認証や送信確認を追加しない。共通変更セット生成とテストAPIのオフライン回帰テストを増補し、固定Engine/モックUIは変更しない。GitHub Actions/PagesとSafari実機確認は区別する。
 
 > **2026-11-22 OSM changeset の作成元名を Komorebi Builder に統一（実機確認待ち）：** テストOSMへの `level` 更新・既存OSM要素のテストコピー作成で利用する変更セット作成元 `created_by` を従来の `Komorebi 3D test editor` から **`Komorebi Builder`** に変更。テスト・将来の本番で同じ名前を使えるよう、共通の `maps/osm-changeset-tags.js` に定義してテストAPIが参照。変更セットの `comment` は従来どおり編集内容を表す。建物/店舗のOSM要素タグには `created_by` を付けず、本番OSMへの送信機能も追加しない。オフラインのXML生成・構造・2経路の回帰テストをGitHub Actionsに追加し、固定Engine、認証・送信先、OSM保存・描画処理には手を加えない。GitHub PagesとiPhone Safariの結果は別途記録する。
