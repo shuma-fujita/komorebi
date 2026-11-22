@@ -3,7 +3,7 @@ import {BUILDING_POI_OUTSIDE_TOLERANCE_METRES} from '../../../maps/building-poi-
 import {resolveConveniencePaint} from '../convenience/osm-adapter.js?v=lawson-storefront-20261119';
 import {yoshinoya} from './yoshinoya.js?v=food-storefront-20261119';
 import {hidakaya} from './hidakaya.js?v=food-storefront-20261119';
-import {mcdonalds} from './mcdonalds.js?v=mcdonalds-poi-level-20261122';
+import {mcdonalds} from './mcdonalds.js?v=mcdonalds-poi-level-v2-20261122';
 const brands=[yoshinoya,hidakaya,mcdonalds];
 const normalize=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 function identifyFood(tags){
