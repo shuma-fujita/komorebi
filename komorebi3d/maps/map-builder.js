@@ -3,7 +3,7 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint,resolveGustoPaint,resolveTorikizokuPaint} from '../objects/buildings/food/osm-adapter.js?v=restaurant-png-v4-20261122';
+import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint,resolveGustoPaint,resolveTorikizokuPaint} from '../objects/buildings/food/osm-adapter.js?v=restaurant-png-pub-v5-20261122';
 import {paintMcDonaldsFacade} from '../objects/buildings/food/mcdonalds-sign.js?v=brand-uv-orientation-v3-20261122';
 import {paintGustoFacade} from '../objects/buildings/food/gusto-sign.js?v=gusto-wall-v1-20261122';
 import {paintTorikizokuFacade} from '../objects/buildings/food/torikizoku-sign.js?v=torikizoku-wall-v1-20261122';
