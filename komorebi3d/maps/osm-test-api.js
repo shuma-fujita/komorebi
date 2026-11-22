@@ -123,11 +123,11 @@ export function buildOsmChangeComment(before,after){
  const width=actions.length===1?0:Math.max(...actions.map(a=>a.verb.length));
  return actions.map(a=>(width?a.verb.padEnd(width,' '):a.verb)+' - '+a.detail).join('\n');
 }
-export function makeChangesetXml(comment='Add verified shop floor level (development server only)'){
+export function makeChangesetXml(comment='Add verified shop floor level (development server only)',source=''){
  const doc=document.implementation.createDocument(null,'osm',null);
  doc.documentElement.setAttribute('version','0.6');
  const changeset=doc.createElement('changeset');doc.documentElement.appendChild(changeset);
- for(const [key,value] of Object.entries(buildOsmChangesetTags(comment))){
+ for(const [key,value] of Object.entries(buildOsmChangesetTags(comment,source))){
   const tag=doc.createElement('tag');tag.setAttribute('k',key);tag.setAttribute('v',value);changeset.appendChild(tag);
  }
  return new XMLSerializer().serializeToString(doc);
@@ -149,7 +149,7 @@ function makeElementXml(item,changesetId,level){
  return new XMLSerializer().serializeToString(doc);
 }
 // A send uses the exact version loaded for preview. Stale version => API 409.
-export async function sendOsmTestLevel(item,level){
+export async function sendOsmTestLevel(item,level,source=''){
  const value=Number(level);
  if(!Number.isInteger(value)||value<0||value>8)throw Error('1〜9階の階数を指定してください。');
  validateOsmTestLevelTarget(item);
@@ -158,7 +158,7 @@ export async function sendOsmTestLevel(item,level){
  try{
   const updatedTags={...item.tags,level:String(value)};
   const comment=buildOsmChangeComment(item.tags,updatedTags);
-  changesetId=await apiWrite('/changeset/create',makeChangesetXml(comment),token);
+  changesetId=await apiWrite('/changeset/create',makeChangesetXml(comment,source),token);
   if(!/^[1-9]\d*$/.test(changesetId))throw Error('変更セットIDが不正です。');
   const newVersion=await apiWrite('/'+item.type+'/'+item.id,makeElementXml(item,changesetId,value),token);
   uploaded=true;

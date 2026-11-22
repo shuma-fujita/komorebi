@@ -1,5 +1,5 @@
 // Project building and ground-level POI labels using shared A/B viewport camera information.
-import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=komorebi-builder-20261122';
+import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=changeset-source-20261122';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {attachSheetMotion} from './sheet-motion.js?v=tag-focus-scroll-only-20261121';
 import {attachEditorKeyboardLayout,attachNewTagKeyNext} from './editor-keyboard-layout.js?v=tag-key-next-20261122';
@@ -369,6 +369,35 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   const testDetails=document.createElement('pre');
   testDetails.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;background:#e8f0eb;border-radius:7px;padding:8px;';
   testDetails.hidden=true;
+  // Optional changeset source; never add it to OSM building/shop element tags.
+  const changesetSourceLabel=document.createElement('label');
+  changesetSourceLabel.style.cssText='display:block;margin:10px 0;font-size:12px;font-weight:700;';
+  changesetSourceLabel.textContent='変更セットのsource（任意）';
+  const changesetSourceSelect=document.createElement('select');
+  changesetSourceSelect.style.cssText=inputStyle;
+  for(const [value,label] of [
+   ['','指定しない'],
+   ['survey','現地調査（survey）'],
+   ['local knowledge','現地知識（local knowledge）'],
+   ['other','その他（自由入力）']
+  ]){
+   const option=document.createElement('option');option.value=value;option.textContent=label;
+   changesetSourceSelect.appendChild(option);
+  }
+  changesetSourceLabel.appendChild(changesetSourceSelect);
+  const changesetSourceOtherLabel=document.createElement('label');
+  changesetSourceOtherLabel.style.cssText='display:block;margin:8px 0;font-size:12px;font-weight:700;';
+  changesetSourceOtherLabel.textContent='sourceの値';
+  const changesetSourceOther=document.createElement('input');
+  changesetSourceOther.type='text';changesetSourceOther.placeholder='sourceを自由入力';
+  changesetSourceOther.style.cssText=inputStyle;
+  changesetSourceOtherLabel.appendChild(changesetSourceOther);
+  changesetSourceOtherLabel.hidden=true;
+  changesetSourceSelect.addEventListener('change',()=>{
+   changesetSourceOtherLabel.hidden=changesetSourceSelect.value!=='other';
+  });
+  const selectedChangesetSource=()=>changesetSourceSelect.value==='other'
+   ?changesetSourceOther.value.trim():changesetSourceSelect.value;
   const consentLabel=document.createElement('label');consentLabel.style.cssText='display:block;margin-top:10px;font-size:12px;';
   const consent=document.createElement('input');consent.type='checkbox';
   consentLabel.append(consent,document.createTextNode(' テストサーバーの対象要素を実際に更新することを確認した'));
@@ -408,7 +437,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    if(!loaded||levelValue===null||!consent.checked||busy)return;
    busy=true;syncTestControls();testStatus.textContent='テストサーバーへ送信中…';
    try{
-    const result=await sendOsmTestLevel(loaded,levelValue);
+    const result=await sendOsmTestLevel(loaded,levelValue,selectedChangesetSource());
     testStatus.textContent='テスト送信成功！ changeset: '+result.changesetId+' / 新version: '+result.newVersion;
     const resultLink=document.createElement('a');resultLink.href=result.elementUrl;resultLink.target='_blank';resultLink.rel='noopener noreferrer';resultLink.textContent='テスト環境で更新された要素を見る';
     testStatus.append(document.createTextNode('\n'),resultLink);
@@ -416,7 +445,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    }catch(e){testStatus.textContent='テスト送信失敗: '+e.message+'。本番OSMへの送信は行っていません。';}
    finally{busy=false;syncTestControls();}
   });
-  testPane.append(testHeading,testHelp,oauth,logout,typeLabel,targetId.parentElement,loadTarget,testDetails,consentLabel,send,testStatus);
+  testPane.append(testHeading,testHelp,oauth,logout,typeLabel,targetId.parentElement,loadTarget,testDetails,changesetSourceLabel,changesetSourceOtherLabel,consentLabel,send,testStatus);
   review.appendChild(testPane);
 
   const confirm=makeButton('変更内容を確認',true),back=makeButton('編集に戻る');
