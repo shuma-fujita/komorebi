@@ -1,5 +1,6 @@
 // Development OSM server ONLY. Never use live OSM endpoints here.
 // OAuth 2.0 Authorization Code + PKCE for a public browser application.
+import {buildOsmChangesetTags} from './osm-changeset-tags.js?v=komorebi-builder-20261122';
 export const OSM_TEST_ORIGIN='https://master.apis.dev.openstreetmap.org';
 const API=OSM_TEST_ORIGIN+'/api/0.6';
 const TOKEN_KEY='komorebi:osm-test:token';
@@ -122,11 +123,11 @@ export function buildOsmChangeComment(before,after){
  const width=actions.length===1?0:Math.max(...actions.map(a=>a.verb.length));
  return actions.map(a=>(width?a.verb.padEnd(width,' '):a.verb)+' - '+a.detail).join('\n');
 }
-function makeChangesetXml(comment='Add verified shop floor level (development server only)'){
+export function makeChangesetXml(comment='Add verified shop floor level (development server only)'){
  const doc=document.implementation.createDocument(null,'osm',null);
  doc.documentElement.setAttribute('version','0.6');
  const changeset=doc.createElement('changeset');doc.documentElement.appendChild(changeset);
- for(const [key,value] of Object.entries({created_by:'Komorebi 3D test editor',comment})){
+ for(const [key,value] of Object.entries(buildOsmChangesetTags(comment))){
   const tag=doc.createElement('tag');tag.setAttribute('k',key);tag.setAttribute('v',value);changeset.appendChild(tag);
  }
  return new XMLSerializer().serializeToString(doc);

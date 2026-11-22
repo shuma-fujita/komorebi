@@ -1,6 +1,8 @@
 # 🌳 Komorebi 3D｜開発ステータス・次チャット引き継ぎ
 
-> **2026-11-22 ビルタグ新規追加：項目→値のキーボード移動（Safari実機確認待ち）：** `maps/map-labels.js` の新規追加行に限って、タグ名の入力で✓／Enterを押すと同じ行の値欄へ `focus({preventScroll:true})` でフォーカスを移す。キーボードのNext表示に `enterKeyHint='next'` を指定。日本語変換中のEnter（compositionstart/end・isComposing・229）には反応しない。既存OSMタグの読み取り専用項目、保存・送信・スクロール補正・固定Engineは変更せず、既存 `editor-keyboard-layout.js` に補助処理を集約して回帰テストを追加。自動テスト・公開・実機PASSは別々に確認する。
+> **2026-11-22 OSM changeset の作成元名を Komorebi Builder に統一（実機確認待ち）：** テストOSMへの `level` 更新・既存OSM要素のテストコピー作成で利用する変更セット作成元 `created_by` を従来の `Komorebi 3D test editor` から **`Komorebi Builder`** に変更。テスト・将来の本番で同じ名前を使えるよう、共通の `maps/osm-changeset-tags.js` に定義してテストAPIが参照。変更セットの `comment` は従来どおり編集内容を表す。建物/店舗のOSM要素タグには `created_by` を付けず、本番OSMへの送信機能も追加しない。オフラインのXML生成・構造・2経路の回帰テストをGitHub Actionsに追加し、固定Engine、認証・送信先、OSM保存・描画処理には手を加えない。GitHub PagesとiPhone Safariの結果は別途記録する。
+
+> **2026-11-22 ビルタグ新規追加：項目→値のキーボード移動（Safari実機PASS）：** `maps/map-labels.js` の新規追加行に限って、タグ名の入力で✓／Enterを押すと同じ行の値欄へ `focus({preventScroll:true})` でフォーカスを移す。キーボードのNext表示に `enterKeyHint='next'` を指定。日本語変換中のEnter（compositionstart/end・isComposing・229）には反応しない。既存OSMタグの読み取り専用項目、保存・送信・スクロール補正・固定Engineは変更せず、既存 `editor-keyboard-layout.js` に補助処理を集約して回帰テストを追加。GitHub Actions・Pages公開SUCCESS、ユーザーからiPhone Safari実機PASSを受領。
 
 > **2026-11-22 パネル初期配置の共通化（Safari実機PASS）：** モックで選べるlocalStorage管理がプロダクトで選べなかった根本原因は、`dev.html` にのみ残存していた同期前の専用 `applyPanelLayout()` が初期4枠以外のDOMを削除していたこと。前回は隠し領域だけ削除を回避したが、今回はこの旧専用処理そのものを撤去した。**両ページとも共有 `page-shell.html` の初期4枠＋5番目の非表示待機領域を正本として、`dev-panel-layout.js` の `mountDefaultPanelLayoutEditor()` だけが後続のパネル移動・選択を管理する。** 起動前に3D Canvasを別スロットへ移す処理も不要となった。localStorage管理・既存4枠・3D描画・固定Engine・OSM操作には変更なし。静的・構文・共通UI整合・4枠5種類と旧処理不在を検証する回帰チェックを更新。GitHub Actions・Pages公開SUCCESS、ユーザーからiPhone Safari実機PASSを受領。
 
