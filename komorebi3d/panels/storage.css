@@ -25,3 +25,4 @@
 .storage-confirm-actions button{flex:none;width:auto;min-height:40px;padding:7px 12px;touch-action:manipulation;cursor:pointer}
 .storage-confirm-actions button.storage-confirm-delete{background:#8c3027;border-color:#ce7061;color:white}
 .storage-entry-empty{padding:12px;border:1px dashed #536c55;border-radius:8px;color:#a9c6af}
+.landscape-main .panel-slot-main>.storage-panel{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain}

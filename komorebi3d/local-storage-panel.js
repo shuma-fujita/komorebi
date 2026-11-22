@@ -125,6 +125,7 @@ export function mountLocalStorageManager(doc=document){
  const refreshView=()=>{feedback.textContent='';render();};
  filter.addEventListener('input',render);
  refresh.addEventListener('click',refreshView);
+ panel.addEventListener('komorebi:panel-shown',render);
  doc.defaultView?.addEventListener('storage',render);
  doc.defaultView?.addEventListener('komorebi:local-storage-mutated',render);
  doc.defaultView?.addEventListener('focus',render);

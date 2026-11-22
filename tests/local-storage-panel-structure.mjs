@@ -1,4 +1,4 @@
-// Fifth-panel structure and inline game module syntax checks.
+// Four visible slots, five selectable panel types, and inline game syntax checks.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
@@ -8,20 +8,41 @@ const root=join(dirname(fileURLToPath(import.meta.url)),'..');
 const read=path=>readFileSync(join(root,path),'utf8');
 const {PANEL_IDS,SLOT_IDS,transitionPanelLayout}=await import('../komorebi3d/dev-panel-layout.js');
 assert.deepEqual(PANEL_IDS,['build','game','test','runtime','storage']);
-assert.deepEqual(SLOT_IDS,['top','left','right','bottom','storage']);
-const initial={top:'build',left:'game',right:'test',bottom:'runtime',storage:'storage'};
-assert.deepEqual(transitionPanelLayout(initial,{type:'swap',from:'storage',to:'bottom'}),
- {top:'build',left:'game',right:'test',bottom:'storage',storage:'runtime'});
-assert.equal(transitionPanelLayout(initial,{type:'remove',from:'storage'}).storage,null);
+assert.deepEqual(SLOT_IDS,['top','left','right','bottom']);
+const initial={top:'build',left:'game',right:'test',bottom:'runtime'};
+const removed=transitionPanelLayout(initial,{type:'remove',from:'bottom'});
+assert.deepEqual(removed,{top:'build',left:'game',right:'test',bottom:null});
+const added=transitionPanelLayout(removed,{type:'add',from:'bottom',panel:'storage'});
+assert.deepEqual(added,{top:'build',left:'game',right:'test',bottom:'storage'});
+assert.throws(()=>transitionPanelLayout(initial,{type:'add',from:'bottom',panel:'storage'}),/cannot be added/i);
+assert.deepEqual(transitionPanelLayout(added,{type:'swap',from:'bottom',to:'top'}),
+ {top:'storage',left:'game',right:'test',bottom:'build'});
+assert.deepEqual(transitionPanelLayout(added,{type:'remove',from:'bottom'}),removed);
 for(const page of ['komorebi3d/dev.html','komorebi3d/mock.html']){
  const html=read(page);
- assert.equal((html.match(/data-panel-slot="storage"/g)||[]).length,1,page+' storage slot');
- assert.equal((html.match(/data-panel-id="storage"/g)||[]).length,1,page+' storage panel');
+ assert.equal((html.match(/data-panel-slot="/g)||[]).length,4,page+' exactly four visible slots');
+ for(const id of ['top','left','right','bottom'])
+  assert.equal((html.match(new RegExp('data-panel-slot="'+id+'"','g'))||[]).length,1,page+' slot '+id);
+ assert.equal((html.match(/data-panel-slot="storage"/g)||[]).length,0,page+' no fifth slot');
+ assert.equal((html.match(/data-panel-id="storage"/g)||[]).length,1,page+' optional storage panel exists');
+ assert.match(html,/<div id="panel-reserve" hidden><section id="storage-panel" data-panel-id="storage"/,page+' hidden panel reserve');
  assert.ok(html.includes('id="storage-entries"'),page+' inventory');
  assert.ok(html.includes('id="storage-refresh"'),page+' refresh');
  assert.ok(html.includes('id="storage-filter"'),page+' search');
 }
+const layoutSource=read('komorebi3d/dev-panel-layout.js');
+assert.ok(layoutSource.includes("for(const [id,panel] of panels)"),'Unused optional panels are registered and parked');
+assert.ok(layoutSource.includes("parked.appendChild(panel)"),'Unused panels remain available in the + menu');
+assert.ok(layoutSource.includes("panel-shown"),'Layout announces adding a previously hidden panel');
+assert.ok(layoutSource.includes("onGripDown"),'Existing info-icon drag removal remains intact');
+const mockScript=read('komorebi3d/mock-ui.js');
+assert.ok(mockScript.indexOf('mountLocalStorageManager(document);')<
+ mockScript.indexOf('mountDefaultPanelLayoutEditor(document);'),
+ 'Mock must mount the manager before the hidden panel is parked');
 const dev=read('komorebi3d/dev.html');
+assert.ok(dev.indexOf('mountLocalStorageManager(document);')<
+ dev.indexOf('mountDefaultPanelLayoutEditor(document);'),
+ 'Game must mount the manager before the hidden panel is parked');
 const match=dev.match(/<script type="module">([\s\S]*?)<\/script>/);
 assert.ok(match,'Game module script exists');
 const parsed=spawnSync(process.execPath,['--check','--input-type=module'],{
@@ -35,4 +56,4 @@ assert.equal(manager.includes('localStorage.clear('),false,'Never clear the enti
 const pending=read('komorebi3d/maps/osm-pending-changes.js');
 assert.equal(pending.includes('function migrate('),false,'No automatic old-key migration');
 assert.equal(pending.includes('OLD_PRODUCTION'),false,'No legacy-key read path');
-console.log('Five-panel localStorage manager: structure, layout, and inline game module syntax PASS');
+console.log('Four slots / five selectable panel types: hidden localStorage manager, remove + add, and inline JS syntax PASS');

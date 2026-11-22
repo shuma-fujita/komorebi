@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "OSMタグ変更v2の旧キー自動移行を廃止。過去キーは新しいlocalStorage管理パネルから手動で整理",
-  "common": "5枚目にlocalStorage管理パネルを追加。全キーの一覧・検索・内容確認・個別2段階削除に対応"
+  "common": "4枠の配置を維持し、5種類目のlocalStorage管理は右上ⓘで枠を空けて＋から選択。Safari表示確認待ち"
 }

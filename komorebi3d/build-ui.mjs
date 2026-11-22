@@ -60,11 +60,11 @@ if((mockShell.match(/id="play-surface"/g)||[]).length!==1)
 const currentDev=dev.slice(0,a+styleOpen.length)+sharedCSS+dev.slice(b,c+bodyOpen.length)+gameShell+dev.slice(script);
 const title='<title>Komorebi 3D DEV｜NPC表示限界テスト</title>';
 let mockHead=dev.slice(0,a+styleOpen.length)+sharedCSS+dev.slice(b,c);
-mockHead=replaceOnce(mockHead,title,'<title>Komorebi 3D｜5パネルモック</title>','mock title');
+mockHead=replaceOnce(mockHead,title,'<title>Komorebi 3D｜4パネルモック</title>','mock title');
 const mockCSS=read('panels/game.mock.css').trim();
 mockHead=replaceOnce(mockHead,styleClose,'\n\n/* Mock-only viewport: replace 3D rendering with a black dummy. */\n'+mockCSS+'\n'+
  '.mock-root .landscape-game .play-surface,.mock-root .play-surface .screen-view{background:#000}\n</style>','mock CSS');
-const expectedMock=mockHead+bodyOpen+mockShell+'<script type="module" src="./mock-ui.js"></script></body></html>\n';
+const expectedMock=mockHead+bodyOpen+mockShell+'<script type="module" src="./mock-ui.js?v=storage-four-slots-20261122"></script></body></html>\n';
 if((expectedMock.match(/<script\b/g)||[]).length!==1||expectedMock.includes(objectMarker))
  throw Error('Mock may contain only its independent UI script');
 const write=(path,value)=>{writeFileSync(join(dir,path),value,'utf8');console.log('Updated '+path)};
