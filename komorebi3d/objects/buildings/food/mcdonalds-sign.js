@@ -92,7 +92,7 @@ export function paintMcDonaldsFacade(quad,mesh,polygon,{bottom,top,texturedFaces
   }else{
    // Legacy/editor preview compatibility without changing fixed Engine.
    const imagePoint=(x,y)=>place(wall,wall.length/2+x*size/2.25,
-    (bottom+top)/2+y*size/2.1,.12);
+    (bottom+top)/2+y*size/3.1,.12);
    const logoQuad=(p0,p1,p2,p3,color)=>quad(mesh,
     imagePoint(p0[0],p0[1]),imagePoint(p1[0],p1[1]),
     imagePoint(p2[0],p2[1]),imagePoint(p3[0],p3[1]),color);
