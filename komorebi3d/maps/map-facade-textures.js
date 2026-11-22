@@ -1,7 +1,10 @@
 // Application-owned UV facade renderer for the pinned Komorebi Engine.
 // Main city mesh snapshots remain unchanged; these are zero-thickness UV
 // surfaces on the building wall, not free-standing sign boards.
-const MCDONALDS_URL=new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href;
+const TEXTURE_URLS=Object.freeze({
+ mcdonalds:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
+ daiso:new URL('../assets/textures/brands/daiso.png',import.meta.url).href
+});
 
 function perspective(fov,aspect,near,far){
  const f=1/Math.tan(fov/2);
@@ -73,7 +76,7 @@ function programFor(gl){
   fogEnd:gl.getUniformLocation(program,'uFogEnd')};
 }
 function isFace(face){
- return face?.texture==='mcdonalds'&&Array.isArray(face.positions)&&
+ return Object.hasOwn(TEXTURE_URLS,face?.texture)&&Array.isArray(face.positions)&&
   Array.isArray(face.uvs)&&face.positions.length>=18&&
   face.positions.length%9===0&&face.uvs.length===face.positions.length/3*2;
 }
@@ -84,46 +87,60 @@ export function createMapFacadeTextureLayer(renderer){
  const THREE=renderer?.THREE;
  const gl=renderer?.gl;
  if(!isThree&&!gl)throw new Error('Map facade needs a ready A or B renderer');
- let disposed=false,ready=false,failed=false;
- const cache=new Map();
- let scene=null,material=null,texture=null,shader=null;
+ let disposed=false;
+ const cache=new Map(),resources=new Map();
+ let scene=null,shader=null;
  if(isThree){
   scene=new THREE.Scene();
   scene.fog=renderer.scene?.fog??null;
-  texture=new THREE.Texture();
-  texture.colorSpace=THREE.SRGBColorSpace;
-  texture.magFilter=THREE.LinearFilter;
-  texture.minFilter=THREE.LinearFilter;
-  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
-  material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,
-   transparent:false,depthTest:true,depthWrite:true,toneMapped:false});
- }else{
-  shader=programFor(gl);
-  texture=gl.createTexture();
-  if(!texture)throw new Error('UV facade WebGL texture allocation failed');
+ }else shader=programFor(gl);
+ // Every brand owns its texture; all geometry and camera operations remain
+ // identical across the fixed WebGL1/Three.js rendering backends.
+ for(const [name,url] of Object.entries(TEXTURE_URLS)){
+  const resource={name,url,ready:false,failed:false,image:new Image(),texture:null,material:null};
+  if(isThree){
+   const texture=new THREE.Texture();
+   texture.colorSpace=THREE.SRGBColorSpace;
+   texture.magFilter=THREE.LinearFilter;
+   texture.minFilter=THREE.LinearFilter;
+   texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+   resource.texture=texture;
+   resource.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,
+    transparent:false,depthTest:true,depthWrite:true,toneMapped:false});
+  }else{
+   resource.texture=gl.createTexture();
+   if(!resource.texture)throw new Error('UV facade texture allocation failed: '+name);
+  }
+  const image=resource.image;
+  image.decoding='async';
+  image.onload=()=>{
+   if(disposed)return;
+   try{
+    if(isThree){
+     resource.texture.image=image;
+     resource.texture.needsUpdate=true;
+    }else{
+     gl.activeTexture(gl.TEXTURE0);
+     gl.bindTexture(gl.TEXTURE_2D,resource.texture);
+     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+     try{
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
+     }finally{gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);}
+     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+     // Both logos are NPOT in WebGL1: no mipmaps and CLAMP_TO_EDGE.
+     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    }
+    resource.ready=true;
+   }catch(error){resource.failed=true;console.warn('PNG facade upload failed:',name,error);}
+  };
+  image.onerror=()=>{
+   if(!disposed){resource.failed=true;console.warn('PNG facade not found:',url);}
+  };
+  resources.set(name,resource);
+  image.src=url;
  }
- const image=new Image();
- image.decoding='async';
- image.onload=()=>{
-  if(disposed)return;
-  try{
-   if(isThree){texture.image=image;texture.needsUpdate=true;}
-   else{
-    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    // 554px NPOT texture in WebGL1: LINEAR, no mipmaps, CLAMP_TO_EDGE.
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
-   }
-   ready=true;
-  }catch(error){failed=true;console.warn('PNG facade upload failed',error);}
- };
- image.onerror=()=>{if(!disposed){failed=true;console.warn('PNG facade not found:',MCDONALDS_URL);}};
- image.src=MCDONALDS_URL;
  function geometryFor(face){
   if(cache.has(face))return cache.get(face);
   if(!isFace(face))return null;
@@ -132,7 +149,7 @@ export function createMapFacadeTextureLayer(renderer){
    const geo=new THREE.BufferGeometry();
    geo.setAttribute('position',new THREE.Float32BufferAttribute(face.positions,3));
    geo.setAttribute('uv',new THREE.Float32BufferAttribute(face.uvs,2));
-   const mesh=new THREE.Mesh(geo,material);
+   const mesh=new THREE.Mesh(geo,resources.get(face.texture).material);
    mesh.frustumCulled=false;scene.add(mesh);
    entry={mesh,geometry:geo};
   }else{
@@ -153,11 +170,15 @@ export function createMapFacadeTextureLayer(renderer){
   cache.delete(face);
  }
  return {
-  get state(){return disposed?'disposed':failed?'failed':ready?'ready':'loading';},
+  get state(){return disposed?'disposed':
+   [...resources.values()].some(r=>r.ready)?'ready':
+   [...resources.values()].some(r=>r.failed)?'failed':'loading';},
   render(faces,camera){
-   if(disposed||!ready||!Array.isArray(faces)||!faces.length)return;
-   const valid=faces.filter(isFace),current=new Set(valid);
+   if(disposed)return;
+   const all=Array.isArray(faces)?faces.filter(isFace):[];
+   const current=new Set(all);
    for(const [face,entry] of cache)if(!current.has(face))forget(face,entry);
+   const valid=all.filter(face=>resources.get(face.texture)?.ready);
    for(const face of valid)geometryFor(face);
    if(!valid.length)return;
    if(isThree){
@@ -176,12 +197,13 @@ export function createMapFacadeTextureLayer(renderer){
     gl.uniformMatrix4fv(shader.view,false,view);
     gl.uniform1f(shader.fogStart,1000);
     gl.uniform1f(shader.fogEnd,2200);
-    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.activeTexture(gl.TEXTURE0);
     gl.uniform1i(shader.image,0);
     gl.depthMask(true);
     gl.enable(gl.DEPTH_TEST);
     for(const face of valid){
      const entry=cache.get(face);
+     gl.bindTexture(gl.TEXTURE_2D,resources.get(face.texture).texture);
      gl.bindBuffer(gl.ARRAY_BUFFER,entry.position);
      gl.enableVertexAttribArray(shader.position);
      gl.vertexAttribPointer(shader.position,3,gl.FLOAT,false,0,0);
@@ -194,10 +216,17 @@ export function createMapFacadeTextureLayer(renderer){
   },
   dispose(){
    if(disposed)return;
-   disposed=true;image.onload=null;image.onerror=null;
+   disposed=true;
+   for(const res of resources.values()){
+    res.image.onload=null;res.image.onerror=null;
+   }
    for(const [face,entry] of cache)forget(face,entry);
-   if(isThree){material.dispose();texture.dispose();}
-   else{gl.deleteTexture(texture);gl.deleteProgram(shader.program);}
+   for(const res of resources.values()){
+    if(isThree){res.material.dispose();res.texture.dispose();}
+    else gl.deleteTexture(res.texture);
+   }
+   resources.clear();
+   if(!isThree)gl.deleteProgram(shader.program);
   }
  };
 }
