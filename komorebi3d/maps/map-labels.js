@@ -587,6 +587,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     sourceStatus.textContent='テストOSMにコピーがまだありません。右上の「テスト環境へコピー」で複製してください。';
     return;
    }
+   // An earlier transient prefetch failure must not block a fresh user retry.
+   if(testPrefetchResult?.error){testPrefetchPromise=null;testPrefetchResult=null;}
    // Switch to a prefetched test copy without flashing an empty tag list.
    const ready=testPrefetchResult?.data?testPrefetchResult:null;
    if(!ready){
@@ -659,6 +661,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    controls.replaceChildren(confirm);
    add.hidden=activeSource==='test'&&!testReady;
    updateConfirm();
+   // After sending to test OSM, reload its fresh tags when review is dismissed.
+   if(activeSource==='test'&&!testReady&&linkedTestTarget)void setSource('test');
   });
   form.addEventListener('submit',event=>event.preventDefault());
   mask.addEventListener('pointerdown',event=>event.stopPropagation());
