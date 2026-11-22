@@ -161,7 +161,7 @@ console.log('DAISO current Geofabrik tile POIs: '+JSON.stringify(
 const actualMatched=matchDaisoBuildings(tile.elements,project,1000);
 const ownerIds=[...actualMatched.keys()];
 console.log('DAISO actual footprint owner IDs: '+JSON.stringify(ownerIds));
-if(realShops.some(e=>e.type==='node'&&/^\\d+$/.test(String(e.tags.level||'')))){
+if(realShops.some(e=>e.type==='node'&&/^\d+$/.test(String(e.tags.level||'')))){
  const actual3D=buildMap(tile,{halfSize:1000});
  const actualFaces=actual3D.texturedFaces.filter(f=>f.texture==='daiso');
  console.log('DAISO actual UV faces: '+JSON.stringify(actualFaces.map(f=>({
