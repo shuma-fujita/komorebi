@@ -73,6 +73,7 @@ export function mountLocalStorageManager(doc=document,{copyKeys=false}={}){
    const row=doc.createElement('article');
    row.className='storage-entry';
    row.dataset.key=item.key;
+   const osmMatch=item.key.match(/(?:^|:)(node|way|relation)\/([1-9]\d*)$/);
    if(copyKeys){
     const status=text('p','','storage-copy-status');
     status.setAttribute('role','status');
@@ -100,10 +101,24 @@ export function mountLocalStorageManager(doc=document,{copyKeys=false}={}){
     };
     row.appendChild(copyButton(item.key,item.key,'保存キーをコピー：'+item.key));
     // The canonical and legacy OSM storage keys end in node/ID, way/ID, etc.
-    const match=item.key.match(/(?:^|:)(node|way|relation)\/([1-9]\d*)$/);
-    if(match)row.appendChild(copyButton('OSM ID: '+match[2]+'  ⧉',match[2],'OSM ID '+match[2]+' をコピー'));
+    if(osmMatch)row.appendChild(copyButton('OSM ID: '+osmMatch[2]+'  ⧉',osmMatch[2],'OSM ID '+osmMatch[2]+' をコピー'));
     row.appendChild(status);
-   }else row.appendChild(text('code',item.key,'storage-entry-key'));
+   }else{
+    row.appendChild(text('code',item.key,'storage-entry-key'));
+    if(osmMatch){
+     const searchButton=text('button','OSM ID: '+osmMatch[2]+'  → 検索','storage-search-id');
+     searchButton.type='button';
+     searchButton.title='タップしてこのIDで保存キーを検索';
+     searchButton.setAttribute('aria-label','OSM ID '+osmMatch[2]+' で検索');
+     searchButton.style.cssText='display:block;max-width:100%;min-height:40px;margin:7px 0 4px;padding:7px 10px;border:1px solid #557b5c;border-radius:7px;background:#1b3724;color:#d7ffe5;font:700 11px/1.5 ui-monospace,SFMono-Regular,monospace;text-align:left;overflow-wrap:anywhere;white-space:normal;touch-action:manipulation;cursor:pointer;';
+     searchButton.addEventListener('click',()=>{
+      filter.value=osmMatch[2];
+      feedback.textContent='OSM ID '+osmMatch[2]+' で絞り込みました。';
+      render();
+     });
+     row.appendChild(searchButton);
+    }
+   }
    row.append(
     text('p',keyDescription(item.key),'storage-entry-about'),
     text('p','値 '+(item.value?.length??0).toLocaleString()+'文字','storage-entry-meta'));
@@ -157,9 +172,10 @@ export function mountLocalStorageManager(doc=document,{copyKeys=false}={}){
   }
  };
  const refreshView=()=>{feedback.textContent='';render();};
- filter.addEventListener('input',render);
+ filter.addEventListener('input',()=>{feedback.textContent='';render();});
  clear.addEventListener('click',()=>{
   filter.value='';
+  feedback.textContent='';
   render();
   filter.focus();
  });

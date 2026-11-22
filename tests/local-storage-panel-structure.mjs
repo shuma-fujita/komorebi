@@ -93,7 +93,13 @@ assert.ok(manager.includes("confirm.addEventListener('click'"));
 assert.ok(manager.includes('{copyKeys=false}'),'Tap-to-copy is opt-in for mock approval');
 assert.ok(manager.includes('clipboard.writeText(value)'),'Clipboard copy does not mutate storage');
 assert.ok(manager.includes("'保存キーをコピー：'+item.key"),'Full storage key can be copied');
-assert.ok(manager.includes("'OSM ID '+match[2]+' をコピー"),'OSM numeric ID can be copied separately');
+assert.ok(manager.includes("'OSM ID '+osmMatch[2]+' をコピー"),'Mock still copies numeric OSM ID separately');
+assert.ok(manager.includes("const osmMatch=item.key.match("),'Only OSM keys with trailing type/ID show the search shortcut');
+assert.ok(manager.includes("searchButton.addEventListener('click'"),'Product OSM ID button is clickable');
+assert.ok(manager.includes('filter.value=osmMatch[2]'),'Product ID tap populates the search field');
+assert.ok(manager.includes("feedback.textContent='OSM ID '"),'Product ID search provides feedback');
+assert.ok(manager.includes("row.appendChild(searchButton)"),'Product adds the ID shortcut to the item');
+assert.ok(dev.includes('storage-id-search-product-20261122'),'Product loads the updated localStorage module');
 assert.ok(mockScript.includes('mountLocalStorageManager(document,{copyKeys:true});'),'Mock enables copy controls');
 assert.ok(dev.includes('mountLocalStorageManager(document);'),'Game remains unchanged until approved');
 
