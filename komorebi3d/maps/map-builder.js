@@ -3,7 +3,7 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint} from '../objects/buildings/food/osm-adapter.js?v=food-poi-level-mcdonalds-v2-20261122';
+import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint} from '../objects/buildings/food/osm-adapter.js?v=food-poi-level-mcdonalds-v3-20261122';
 import {paintMcDonaldsFacade} from '../objects/buildings/food/mcdonalds-sign.js?v=mcdonalds-daiso-shared-v1-20261122';
 import {matchDaisoBuildings,resolveDaisoPaint} from '../objects/buildings/variety/osm-adapter.js?v=daiso-poi-level-v1-20261122';
 import {paintDaisoFacade} from '../objects/buildings/variety/daiso-sign.js?v=daiso-png-wall-v1-20261122';
