@@ -106,6 +106,13 @@ assert.equal(paintMcDonaldsFacade((mesh,a,b,c,d,color)=>quads.push({a,b,c,d,colo
 assert.equal(quads.filter(q=>q.color===MC_SIGN_BG).length,4);
 assert.equal(quads.filter(q=>q.color===MC_SIGN_GOLD).length,0);
 assert.equal(uv.length,1);
+const reversed=[];
+assert.equal(paintMcDonaldsFacade(()=>{},{},
+ [[0,12],[18,12],[18,0],[0,0]],
+ {bottom:6,top:9,texturedFaces:reversed}),true);
+assert.equal(reversed[0].uvs.filter((_,i)=>i%12===0&&
+ reversed[0].uvs.slice(i,i+12).join(',')==='0,0,1,0,1,1,0,0,1,1,0,1').length,4,
+ 'Reverse footprint winding must also preserve exterior-facing McDonalds logo direction');
 assert.equal(paintMcDonaldsFacade(()=>{}, {},notched,{bottom:10,top:10}),false);
 const fallback=[];
 assert.equal(paintMcDonaldsFacade((m,a,b,c,d,color)=>fallback.push(color),{},notched,
