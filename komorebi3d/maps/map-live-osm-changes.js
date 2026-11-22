@@ -55,6 +55,7 @@ function localContext(map,raw,origin){
 function rebuildOne(map,building,origin){
  const result=buildMap(localContext(map,building,origin),{halfSize:1000});
  const id=keyOf(building);
+ const texturedFaces=result.texturedFaces.filter(face=>face.ownerKey===id);
  const feature=result.mapFeatures.find(f=>f.type==='building'&&f.osmType+'/'+f.osmId===id)||null;
  const label=result.labels.find(l=>l.kind==='building'&&l.osmType+'/'+l.osmId===id)||null;
  for(const batch of result.displayBatches){
@@ -64,9 +65,9 @@ function rebuildOne(map,building,origin){
   if(!m)continue;
   return {data:{positions:m.positions.slice(slice.start,slice.end),
    normals:m.normals.slice(slice.start,slice.end),
-   colors:m.colors.slice(slice.start,slice.end)},feature,label};
+   colors:m.colors.slice(slice.start,slice.end)},feature,label,texturedFaces};
  }
- return {data:null,feature,label};
+ return {data:null,feature,label,texturedFaces};
 }
 function removeOriginalTriangles(world,key,createMeshGeometry){
  const span=world.buildingSlices.get(key);
@@ -136,6 +137,11 @@ export function patchLiveGeofabrikMap(world,entry,createMeshGeometry){
   // Build first, then replace: a geometry error leaves the old 3D intact.
   removeOriginalTriangles(world,id,createMeshGeometry);
   if(geometry)world.liveMeshes.set(id,geometry);else world.liveMeshes.delete(id);
+  // Replace only this building's PNG UV surface as localStorage / OSM tags
+  // change. No full-tile rebuild; the app-side texture layer drops stale
+  // surfaces on its next frame while other buildings keep their identity.
+  world.texturedFaces=(world.texturedFaces||[]).filter(face=>face.ownerKey!==id)
+   .concat(replacement.texturedFaces||[]);
   const i=world.mapFeatures.findIndex(f=>f.type==='building'&&f.osmType+'/'+f.osmId===id);
   if(replacement.feature){
    if(i>=0)world.mapFeatures[i]=replacement.feature;
