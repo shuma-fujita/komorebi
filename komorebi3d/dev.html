@@ -564,36 +564,8 @@ button.panel-add-button{color:var(--g-accent)}
 <p class="storage-panel-footer">削除は各キーごとに2段階で確認します。設定やOSMタグ変更のキーを削除すると表示に影響する場合があります。変更が反映されないときはページを再読み込みしてください。</p>
 <div id="storage-help-overlay" class="panel-help-overlay storage-help-overlay" role="tooltip" hidden><div class="panel-help-label storage-help-label">🗄️ localStorage管理</div></div>
 </section></div></div></div></div><script>
-// Only this mapping controls which panel is displayed in each slot.
-// Set a slot to null to omit the panel. Removed panel markup is also safe.
-const PANEL_LAYOUT=Object.freeze({top:'build',left:'game',right:'test',bottom:'runtime'});
-function applyPanelLayout(layout){
- const slotNames=['top','left','right','bottom'];
- const slots=new Map(Array.from(document.querySelectorAll('[data-panel-slot]'),el=>[el.dataset.panelSlot,el]));
- const panels=new Map(Array.from(document.querySelectorAll('[data-panel-id]'),el=>[el.dataset.panelId,el]));
- const used=new Set();
- for(const slotName of slotNames){
-  if(!slots.has(slotName))throw new Error('Missing panel slot: '+slotName);
-  const key=layout[slotName];
-  if(key==null)continue;
-  if(!['build','game','test','runtime'].includes(key)||used.has(key))
-   throw new Error('Unknown or repeated panel: '+key);
-  used.add(key);
- }
- // Must run before module initialization: moving a live WebGL canvas is avoided.
- for(const slot of slots.values())slot.replaceChildren();
- for(const slotName of slotNames){
-  const key=layout[slotName],slot=slots.get(slotName),panel=panels.get(key);
-  slot.dataset.panel=panel?key:'empty';
-  if(panel)slot.appendChild(panel);
- }
- // Optional panels in the hidden reserve must survive for the later + menu.
- for(const [key,panel] of panels)
-  if(!used.has(key)&&!panel.closest('#panel-reserve'))panel.remove();
- const main=document.querySelector('.landscape-main');
- if(main)main.dataset.visiblePanels=String(['left','right'].filter(s=>slots.get(s).dataset.panel!=='empty').length);
-}
-applyPanelLayout(PANEL_LAYOUT);
+// Initial panel placement comes from shared page-shell/panel fragments.
+ // The shared dev-panel-layout.js owns all panel reparenting after module startup.
 
 (async function () {
   const hash = document.getElementById('github-commit');

@@ -241,8 +241,8 @@ export function mountPanelLayoutEditor(doc,initialLayout,{preserveSlotSize=false
  return {getLayout:()=>({...layout})};
 }
 
-/* Initialize the editor from the panels already placed in the four slots.
-   Product's synchronous pre-Engine layout and mock's static layout both work. */
+/* Initialize the editor from the shared HTML's existing four-slot placement.
+   Both mock and product use this single controller; live game canvases stay put. */
 export function mountDefaultPanelLayoutEditor(doc){
  const initialLayout=Object.fromEntries(SLOT_IDS.map(name=>{
   const slot=doc.querySelector('[data-panel-slot="'+name+'"]');

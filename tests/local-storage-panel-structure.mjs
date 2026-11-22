@@ -53,36 +53,39 @@ const parsed=spawnSync(process.execPath,['--check','--input-type=module'],{
 });
 assert.equal(parsed.status,0,'Inline game JS must parse: '+parsed.stderr);
 
-/* Execute the product's synchronous pre-module panel bootstrap.
-   It must keep the fifth panel in its hidden reserve for the + chooser. */
-import {runInNewContext} from 'node:vm';
-const setupStart=dev.indexOf('const PANEL_LAYOUT=Object.freeze(');
-const setupEnd=dev.indexOf('applyPanelLayout(PANEL_LAYOUT);',setupStart);
-assert.ok(setupStart>0&&setupEnd>setupStart,'Product pre-module panel layout exists');
-const setup=dev.slice(setupStart,setupEnd+'applyPanelLayout(PANEL_LAYOUT);'.length);
-const removedEarly=[];
-const reserve={id:'panel-reserve'};
-const panelNodes=['build','game','test','runtime','storage','obsolete'].map(id=>({
- dataset:{panelId:id},closest(selector){return id==='storage'&&selector==='#panel-reserve'?reserve:null;},
- remove(){removedEarly.push(id);}
-}));
-const slotNodes=['top','left','right','bottom'].map(id=>({
- dataset:{panelSlot:id},children:[],replaceChildren(){this.children=[];},
- appendChild(panel){this.children.push(panel);}
-}));
-const mainNode={dataset:{}};
-runInNewContext(setup,{document:{
- querySelectorAll(selector){
-  if(selector==='[data-panel-slot]')return slotNodes;
-  if(selector==='[data-panel-id]')return panelNodes;
-  throw Error('Unexpected selector: '+selector);
- },
- querySelector(selector){return selector==='.landscape-main'?mainNode:null;}
-}});
-assert.deepEqual([...removedEarly],['obsolete'],'Only abandoned non-reserve panels may be removed');
-assert.equal(slotNodes.filter(x=>x.children.length===1).length,4,'Four visible slots remain');
-assert.equal(panelNodes.find(x=>x.dataset.panelId==='storage').closest('#panel-reserve'),reserve,
- 'Hidden storage panel remains registered for the chooser');
+// The shared HTML defines the same initial slots for both pages. Product no
+// longer runs a separate synchronous panel bootstrap that could delete storage.
+const initialPanels={top:'build',left:'game',right:'test',bottom:'runtime'};
+for(const page of ['komorebi3d/dev.html','komorebi3d/mock.html']){
+ const html=read(page);
+ for(const [slot,id] of Object.entries(initialPanels)){
+  const anchor='data-panel-slot="'+slot+'">';
+  const index=html.indexOf(anchor);
+  assert.ok(index>=0,page+' has the '+slot+' slot');
+  assert.match(html.slice(index,index+300),new RegExp('data-panel-id="'+id+'"'),
+   page+' initially places '+id+' in '+slot);
+ }
+ const reserveAt=html.indexOf('id="panel-reserve" hidden>');
+ assert.ok(reserveAt>=0,page+' keeps the optional panel reserve');
+ assert.match(html.slice(reserveAt,reserveAt+190),/data-panel-id="storage"/,
+  page+' keeps storage in the reserve');
+}
+const canonicalShell=read('komorebi3d/page-shell.html');
+for(const [slot,id] of Object.entries(initialPanels)){
+ assert.match(canonicalShell,new RegExp('data-panel-slot="'+slot+'".*?@panel:'+id),
+  'Shared page shell owns initial '+slot+' assignment');
+}
+assert.match(canonicalShell,/id="panel-reserve" hidden>.*?@panel:storage/,
+ 'Shared page shell owns the optional storage reserve');
+assert.doesNotMatch(dev,/\\b(?:const PANEL_LAYOUT|function applyPanelLayout)\\b/,
+ 'Product must not redefine panel placement');
+assert.equal((dev.match(/mountDefaultPanelLayoutEditor\\(document\\);/g)||[]).length,1,
+ 'Product initializes the shared panel controller exactly once');
+assert.equal((mockScript.match(/mountDefaultPanelLayoutEditor\\(document\\);/g)||[]).length,1,
+ 'Mock initializes the same shared panel controller exactly once');
+assert.doesNotMatch(dev,/\\bpanel\\.remove\\(\\)/,
+ 'Product must not discard optional panels before the shared controller');
+
 
 const manager=read('komorebi3d/local-storage-panel.js');
 assert.ok(manager.includes("confirm.addEventListener('click'"));
