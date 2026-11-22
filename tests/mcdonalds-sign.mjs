@@ -8,6 +8,8 @@ import {matchFoodBuildings,resolveMcDonaldsPaint,resolveFoodPaint}
  from '../komorebi3d/objects/buildings/food/osm-adapter.js';
 import {applySavedOsmTagChangesToMap}
  from '../komorebi3d/maps/osm-pending-changes.js';
+import {patchLiveGeofabrikMap}
+ from '../komorebi3d/maps/map-live-osm-changes.js';
 import {buildMap} from '../komorebi3d/maps/map-builder.js';
 
 const lat=35.78444,lon=139.90061,scale=111320*Math.cos(lat*Math.PI/180);
@@ -136,6 +138,39 @@ try{
  if(priorStorage===undefined)delete globalThis.localStorage;
  else globalThis.localStorage=priorStorage;
 }
+// Recreate the in-memory world used by the localStorage review UI. A saved
+// POI level must shift the actual PNG wall immediately, without page reload.
+const liveMap={source:'OpenStreetMap contributors',tile:live.tile,
+ elements:[{...way,tags:{...way.tags}},
+  {...poi,version:1,tags:{...poi.tags,level:'2'}}]};
+const built=buildMap(liveMap,{halfSize:1000});
+const liveWorld={ready:true,sourceMap:liveMap,
+ meshes:built.meshes.map((m,i)=>({...m,id:'test-mesh:'+i})),
+ texturedFaces:[...built.texturedFaces],
+ labels:built.labels,mapFeatures:built.mapFeatures,
+ liveMeshes:new Map(),buildingSlices:new Map()};
+let meshOffset=0;
+for(const batch of built.displayBatches){
+ for(const slice of batch.buildingSlices||[])
+  liveWorld.buildingSlices.set(slice.osmKey,{
+   meshIndex:meshOffset+slice.meshIndex,start:slice.start,end:slice.end
+  });
+ meshOffset+=batch.meshes.length;
+}
+assert.equal(liveWorld.texturedFaces.length,1);
+const createGeometry=({id,positions,normals,colors})=>({id,positions,normals,colors});
+const update1=patchLiveGeofabrikMap(liveWorld,{type:'node',id:poi.id,
+ version:1,changes:{level:'1'}},createGeometry);
+assert.equal(update1.applied,true);
+assert.equal(liveWorld.texturedFaces.length,1,'Live save replaces UV facade');
+assert.notStrictEqual(liveWorld.texturedFaces[0],built.texturedFaces[0],
+ 'Previous UV facade object must be released');
+assert.ok(liveWorld.texturedFaces[0].positions.every((n,i)=>i%3!==1||
+  n>=floor-1e-8&&n<=2*floor+1e-8),'Live level change should move PNG down to 2F');
+const update2=patchLiveGeofabrikMap(liveWorld,{type:'node',id:poi.id,
+ version:1,changes:{name:'他の店'}},createGeometry);
+assert.equal(update2.applied,true);
+assert.equal(liveWorld.texturedFaces.length,0,'Removing McDonalds name clears the UV wall');
 const asset=readFileSync(join('komorebi3d','assets','textures','brands','mcdonalds.png'));
 assert.equal(asset.subarray(1,4).toString(),'PNG');
 assert.equal(asset.readUInt32BE(16),554);
