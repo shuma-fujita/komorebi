@@ -46,7 +46,7 @@ assert.equal(simple.filter(q=>q.color===MC_SIGN_GOLD).length,144);
 const redCenters=simple.filter(q=>q.color===MC_SIGN_BG).map(q=>
  [0,2].map(axis=>[q.a,q.b,q.c,q.d].reduce((s,p)=>s+p[axis],0)/4));
 const logoCenters=Array.from({length:4},(_,i)=>{
- const logo=simple.slice(4+i*36,4+(i+1)*36);
+ const logo=simple.filter(q=>q.color===MC_SIGN_GOLD).slice(i*36,(i+1)*36);
  return [0,2].map(axis=>logo.flatMap(q=>[q.a,q.b,q.c,q.d])
   .reduce((s,p)=>s+p[axis],0)/(logo.length*4));
 });
