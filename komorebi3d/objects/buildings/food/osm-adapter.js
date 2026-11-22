@@ -8,6 +8,7 @@ const brands=[yoshinoya,hidakaya,mcdonalds];
 const normalize=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 function identifyFood(tags){
  if(!['fast_food','restaurant'].includes(tags?.amenity))return null;
+ if(tags?.['brand:wikidata']==='Q38076')return mcdonalds;
  const names=[tags?.['brand:ja'],tags?.brand,tags?.['brand:en'],tags?.['name:ja'],tags?.name,tags?.['name:en']];
  return brands.find(brand=>names.some(v=>{const n=normalize(v);return n&&brand.names.some(alias=>n.startsWith(normalize(alias)));}))||null;
 }
