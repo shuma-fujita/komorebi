@@ -78,7 +78,7 @@ export function resolveMcDonaldsPaint(stores,tags,height,inferredLevels=null){
  if(!matched.length||'min_height' in tags||'building:min_level' in tags)return [];
  if(matched.some(s=>{
   const raw=String(s.level??'').trim();
-  if(!/^\\d+(?:\\s*;\\s*\\d+)*$/.test(raw))return true;
+  if(!/^\d+(?:\s*;\s*\d+)*$/.test(raw))return true;
   return raw.split(';').some(value=>!Number.isSafeInteger(Number(value)));
  }))return [];
  // Existing convenience-level utility owns the floor-height convention
@@ -89,6 +89,7 @@ export function resolveMcDonaldsPaint(stores,tags,height,inferredLevels=null){
  // all-building span. Never paint a whole multistorey tower on bad data.
  const count=Number(tags?.['building:levels']);
  const hasCount=Number.isSafeInteger(count)&&count>0;
+ if(tags?.['building:levels']!==undefined&&!hasCount)return [];
  const explicitHeight=Number(tags?.height);
  const hasHeight=Number.isFinite(explicitHeight)&&explicitHeight>0;
  if(!hasCount&&!hasHeight&&!(Number.isSafeInteger(inferredLevels)&&inferredLevels>0))return [];
