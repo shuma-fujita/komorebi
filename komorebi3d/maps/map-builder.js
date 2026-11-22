@@ -4,7 +4,7 @@ import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=br
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-storefront-20261119';
-import {findMatsudoMcDonaldsBuilding,paintMatsudoMcDonaldsSign} from '../objects/buildings/food/mcdonalds-sign.js?v=matsudo-mcdonalds-four-faces-v2-20261122';
+import {findMatsudoMcDonaldsBuilding,paintMatsudoMcDonaldsSign} from '../objects/buildings/food/mcdonalds-sign.js?v=matsudo-png-uv-wall-v3-20261122';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=food-storefront-20261119';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
@@ -148,6 +148,7 @@ function strip(m,points,width,t,y=.045){
 function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1],[x1,-.22,z0],t);}
  let buildings=palette.map(builder),roads=builder(),walks=builder(),rails=builder(),parkings=builder();
  let buildingSlices=[]; // Per-building spans inside existing grouped batch meshes.
+ let texturedFaces=[]; // UV-mapped facade surfaces live outside the fixed Engine mesh contract.
  const floor=builder(),labels=[],mapFeatures=[],poiLabels=[];
  const facilityKeys=['shop','amenity','tourism','office','leisure','healthcare'];
  // Step 1: prioritize complete OSM features nearest the helicopter.
@@ -158,7 +159,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  const featureQueue=createFeatureWorkQueue(map.elements,xy,priorityX,priorityZ);
  // Every batch contains only fully generated features. Keep the ground
  // in its own first batch so the helicopter always has visible terrain.
- const displayBatches=[{meshes:[floor],labels:[],mapFeatures:[],start:-1,end:-1}];
+ const displayBatches=[{meshes:[floor],labels:[],mapFeatures:[],texturedFaces:[],start:-1,end:-1}];
  const batchSize=Math.max(1,Math.ceil(featureQueue.total/24));
  let batchStart=0,processed=0,lastLabelIndex=0,lastFeatureIndex=0,lastEarlyPoiIndex=0;
  // Track the REAL processed order, not the initially predicted distance rank.
@@ -168,14 +169,15 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  function flushBatch(end){
   const meshes=[...buildings,roads,walks,rails,parkings].filter(m=>m.positions.length>0);
   const batch={meshes,start:batchStart,end,labels:[...labels.slice(lastLabelIndex),...earlyPoiDisplay.slice(lastEarlyPoiIndex)],mapFeatures:mapFeatures.slice(lastFeatureIndex),
-   buildingSlices:buildingSlices.map(slice=>({osmKey:slice.osmKey,meshIndex:meshes.indexOf(slice.mesh),start:slice.start,end:slice.end}))};
+   buildingSlices:buildingSlices.map(slice=>({osmKey:slice.osmKey,meshIndex:meshes.indexOf(slice.mesh),start:slice.start,end:slice.end})),
+   texturedFaces};
   if(meshes.length||batch.labels.length||batch.mapFeatures.length){
    displayBatches.push(batch);
    for(let i=batchStart;i<=end;i++)completedBatchByIndex[processedIndices[i]]=batch;
   }
   lastLabelIndex=labels.length;lastFeatureIndex=mapFeatures.length;lastEarlyPoiIndex=earlyPoiDisplay.length;
   buildings=palette.map(builder);roads=builder();walks=builder();rails=builder();parkings=builder();
-  buildingSlices=[];
+  buildingSlices=[];texturedFaces=[];
   batchStart=end+1;
   return batch;
  }
@@ -267,7 +269,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
     resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels),roadSegments,tags,pinkSpans,
     resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels));
    if(e.type==='way'&&matsudoMcDonaldsBuilding===e.id)
-    paintMatsudoMcDonaldsSign(quad,buildingMesh,p,height,{levels:Number.parseFloat(tags['building:levels'])});
+    paintMatsudoMcDonaldsSign(quad,buildingMesh,p,height,{levels:Number.parseFloat(tags['building:levels']),texturedFaces});
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.
@@ -356,7 +358,9 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  if(profile){profile.record('final-batches',performance.now()-finalClock);finalClock=performance.now();}
  const meshes=displayBatches.flatMap(batch=>batch.meshes);
  if(profile)profile.record('final-meshes',performance.now()-finalClock);
- return {meshes,displayBatches,labels,mapFeatures,counts:{buildings:buildingCount,roads:roadCount,rails:railCount}};
+ return {meshes,displayBatches,labels,mapFeatures,
+  texturedFaces:displayBatches.flatMap(batch=>batch.texturedFaces||[]),
+  counts:{buildings:buildingCount,roads:roadCount,rails:railCount}};
 }
 
 // Existing callers can still request the identical full-map result.
