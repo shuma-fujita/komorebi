@@ -7,7 +7,8 @@ const TEXTURE_URLS=Object.freeze({
  gusto:new URL('../assets/textures/brands/gusto.png',import.meta.url).href,
  torikizoku:new URL('../assets/textures/brands/torikizoku.png',import.meta.url).href,
  bamiyan:new URL('../assets/textures/brands/bamiyan.png',import.meta.url).href,
- kaikatsu:new URL('../assets/textures/brands/kaikatsu.png',import.meta.url).href
+ kaikatsu:new URL('../assets/textures/brands/kaikatsu.png',import.meta.url).href,
+ isomaru:new URL('../assets/textures/brands/isomaru.webp',import.meta.url).href
 });
 
 function perspective(fov,aspect,near,far){

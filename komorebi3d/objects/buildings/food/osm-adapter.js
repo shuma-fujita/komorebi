@@ -8,7 +8,8 @@ import {mcdonalds} from './mcdonalds.js?v=mcdonalds-poi-level-v2-20261122';
 import {gusto} from './gusto.js?v=food-gusto-v1-20261122';
 import {torikizoku} from './torikizoku.js?v=food-torikizoku-v1-20261122';
 import {bamiyan} from './bamiyan.js?v=food-bamiyan-v1-20261122';
-const brands=[yoshinoya,hidakaya,mcdonalds,gusto,torikizoku,bamiyan];
+import {isomaru} from './isomaru.js?v=isomaru-wide-v1-20261122';
+const brands=[yoshinoya,hidakaya,mcdonalds,gusto,torikizoku,bamiyan,isomaru];
 const normalize=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 function identifyFood(tags){
  const amenity=tags?.amenity;
@@ -28,7 +29,7 @@ export function matchFoodBuildings(elements,project,halfSize){
 // Same physical floor-spanning rules and missing-level fallback as convenience.
 export function resolveFoodPaint(stores,tags,height,inferredLevels=null){
  // Image-backed brands draw on UV wall faces rather than ordinary food stripes.
- const imageBrands=new Set(['mcdonalds','gusto','torikizoku','bamiyan']);
+ const imageBrands=new Set(['mcdonalds','gusto','torikizoku','bamiyan','isomaru']);
  return resolveConveniencePaint(stores?.filter(s=>!imageBrands.has(s.brand?.id)),tags,height,inferredLevels);
 }
 // Use the same zero-based OSM 'level' interpretation as convenience stores.
@@ -42,6 +43,9 @@ export function resolveGustoPaint(stores,tags,height,inferredLevels=null){
 }
 export function resolveBamiyanPaint(stores,tags,height,inferredLevels=null){
  return resolveImageBrandPaint(stores,tags,height,inferredLevels,'bamiyan');
+}
+export function resolveIsomaruPaint(stores,tags,height,inferredLevels=null){
+ return resolveImageBrandPaint(stores,tags,height,inferredLevels,'isomaru');
 }
 export function resolveTorikizokuPaint(stores,tags,height,inferredLevels=null){
  return resolveImageBrandPaint(stores,tags,height,inferredLevels,'torikizoku');

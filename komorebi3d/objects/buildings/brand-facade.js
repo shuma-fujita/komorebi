@@ -7,11 +7,11 @@ function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
   surface.uvs.push(...uv);
  }
 }
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
-  typeof texture!=='string'||!texture||!Number.isInteger(backgroundColor)||backgroundColor<0||backgroundColor>0xffffff)return false;
+  typeof texture!=='string'||!texture||!Number.isFinite(logoAspectRatio)||logoAspectRatio<=0||!Number.isInteger(backgroundColor)||backgroundColor<0||backgroundColor>0xffffff)return false;
  let twiceArea=0;
  for(let i=0;i<polygon.length;i++){
   const p=polygon[i],q=polygon[(i+1)%polygon.length];
@@ -51,9 +51,11 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
    if(useTexture)face(wall,0,wall.length,bottom,top);
    continue;
   }
-  const size=Math.min(2.65,top-bottom-.28,wall.length-.35);
-  const left=(wall.length-size)/2,right=(wall.length+size)/2;
-  const logoBottom=(bottom+top)/2-size/2,logoTop=(bottom+top)/2+size/2;
+  // Preserve original image aspect ratio; square brands retain exact dimensions.
+  const imageHeight=Math.min(2.65,top-bottom-.28,(wall.length-.35)/logoAspectRatio);
+  const imageWidth=imageHeight*logoAspectRatio;
+  const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;
+  const logoBottom=(bottom+top)/2-imageHeight/2,logoTop=(bottom+top)/2+imageHeight/2;
   if(useTexture){
    // One continuous UV-mapped wall surface: background bands plus a square
    // logo, preserving image aspect ratio and each facade's center.
@@ -73,8 +75,8 @@ face(wall,left,right,logoBottom,logoTop,...uv);
    // Editor preview / PNG-load fallback. McDonald's supplies its classic
    // arch painter; DAISO keeps the solid pink facade if PNG is unavailable.
    if(typeof drawFallbackLogo==='function'){
-    const imagePoint=(x,y)=>place(wall,wall.length/2+x*size/2.25,
-     (bottom+top)/2+y*size/3.1,.12);
+    const imagePoint=(x,y)=>place(wall,wall.length/2+x*imageWidth/2.25,
+     (bottom+top)/2+y*imageHeight/3.1,.12);
     const logoQuad=(p0,p1,p2,p3,color)=>quad(mesh,
      imagePoint(p0[0],p0[1]),imagePoint(p1[0],p1[1]),
      imagePoint(p2[0],p2[1]),imagePoint(p3[0],p3[1]),color);
