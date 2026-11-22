@@ -222,7 +222,7 @@ import {prependOsmReviewStorageCheck} from './maps/osm-review-storage-check.js?v
 })();
 
 import {mountDefaultPanelLayoutEditor} from './dev-panel-layout.js?v=storage-four-slots-20261122';
-import {mountLocalStorageManager} from './local-storage-panel.js?v=storage-four-slots-20261122';
+import {mountLocalStorageManager} from './local-storage-panel.js?v=storage-search-clear-20261122';
 // Initialize the hidden optional panel before the layout parks it.
 mountLocalStorageManager(document);
 mountDefaultPanelLayoutEditor(document);

@@ -6,7 +6,7 @@
 <p class="storage-panel-intro">このブラウザで開いているサイトと同じ保存元のlocalStorageを全件表示。キーの確認と個別削除ができます。</p>
 <div class="storage-panel-controls">
 <label for="storage-filter">キーを検索</label>
-<input id="storage-filter" type="search" placeholder="例：osm-tag-changes" autocomplete="off"/>
+<div class="storage-filter-field"><input id="storage-filter" type="search" placeholder="例：osm-tag-changes" autocomplete="off"/><button id="storage-filter-clear" class="storage-filter-clear" type="button" aria-label="検索ワードを消去" title="検索ワードを消去" hidden>×</button></div>
 <button id="storage-refresh" type="button">↻ 一覧更新</button>
 </div>
 <p id="storage-count" class="storage-count" role="status" aria-live="polite">localStorageを確認中…</p>

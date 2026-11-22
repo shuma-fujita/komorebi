@@ -162,6 +162,11 @@ button.slider-step:active{background:#c4dec1}
 .storage-panel-controls label{grid-column:1/-1;font-weight:700;font-size:11px}
 .storage-panel-controls input{min-width:0;width:100%;height:43px;padding:9px 11px;font:16px system-ui;border:1px solid var(--g-border-2,#45654b);border-radius:9px;background:#0f2117;color:#e9ffee}
 .storage-panel-controls button{flex:none;width:auto;min-height:43px;padding:8px 12px;touch-action:manipulation;cursor:pointer;font-size:11px}
+.storage-filter-field{position:relative;min-width:0}
+.storage-filter-field input{padding-right:48px}
+.storage-filter-field input::-webkit-search-cancel-button{display:none}
+.storage-filter-field .storage-filter-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;min-height:36px;padding:0;border:1px solid var(--g-border-2,#45654b);border-radius:8px;background:#1a3223;color:#d7ffe5;font:700 22px/1 system-ui;cursor:pointer;touch-action:manipulation}
+.storage-filter-field .storage-filter-clear[hidden]{display:none}
 .storage-count,.storage-feedback{margin:9px 0 7px;color:var(--g-text-dim,#9bad9d);font-size:11px;overflow-wrap:anywhere}
 .storage-feedback:empty{display:none}
 .storage-entries{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:8px;max-height:440px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px}
@@ -574,7 +579,7 @@ button.panel-add-button{color:var(--g-accent)}
 <p class="storage-panel-intro">このブラウザで開いているサイトと同じ保存元のlocalStorageを全件表示。キーの確認と個別削除ができます。</p>
 <div class="storage-panel-controls">
 <label for="storage-filter">キーを検索</label>
-<input id="storage-filter" type="search" placeholder="例：osm-tag-changes" autocomplete="off"/>
+<div class="storage-filter-field"><input id="storage-filter" type="search" placeholder="例：osm-tag-changes" autocomplete="off"/><button id="storage-filter-clear" class="storage-filter-clear" type="button" aria-label="検索ワードを消去" title="検索ワードを消去" hidden>×</button></div>
 <button id="storage-refresh" type="button">↻ 一覧更新</button>
 </div>
 <p id="storage-count" class="storage-count" role="status" aria-live="polite">localStorageを確認中…</p>
@@ -582,4 +587,4 @@ button.panel-add-button{color:var(--g-accent)}
 <p id="storage-feedback" class="storage-feedback" role="status" aria-live="polite"></p>
 <p class="storage-panel-footer">削除は各キーごとに2段階で確認します。設定やOSMタグ変更のキーを削除すると表示に影響する場合があります。変更が反映されないときはページを再読み込みしてください。</p>
 <div id="storage-help-overlay" class="panel-help-overlay storage-help-overlay" role="tooltip" hidden><div class="panel-help-label storage-help-label">🗄️ localStorage管理</div></div>
-</section></div></div></div></div><script type="module" src="./mock-ui.js?v=storage-four-slots-20261122"></script></body></html>
+</section></div></div></div></div><script type="module" src="./mock-ui.js?v=storage-search-clear-20261122"></script></body></html>

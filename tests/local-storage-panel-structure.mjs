@@ -29,6 +29,9 @@ for(const page of ['komorebi3d/dev.html','komorebi3d/mock.html']){
  assert.ok(html.includes('id="storage-entries"'),page+' inventory');
  assert.ok(html.includes('id="storage-refresh"'),page+' refresh');
  assert.ok(html.includes('id="storage-filter"'),page+' search');
+ assert.ok(html.includes('id="storage-filter-clear"'),page+' clear search button');
+ assert.ok(html.includes('aria-label="検索ワードを消去"'),page+' accessible clear label');
+ assert.ok(html.includes('.storage-filter-field .storage-filter-clear[hidden]{display:none}'),page+' hidden clear button styling');
 }
 const layoutSource=read('komorebi3d/dev-panel-layout.js');
 assert.ok(layoutSource.includes("for(const [id,panel] of panels)"),'Unused optional panels are registered and parked');
@@ -52,6 +55,10 @@ assert.equal(parsed.status,0,'Inline game JS must parse: '+parsed.stderr);
 const manager=read('komorebi3d/local-storage-panel.js');
 assert.ok(manager.includes("confirm.addEventListener('click'"));
 assert.ok(manager.includes("remove.addEventListener('click'"));
+assert.ok(manager.includes("clear.hidden=!filter.value.length"),'Clear button is shown only while input has content');
+assert.ok(manager.includes("clear.addEventListener('click'"),'Clear button responds to user taps');
+assert.ok(manager.includes("filter.value=''"),'Clear button resets the query');
+assert.ok(manager.includes('  render();\n  filter.focus();'), 'Clearing restores the full key list and input focus');
 assert.equal(manager.includes('localStorage.clear('),false,'Never clear the entire origin');
 const pending=read('komorebi3d/maps/osm-pending-changes.js');
 assert.equal(pending.includes('function migrate('),false,'No automatic old-key migration');

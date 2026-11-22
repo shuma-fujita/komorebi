@@ -46,12 +46,14 @@ export function mountLocalStorageManager(doc=document){
  if(!panel||panel.dataset.storageMounted==='true')return null;
  panel.dataset.storageMounted='true';
  const filter=panel.querySelector('#storage-filter');
+ const clear=panel.querySelector('#storage-filter-clear');
  const refresh=panel.querySelector('#storage-refresh');
  const count=panel.querySelector('#storage-count');
  const entries=panel.querySelector('#storage-entries');
  const feedback=panel.querySelector('#storage-feedback');
- if(!filter||!refresh||!count||!entries||!feedback)throw Error('localStorage管理パネルの部品が見つかりません。');
+ if(!filter||!clear||!refresh||!count||!entries||!feedback)throw Error('localStorage管理パネルの部品が見つかりません。');
  const render=()=>{
+  clear.hidden=!filter.value.length;
   entries.replaceChildren();
   let rows;
   try{rows=listLocalStorage();}
@@ -124,6 +126,11 @@ export function mountLocalStorageManager(doc=document){
  };
  const refreshView=()=>{feedback.textContent='';render();};
  filter.addEventListener('input',render);
+ clear.addEventListener('click',()=>{
+  filter.value='';
+  render();
+  filter.focus();
+ });
  refresh.addEventListener('click',refreshView);
  panel.addEventListener('komorebi:panel-shown',render);
  doc.defaultView?.addEventListener('storage',render);
