@@ -61,7 +61,10 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
    face(wall,right,wall.length,bottom,top);
    face(wall,left,right,bottom,logoBottom);
    face(wall,left,right,logoTop,top);
-   face(wall,left,right,logoBottom,logoTop,[0,0],[1,0],[1,1],[0,1]);
+   // Wall edges follow the OSM footprint winding. Viewed from OUTSIDE,
+// edge a->b is visually right-to-left, so invert U to keep text legible.
+// V is unchanged (both A/B PNG uploads already flip image rows).
+face(wall,left,right,logoBottom,logoTop,[1,0],[0,0],[0,1],[1,1]);
   }else{
    // Editor preview / PNG-load fallback. McDonald's supplies its classic
    // arch painter; DAISO keeps the solid pink facade if PNG is unavailable.
