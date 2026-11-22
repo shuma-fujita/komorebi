@@ -39,8 +39,12 @@ jobs:
           node --check komorebi3d/maps/map-labels.js
           node --check komorebi3d/maps/osm-pending-tag-visual.js
           node --check komorebi3d/local-storage-panel.js
+          node --check komorebi3d/objects/parking/const.js
+          node --check komorebi3d/objects/parking/osm-adapter.js
+          node --check komorebi3d/objects/parking/common.js
           node --check komorebi3d/dev-panel-layout.js
           node tests/map-filename-indicator.mjs
+          node tests/parking-areas.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs
           node tests/osm-tag-changes-v2.mjs

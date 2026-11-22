@@ -6,6 +6,8 @@ import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.j
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-storefront-20261119';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=food-storefront-20261119';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
+import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
+import {paintParkingArea} from '../objects/parking/common.js?v=parking-surface-v1-20261122';
 import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=lawson-storefront-20261119';
 // Step 4-B: keep the Step 3 initial ordering, then reprioritize only unfinished
 // features when the helicopter moves >= 50m. Sorting yields every 512 operations
@@ -143,7 +145,7 @@ function strip(m,points,width,t,y=.045){
  }
 }
 function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1],[x1,-.22,z0],t);}
- let buildings=palette.map(builder),roads=builder(),walks=builder(),rails=builder();
+ let buildings=palette.map(builder),roads=builder(),walks=builder(),rails=builder(),parkings=builder();
  let buildingSlices=[]; // Per-building spans inside existing grouped batch meshes.
  const floor=builder(),labels=[],mapFeatures=[],poiLabels=[];
  const facilityKeys=['shop','amenity','tourism','office','leisure','healthcare'];
@@ -163,7 +165,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  const processedIndices=[],completedBatchByIndex=new Array(featureQueue.total);
  const earlyPoiDisplay=[];
  function flushBatch(end){
-  const meshes=[...buildings,roads,walks,rails].filter(m=>m.positions.length>0);
+  const meshes=[...buildings,roads,walks,rails,parkings].filter(m=>m.positions.length>0);
   const batch={meshes,start:batchStart,end,labels:[...labels.slice(lastLabelIndex),...earlyPoiDisplay.slice(lastEarlyPoiIndex)],mapFeatures:mapFeatures.slice(lastFeatureIndex),
    buildingSlices:buildingSlices.map(slice=>({osmKey:slice.osmKey,meshIndex:meshes.indexOf(slice.mesh),start:slice.start,end:slice.end}))};
   if(meshes.length||batch.labels.length||batch.mapFeatures.length){
@@ -171,7 +173,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    for(let i=batchStart;i<=end;i++)completedBatchByIndex[processedIndices[i]]=batch;
   }
   lastLabelIndex=labels.length;lastFeatureIndex=mapFeatures.length;lastEarlyPoiIndex=earlyPoiDisplay.length;
-  buildings=palette.map(builder);roads=builder();walks=builder();rails=builder();
+  buildings=palette.map(builder);roads=builder();walks=builder();rails=builder();parkings=builder();
   buildingSlices=[];
   batchStart=end+1;
   return batch;
@@ -230,6 +232,8 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
   const {element:e,index}=featureQueue.takeNext();
   function processElement(){
   const tags=e.tags||{},p=(e.geometry||[]).map(xy);
+  const parking=parkingAreaFromOsm(e,p,HALF);
+  if(parking)paintParkingArea(parkings,parking.points,top,quad);
   // Point-of-interest nodes have coordinates, not a way geometry.
   // Keep their OSM position as the ground-level anchor.
   if(e.type==='node'&&facilityKeys.some(key=>tags[key])){
