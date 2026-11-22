@@ -35,6 +35,8 @@ jobs:
           node --check komorebi3d/maps/osm-pending-changes.js
           node --check komorebi3d/maps/osm-review-storage-check.js
           node --check komorebi3d/maps/map-loader.js
+          node --check komorebi3d/maps/map-builder.js
+          node --check komorebi3d/maps/map-facade-textures.js
           node --check komorebi3d/maps/map-filename-indicator.js
           node --check komorebi3d/maps/map-labels.js
           node --check komorebi3d/maps/osm-pending-tag-visual.js
