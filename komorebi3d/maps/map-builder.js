@@ -3,8 +3,10 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint} from '../objects/buildings/food/osm-adapter.js?v=food-poi-level-mcdonalds-v3-20261122';
+import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint,resolveGustoPaint,resolveTorikizokuPaint} from '../objects/buildings/food/osm-adapter.js?v=restaurant-png-v4-20261122';
 import {paintMcDonaldsFacade} from '../objects/buildings/food/mcdonalds-sign.js?v=brand-uv-orientation-v3-20261122';
+import {paintGustoFacade} from '../objects/buildings/food/gusto-sign.js?v=gusto-wall-v1-20261122';
+import {paintTorikizokuFacade} from '../objects/buildings/food/torikizoku-sign.js?v=torikizoku-wall-v1-20261122';
 import {matchDaisoBuildings,resolveDaisoPaint} from '../objects/buildings/variety/osm-adapter.js?v=daiso-poi-level-v1-20261122';
 import {paintDaisoFacade} from '../objects/buildings/variety/daiso-sign.js?v=brand-uv-orientation-v3-20261122';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=food-storefront-20261119';
@@ -279,7 +281,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const otherStoreSpans=[];
    for(const stores of [convenienceBuildings.get(e.id),foodBuildings.get(e.id)])
     for(const store of stores||[]){
-     if(store.brand?.id==='mcdonalds')continue; // Image pass owns this brand.
+     if(['mcdonalds','gusto','torikizoku'].includes(store.brand?.id))continue; // Image pass owns these brands.
      const levels=String(store.level??'').split(';').map(s=>s.trim());
      if(!levels.length||levels.some(s=>!/^\d+$/.test(s)||!Number.isSafeInteger(Number(s))))
       continue;
@@ -297,6 +299,18 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    for(const span of resolveDaisoPaint(daisoBuildings.get(e.id),tags,height,inferredLevels)){
     if(!available(span))continue;
     if(paintDaisoFacade(quad,buildingMesh,p,{
+     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
+    }))otherStoreSpans.push(span);
+   }
+   for(const span of resolveGustoPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
+    if(!available(span))continue;
+    if(paintGustoFacade(quad,buildingMesh,p,{
+     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
+    }))otherStoreSpans.push(span);
+   }
+   for(const span of resolveTorikizokuPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
+    if(!available(span))continue;
+    if(paintTorikizokuFacade(quad,buildingMesh,p,{
      bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
     }))otherStoreSpans.push(span);
    }
