@@ -19,8 +19,9 @@ const painted=[];const corners=[[0,0],[20,0],[20,12],[0,12]];
 assert.equal(paintIsomaruFacade(()=>{},{},corners,{bottom:6,top:9,texturedFaces:painted}),true);
 const uvA=['1,0,0,0,0,1,1,0,0,1,1,1','0,0,1,0,1,1,0,0,1,1,0,1'];
 const positions=painted[0].positions,uvs=painted[0].uvs;
-assert.equal(positions.length,4*18,'Only logo patches may sample the blue artwork; white background is the original wall mesh');
-assert.equal(uvs.length,4*12);
+assert.ok(positions.length>4*18,'White background bands use the same common UV geometry as Gusto');
+assert.equal(uvs.length,positions.length/3*2);
+for(let i=0;i<uvs.length;i+=12){const chunk=uvs.slice(i,i+12);if(!['1,0,0,0,0,1,1,0,0,1,1,1','0,0,1,0,1,1,0,0,1,1,0,1'].includes(chunk.join(',')))assert.ok(chunk.every(x=>x===.5),'Only the full logo samples non-white points');}
 const logoStarts=[];for(let i=0;i<uvs.length;i+=12)if(uvA.includes(uvs.slice(i,i+12).join(',')))logoStarts.push(i);
 assert.equal(logoStarts.length,4);
 for(const i of logoStarts){const p=positions.slice(i/12*18,i/12*18+18);const width=Math.hypot(p[3]-p[0],p[5]-p[2]),height=p[7]-p[1];assert.ok(Math.abs(width/height-ISOMARU_ASPECT)<1e-6);}
