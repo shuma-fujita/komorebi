@@ -41,8 +41,8 @@ const text=(tag,value,className)=>{
  el.textContent=value;
  return el;
 };
-// Copy interactions remain mock-only until the user's UI approval.
-export function mountLocalStorageManager(doc=document,{copyKeys=false}={}){
+// OSM ID tap presets the search field in both game and mock; never copies or modifies stored data.
+export function mountLocalStorageManager(doc=document){
  const panel=doc.getElementById('storage-panel');
  if(!panel||panel.dataset.storageMounted==='true')return null;
  panel.dataset.storageMounted='true';
@@ -73,51 +73,24 @@ export function mountLocalStorageManager(doc=document,{copyKeys=false}={}){
    const row=doc.createElement('article');
    row.className='storage-entry';
    row.dataset.key=item.key;
+   row.appendChild(text('code',item.key,'storage-entry-key'));
+   // For OSM-tag records, use the numeric ID to filter this same inventory.
    const osmMatch=item.key.match(/(?:^|:)(node|way|relation)\/([1-9]\d*)$/);
-   if(copyKeys){
-    const status=text('p','','storage-copy-status');
-    status.setAttribute('role','status');
-    status.setAttribute('aria-live','polite');
-    status.style.cssText='margin:4px 0;color:#b9f5c8;font-size:11px;';
-    const copyButton=(label,value,ariaLabel)=>{
-     const button=doc.createElement('button');
-     button.type='button';
-     button.className='storage-copy-button';
-     button.textContent=label;
-     button.setAttribute('aria-label',ariaLabel);
-     button.title='タップでコピー';
-     button.style.cssText='display:block;box-sizing:border-box;max-width:100%;min-height:38px;margin:0 0 5px;padding:7px 9px;border:1px solid #456b51;border-radius:7px;background:#1b3724;color:#d7ffe5;font:700 11px/1.5 ui-monospace,SFMono-Regular,monospace;text-align:left;overflow-wrap:anywhere;white-space:normal;touch-action:manipulation;cursor:pointer;';
-     button.addEventListener('click',async()=>{
-      try{
-       const clipboard=doc.defaultView?.navigator?.clipboard;
-       if(typeof clipboard?.writeText!=='function')throw Error('クリップボードを利用できません');
-       await clipboard.writeText(value);
-       status.textContent='✓ コピーしました：'+value;
-      }catch(error){
-       status.textContent='⚠ コピーできませんでした。ブラウザのコピー許可を確認してください。';
-      }
-     });
-     return button;
-    };
-    row.appendChild(copyButton(item.key,item.key,'保存キーをコピー：'+item.key));
-    // The canonical and legacy OSM storage keys end in node/ID, way/ID, etc.
-    if(osmMatch)row.appendChild(copyButton('OSM ID: '+osmMatch[2]+'  ⧉',osmMatch[2],'OSM ID '+osmMatch[2]+' をコピー'));
-    row.appendChild(status);
-   }else{
-    row.appendChild(text('code',item.key,'storage-entry-key'));
-    if(osmMatch){
-     const searchButton=text('button','OSM ID: '+osmMatch[2]+'  → 検索','storage-search-id');
-     searchButton.type='button';
-     searchButton.title='タップしてこのIDで保存キーを検索';
-     searchButton.setAttribute('aria-label','OSM ID '+osmMatch[2]+' で検索');
-     searchButton.style.cssText='display:block;max-width:100%;min-height:40px;margin:7px 0 4px;padding:7px 10px;border:1px solid #557b5c;border-radius:7px;background:#1b3724;color:#d7ffe5;font:700 11px/1.5 ui-monospace,SFMono-Regular,monospace;text-align:left;overflow-wrap:anywhere;white-space:normal;touch-action:manipulation;cursor:pointer;';
-     searchButton.addEventListener('click',()=>{
-      filter.value=osmMatch[2];
-      feedback.textContent='OSM ID '+osmMatch[2]+' で絞り込みました。';
-      render();
-     });
-     row.appendChild(searchButton);
-    }
+   if(osmMatch){
+    const id=osmMatch[2];
+    const searchButton=text('button','OSM ID: '+id+'  → 検索','storage-search-id');
+    searchButton.type='button';
+    searchButton.title='タップしてこのIDで保存キーを検索';
+    searchButton.setAttribute('aria-label','OSM ID '+id+' で検索');
+    searchButton.style.cssText='display:block;max-width:100%;min-height:40px;margin:7px 0 4px;padding:7px 10px;border:1px solid #557b5c;border-radius:7px;background:#1b3724;color:#d7ffe5;font:700 11px/1.5 ui-monospace,SFMono-Regular,monospace;text-align:left;overflow-wrap:anywhere;white-space:normal;touch-action:manipulation;cursor:pointer;';
+    searchButton.addEventListener('click',()=>{
+     filter.value=id;
+     feedback.textContent='OSM ID '+id+' で絞り込みました。';
+     render();
+     // Reveal the populated search field without opening the iPhone keyboard.
+     filter.scrollIntoView?.({block:'nearest'});
+    });
+    row.appendChild(searchButton);
    }
    row.append(
     text('p',keyDescription(item.key),'storage-entry-about'),

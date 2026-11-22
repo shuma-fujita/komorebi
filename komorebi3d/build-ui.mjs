@@ -64,7 +64,7 @@ mockHead=replaceOnce(mockHead,title,'<title>Komorebi 3D｜4パネルモック</t
 const mockCSS=read('panels/game.mock.css').trim();
 mockHead=replaceOnce(mockHead,styleClose,'\n\n/* Mock-only viewport: replace 3D rendering with a black dummy. */\n'+mockCSS+'\n'+
  '.mock-root .landscape-game .play-surface,.mock-root .play-surface .screen-view{background:#000}\n</style>','mock CSS');
-const expectedMock=mockHead+bodyOpen+mockShell+'<script type="module" src="./mock-ui.js?v=mock-storage-copy-20261122"></script></body></html>\n';
+const expectedMock=mockHead+bodyOpen+mockShell+'<script type="module" src="./mock-ui.js?v=mock-storage-id-search-20261122"></script></body></html>\n';
 if((expectedMock.match(/<script\b/g)||[]).length!==1||expectedMock.includes(objectMarker))
  throw Error('Mock may contain only its independent UI script');
 const write=(path,value)=>{writeFileSync(join(dir,path),value,'utf8');console.log('Updated '+path)};
