@@ -4,7 +4,9 @@ import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=br
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint} from '../objects/buildings/food/osm-adapter.js?v=food-poi-level-mcdonalds-v2-20261122';
-import {paintMcDonaldsFacade} from '../objects/buildings/food/mcdonalds-sign.js?v=mcdonalds-level-spans-v2-20261122';
+import {paintMcDonaldsFacade} from '../objects/buildings/food/mcdonalds-sign.js?v=mcdonalds-daiso-shared-v1-20261122';
+import {matchDaisoBuildings,resolveDaisoPaint} from '../objects/buildings/variety/osm-adapter.js?v=daiso-poi-level-v1-20261122';
+import {paintDaisoFacade} from '../objects/buildings/variety/daiso-sign.js?v=daiso-png-wall-v1-20261122';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=food-storefront-20261119';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
@@ -183,6 +185,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  }
  const convenienceBuildings=matchConvenienceBuildings(map.elements,xy,HALF);
  const foodBuildings=matchFoodBuildings(map.elements,xy,HALF);
+ const daisoBuildings=matchDaisoBuildings(map.elements,xy,HALF);
  const loveHotelBuildings=matchLoveHotelBuildings(map.elements,xy,HALF);
  const inferredTenantLevels=inferBuildingLevelsFromTenants(map.elements,xy,HALF);
  const roadSegments=[];
@@ -271,12 +274,20 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // zero-based 'level' owns placement; no station/building/floor IDs here.
    // Avoid covering another store's facade on a conflicting level.
    const otherStoreSpans=[...convenienceSpans,...foodSpans];
+   const available=span=>!otherStoreSpans.some(other=>
+    span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8);
+   // Independent images use the same matching, floor and wall-UV rules.
    for(const span of resolveMcDonaldsPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
-    const occupied=otherStoreSpans.some(other=>span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8);
-    if(occupied)continue;
-    paintMcDonaldsFacade(quad,buildingMesh,p,{
+    if(!available(span))continue;
+    if(paintMcDonaldsFacade(quad,buildingMesh,p,{
      bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
-    });
+    }))otherStoreSpans.push(span);
+   }
+   for(const span of resolveDaisoPaint(daisoBuildings.get(e.id),tags,height,inferredLevels)){
+    if(!available(span))continue;
+    if(paintDaisoFacade(quad,buildingMesh,p,{
+     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
+    }))otherStoreSpans.push(span);
    }
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
