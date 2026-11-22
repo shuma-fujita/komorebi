@@ -91,6 +91,12 @@ assert.equal(build(map({...gust.tags,name:'Gusto South',level:'0'},
  {...tori.tags,name:'TORIKIZOKU West',level:'2'})).texturedFaces.length,2);
 assert.equal(build(map({...gust.tags,level:'2'}, {...tori.tags,level:'2'})).texturedFaces.length,1,
  'Two logos with the same explicit level may not overlap');
+// Real Matsudo uses amenity=pub for Torikizoku; do not require restaurant.
+assert.equal(matchFoodBuildings([building,{...tori,tags:{
+ amenity:'pub',name:'鳥貴族',level:'2'}}],project,1000)
+ .get(building.id)?.[0].brand.id,'torikizoku');
+assert.equal(matchFoodBuildings([building,{...tori,tags:{
+ amenity:'pub',name:'無関係な居酒屋',level:'2'}}],project,1000).size,0);
 const nodal={...gust,tags:{...gust.tags,name:'他の店',brand:'ガスト'}};
 assert.equal(matchFoodBuildings([building,nodal],project,1000).get(building.id)[0].brand.id,'gusto');
 const noBrand=build({source:'OpenStreetMap contributors',tile,elements:[building]});
@@ -183,4 +189,19 @@ console.log('Restaurant logo actual Geofabrik POIs: '+JSON.stringify(names.slice
  type:e.type,id:e.id,amenity:e.tags?.amenity,shop:e.tags?.shop,
  name:e.tags?.name,brand:e.tags?.brand,level:e.tags?.level
 }))));
+const realMatched=matchFoodBuildings(live.elements,project,1000);
+const realBuilder=buildMap(live,{halfSize:1000});
+const realFacades=realBuilder.texturedFaces.filter(f=>['gusto','torikizoku'].includes(f.texture));
+const ownerList=[...realMatched.entries()].flatMap(([id,stores])=>
+ stores.filter(s=>['gusto','torikizoku'].includes(s.brand.id))
+  .map(s=>({id,brand:s.brand.id,level:s.level})));
+console.log('Restaurant actual Matsudo matched buildings: '+JSON.stringify(ownerList));
+console.log('Restaurant actual Matsudo UV facades: '+JSON.stringify(
+ realFacades.map(f=>({texture:f.texture,owner:f.ownerKey,
+  minY:Math.min(...f.positions.filter((_,i)=>i%3===1)),
+  maxY:Math.max(...f.positions.filter((_,i)=>i%3===1))}))));
+const validRealBrands=new Set(ownerList.filter(s=>/^\d+$/.test(String(s.level||''))).map(s=>s.brand));
+for(const brand of validRealBrands)
+ assert.ok(realFacades.some(f=>f.texture===brand),
+  'Actual tagged Matsudo '+brand+' must generate at least one UV wall');
 console.log('Restaurant PNG brand facades PASS: white Gusto, cropped-yellow Torikizoku, four UV sides, levels, localStorage, live edit, regression');
