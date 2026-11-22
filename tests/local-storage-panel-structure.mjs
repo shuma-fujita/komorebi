@@ -90,6 +90,13 @@ assert.equal(dev.includes('panel.remove()'),false,
 
 const manager=read('komorebi3d/local-storage-panel.js');
 assert.ok(manager.includes("confirm.addEventListener('click'"));
+assert.ok(manager.includes('{copyKeys=false}'),'Tap-to-copy is opt-in for mock approval');
+assert.ok(manager.includes('clipboard.writeText(value)'),'Clipboard copy does not mutate storage');
+assert.ok(manager.includes("'保存キーをコピー：'+item.key"),'Full storage key can be copied');
+assert.ok(manager.includes("'OSM ID '+match[2]+' をコピー"),'OSM numeric ID can be copied separately');
+assert.ok(mockScript.includes('mountLocalStorageManager(document,{copyKeys:true});'),'Mock enables copy controls');
+assert.ok(dev.includes('mountLocalStorageManager(document);'),'Game remains unchanged until approved');
+
 assert.ok(manager.includes("remove.addEventListener('click'"));
 assert.ok(manager.includes("clear.hidden=!filter.value.length"),'Clear button is shown only while input has content');
 assert.ok(manager.includes("clear.addEventListener('click'"),'Clear button responds to user taps');

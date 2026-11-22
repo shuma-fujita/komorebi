@@ -41,7 +41,8 @@ const text=(tag,value,className)=>{
  el.textContent=value;
  return el;
 };
-export function mountLocalStorageManager(doc=document){
+// Copy interactions remain mock-only until the user's UI approval.
+export function mountLocalStorageManager(doc=document,{copyKeys=false}={}){
  const panel=doc.getElementById('storage-panel');
  if(!panel||panel.dataset.storageMounted==='true')return null;
  panel.dataset.storageMounted='true';
@@ -72,7 +73,38 @@ export function mountLocalStorageManager(doc=document){
    const row=doc.createElement('article');
    row.className='storage-entry';
    row.dataset.key=item.key;
-   row.append(text('code',item.key,'storage-entry-key'),
+   if(copyKeys){
+    const status=text('p','','storage-copy-status');
+    status.setAttribute('role','status');
+    status.setAttribute('aria-live','polite');
+    status.style.cssText='margin:4px 0;color:#b9f5c8;font-size:11px;';
+    const copyButton=(label,value,ariaLabel)=>{
+     const button=doc.createElement('button');
+     button.type='button';
+     button.className='storage-copy-button';
+     button.textContent=label;
+     button.setAttribute('aria-label',ariaLabel);
+     button.title='タップでコピー';
+     button.style.cssText='display:block;box-sizing:border-box;max-width:100%;min-height:38px;margin:0 0 5px;padding:7px 9px;border:1px solid #456b51;border-radius:7px;background:#1b3724;color:#d7ffe5;font:700 11px/1.5 ui-monospace,SFMono-Regular,monospace;text-align:left;overflow-wrap:anywhere;white-space:normal;touch-action:manipulation;cursor:pointer;';
+     button.addEventListener('click',async()=>{
+      try{
+       const clipboard=doc.defaultView?.navigator?.clipboard;
+       if(typeof clipboard?.writeText!=='function')throw Error('クリップボードを利用できません');
+       await clipboard.writeText(value);
+       status.textContent='✓ コピーしました：'+value;
+      }catch(error){
+       status.textContent='⚠ コピーできませんでした。ブラウザのコピー許可を確認してください。';
+      }
+     });
+     return button;
+    };
+    row.appendChild(copyButton(item.key,item.key,'保存キーをコピー：'+item.key));
+    // The canonical and legacy OSM storage keys end in node/ID, way/ID, etc.
+    const match=item.key.match(/(?:^|:)(node|way|relation)\/([1-9]\d*)$/);
+    if(match)row.appendChild(copyButton('OSM ID: '+match[2]+'  ⧉',match[2],'OSM ID '+match[2]+' をコピー'));
+    row.appendChild(status);
+   }else row.appendChild(text('code',item.key,'storage-entry-key'));
+   row.append(
     text('p',keyDescription(item.key),'storage-entry-about'),
     text('p','値 '+(item.value?.length??0).toLocaleString()+'文字','storage-entry-meta'));
    const details=doc.createElement('details');
