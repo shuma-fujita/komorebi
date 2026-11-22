@@ -45,19 +45,20 @@ for(const strip of orange){
  if(Math.abs(dz-PARKING_STALL_DEPTH_M)<.01&&dx<.01)sideCount++;
  else if(Math.abs(dx-PARKING_STALL_WIDTH_M)<.01&&dz<.01){
   backCount++;
-  assert.ok(Math.abs(a[1]-(PARKING_EDGE_INSET_M+PARKING_STALL_DEPTH_M))<.01,
-   'The back stripe closes the deep end, not the entrance');
+  assert.ok(Math.abs(a[1]-PARKING_EDGE_INSET_M)<.01,
+   'The back stripe closes the outer boundary end');
  }else assert.fail('Unexpected parking line shape');
 }
 assert.equal(sideCount,count+1,'Each U has left and right side stripes');
 assert.equal(backCount,count,'Each U has one back stripe');
-assert.ok(!orange.some(strip=>centerLine(strip).every(p=>Math.abs(p[1]-PARKING_EDGE_INSET_M)<.01)),
- 'The stall entrance stays open');
+assert.ok(!orange.some(strip=>centerLine(strip).every(p=>
+ Math.abs(p[1]-(PARKING_EDGE_INSET_M+PARKING_STALL_DEPTH_M))<.01)),
+ 'The inward-facing stall entrance stays open');
 const result=buildMap({source:'OpenStreetMap contributors',elements:[parking]},{latitude:lat,longitude:lon,halfSize:100});
 assert.equal(result.counts.buildings,0);
 assert.equal(result.counts.roads,0);
 assert.equal(result.counts.rails,0);
-assert.ok(result.meshes.length>=2,'ground and asphalt/white mesh');
+assert.ok(result.meshes.length>=2,'ground and asphalt/orange mesh');
 assert.ok(result.meshes.some(mesh=>mesh.colors.some((v,i)=>v===((PARKING_LINE_COLOR>>16&255)/255))),
  'orange-line geometry must reach the shared display meshes');
 assert.equal(result.displayBatches.flatMap(batch=>batch.meshes).length,result.meshes.length);

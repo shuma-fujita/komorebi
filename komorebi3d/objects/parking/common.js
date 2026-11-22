@@ -56,7 +56,7 @@ export function paintParkingArea(mesh,polygon,top,quad){
  const a=polygon[edgeIndex],b=polygon[(edgeIndex+1)%polygon.length];
  const ux=(b[0]-a[0])/edgeLength,uz=(b[1]-a[1])/edgeLength;
  const ix=-uz*orientation,iz=ux*orientation;
- // Each parking bay is a U (コ): two sides and a back, open towards the lot edge.
+ // Each parking bay is a U (コ): back stripe by the outer boundary, entrance facing the lot interior.
  // Adjacent bays share one divider, without duplicate overlapping mesh triangles.
  let drawn=0,previousBay=false;
  for(let k=0;k<bays;k++){
@@ -66,20 +66,20 @@ export function paintParkingArea(mesh,polygon,top,quad){
    a[1]+uz*leftAlong+iz*PARKING_EDGE_INSET_M];
   const rightRoot=[a[0]+ux*rightAlong+ix*PARKING_EDGE_INSET_M,
    a[1]+uz*rightAlong+iz*PARKING_EDGE_INSET_M];
-  const leftBack=[leftRoot[0]+ix*PARKING_STALL_DEPTH_M,
+  const leftInner=[leftRoot[0]+ix*PARKING_STALL_DEPTH_M,
    leftRoot[1]+iz*PARKING_STALL_DEPTH_M];
-  const rightBack=[rightRoot[0]+ix*PARKING_STALL_DEPTH_M,
+  const rightInner=[rightRoot[0]+ix*PARKING_STALL_DEPTH_M,
    rightRoot[1]+iz*PARKING_STALL_DEPTH_M];
   // Do not paint a partial U when any of its three sides leaves the polygon.
-  if(!whollyInside(leftRoot,leftBack,polygon)||
-     !whollyInside(rightRoot,rightBack,polygon)||
-     !whollyInside(leftBack,rightBack,polygon)){
+  if(!whollyInside(leftRoot,leftInner,polygon)||
+     !whollyInside(rightRoot,rightInner,polygon)||
+     !whollyInside(leftRoot,rightRoot,polygon)){
    previousBay=false;
    continue;
   }
-  if(!previousBay)paintDivider(mesh,leftRoot,leftBack,quad);
-  paintDivider(mesh,rightRoot,rightBack,quad);
-  paintDivider(mesh,leftBack,rightBack,quad);
+  if(!previousBay)paintDivider(mesh,leftRoot,leftInner,quad);
+  paintDivider(mesh,rightRoot,rightInner,quad);
+  paintDivider(mesh,leftRoot,rightRoot,quad);
   previousBay=true;
   drawn++;
  }
