@@ -2,7 +2,7 @@
 // and flat-quadrilateral geometry. No extra materials, draw calls or OSM fetches.
 import {PARKING_ASPHALT_COLOR,PARKING_LINE_COLOR,PARKING_ASPHALT_Y,PARKING_LINE_Y,
  PARKING_LINE_WIDTH_M,PARKING_STALL_WIDTH_M,PARKING_STALL_DEPTH_M,
- PARKING_EDGE_INSET_M,PARKING_END_MARGIN_M} from './const.js';
+ PARKING_EDGE_INSET_M,PARKING_END_MARGIN_M} from './const.js?v=parking-orange-u-v2-20261122';
 
 function signedArea(points){
  let twice=0;
@@ -56,14 +56,31 @@ export function paintParkingArea(mesh,polygon,top,quad){
  const a=polygon[edgeIndex],b=polygon[(edgeIndex+1)%polygon.length];
  const ux=(b[0]-a[0])/edgeLength,uz=(b[1]-a[1])/edgeLength;
  const ix=-uz*orientation,iz=ux*orientation;
- let drawn=0;
- for(let k=0;k<=bays;k++){
-  const along=PARKING_END_MARGIN_M+k*PARKING_STALL_WIDTH_M;
-  const root=[a[0]+ux*along+ix*PARKING_EDGE_INSET_M,
-   a[1]+uz*along+iz*PARKING_EDGE_INSET_M];
-  const tip=[root[0]+ix*PARKING_STALL_DEPTH_M,root[1]+iz*PARKING_STALL_DEPTH_M];
-  if(!whollyInside(root,tip,polygon))continue;
-  paintDivider(mesh,root,tip,quad);
+ // Each parking bay is a U (コ): two sides and a back, open towards the lot edge.
+ // Adjacent bays share one divider, without duplicate overlapping mesh triangles.
+ let drawn=0,previousBay=false;
+ for(let k=0;k<bays;k++){
+  const leftAlong=PARKING_END_MARGIN_M+k*PARKING_STALL_WIDTH_M;
+  const rightAlong=leftAlong+PARKING_STALL_WIDTH_M;
+  const leftRoot=[a[0]+ux*leftAlong+ix*PARKING_EDGE_INSET_M,
+   a[1]+uz*leftAlong+iz*PARKING_EDGE_INSET_M];
+  const rightRoot=[a[0]+ux*rightAlong+ix*PARKING_EDGE_INSET_M,
+   a[1]+uz*rightAlong+iz*PARKING_EDGE_INSET_M];
+  const leftBack=[leftRoot[0]+ix*PARKING_STALL_DEPTH_M,
+   leftRoot[1]+iz*PARKING_STALL_DEPTH_M];
+  const rightBack=[rightRoot[0]+ix*PARKING_STALL_DEPTH_M,
+   rightRoot[1]+iz*PARKING_STALL_DEPTH_M];
+  // Do not paint a partial U when any of its three sides leaves the polygon.
+  if(!whollyInside(leftRoot,leftBack,polygon)||
+     !whollyInside(rightRoot,rightBack,polygon)||
+     !whollyInside(leftBack,rightBack,polygon)){
+   previousBay=false;
+   continue;
+  }
+  if(!previousBay)paintDivider(mesh,leftRoot,leftBack,quad);
+  paintDivider(mesh,rightRoot,rightBack,quad);
+  paintDivider(mesh,leftBack,rightBack,quad);
+  previousBay=true;
   drawn++;
  }
  return drawn;

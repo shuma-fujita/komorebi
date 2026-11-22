@@ -1,6 +1,6 @@
 // Ground-level OSM parking areas: mesh colors, elevations, and bay proportions.
-export const PARKING_ASPHALT_COLOR=0x454a4e;
-export const PARKING_LINE_COLOR=0xe9e9df;
+export const PARKING_ASPHALT_COLOR=0x596570; // Same as standard road in map-builder.js
+export const PARKING_LINE_COLOR=0xf0aa55; // Warm orange parking stall markings
 export const PARKING_ASPHALT_Y=0.012; // ground=-0.22; below existing road y=0.047
 export const PARKING_LINE_Y=0.023;
 export const PARKING_LINE_WIDTH_M=0.11;

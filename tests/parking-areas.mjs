@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {parkingAreaFromOsm} from '../komorebi3d/objects/parking/osm-adapter.js';
 import {paintParkingArea} from '../komorebi3d/objects/parking/common.js';
-import {PARKING_ASPHALT_COLOR,PARKING_LINE_COLOR,PARKING_ASPHALT_Y,PARKING_LINE_Y} from '../komorebi3d/objects/parking/const.js';
+import {PARKING_ASPHALT_COLOR,PARKING_LINE_COLOR,PARKING_ASPHALT_Y,PARKING_LINE_Y,PARKING_STALL_DEPTH_M,PARKING_STALL_WIDTH_M,PARKING_EDGE_INSET_M} from '../komorebi3d/objects/parking/const.js';
 import {buildMap} from '../komorebi3d/maps/map-builder.js';
 const lat=35.78444,lon=139.90061,mLon=111320*Math.cos(lat*Math.PI/180);
 const point=(x,z)=>({lon:lon+x/mLon,lat:lat-z/111320});
@@ -22,26 +22,44 @@ for(const invalid of [
  {...parking,geometry:footprint.slice(0,4)},
  {...parking,geometry:[point(0,0),point(1,0),point(1,1),point(0,0)]}
 ])assert.equal(parkingAreaFromOsm(invalid,(invalid.geometry||[]).map(project),100),null);
-const fill=[],white=[];
+assert.equal(PARKING_ASPHALT_COLOR,0x596570,'The parking ground matches the road color');
+assert.equal(PARKING_LINE_COLOR,0xf0aa55,'Parking lines are orange');
+const fill=[],orange=[];
 const fakeTop=(mesh,points,height,color)=>fill.push({points,height,color});
-const fakeQuad=(mesh,a,b,c,d,color)=>white.push({points:[a,b,c,d],color});
+const fakeQuad=(mesh,a,b,c,d,color)=>orange.push({points:[a,b,c,d],color});
 const count=paintParkingArea({},polygon.points,fakeTop,fakeQuad);
 assert.equal(fill.length,1);
 assert.equal(fill[0].color,PARKING_ASPHALT_COLOR);
 assert.equal(fill[0].height,PARKING_ASPHALT_Y);
-assert.ok(count>=5,'Rectangular lot must have visible bay dividers');
-assert.equal(white.length,count);
-for(const strip of white){
+assert.ok(count>=5,'Rectangular lot must have multiple complete U-shaped stalls');
+assert.equal(orange.length,2*count+1,'Adjacent U shapes share their divider');
+const centerLine=strip=>{
+ const [a,b,c,d]=strip.points;
+ return [[(a[0]+b[0])/2,(a[2]+b[2])/2],[(c[0]+d[0])/2,(c[2]+d[2])/2]];
+};
+let sideCount=0,backCount=0;
+for(const strip of orange){
  assert.equal(strip.color,PARKING_LINE_COLOR);
  for(const vertex of strip.points)assert.equal(vertex[1],PARKING_LINE_Y);
+ const [a,b]=centerLine(strip),dx=Math.abs(b[0]-a[0]),dz=Math.abs(b[1]-a[1]);
+ if(Math.abs(dz-PARKING_STALL_DEPTH_M)<.01&&dx<.01)sideCount++;
+ else if(Math.abs(dx-PARKING_STALL_WIDTH_M)<.01&&dz<.01){
+  backCount++;
+  assert.ok(Math.abs(a[1]-(PARKING_EDGE_INSET_M+PARKING_STALL_DEPTH_M))<.01,
+   'The back stripe closes the deep end, not the entrance');
+ }else assert.fail('Unexpected parking line shape');
 }
+assert.equal(sideCount,count+1,'Each U has left and right side stripes');
+assert.equal(backCount,count,'Each U has one back stripe');
+assert.ok(!orange.some(strip=>centerLine(strip).every(p=>Math.abs(p[1]-PARKING_EDGE_INSET_M)<.01)),
+ 'The stall entrance stays open');
 const result=buildMap({source:'OpenStreetMap contributors',elements:[parking]},{latitude:lat,longitude:lon,halfSize:100});
 assert.equal(result.counts.buildings,0);
 assert.equal(result.counts.roads,0);
 assert.equal(result.counts.rails,0);
 assert.ok(result.meshes.length>=2,'ground and asphalt/white mesh');
 assert.ok(result.meshes.some(mesh=>mesh.colors.some((v,i)=>v===((PARKING_LINE_COLOR>>16&255)/255))),
- 'white-line geometry must reach the shared display meshes');
+ 'orange-line geometry must reach the shared display meshes');
 assert.equal(result.displayBatches.flatMap(batch=>batch.meshes).length,result.meshes.length);
 // Read the current Geofabrik tile index, never hardcode a generated timestamp.
 const dir=join('komorebi3d','maps','data','tiles-2km-geofabrik');
@@ -57,5 +75,5 @@ for(const e of areas){
  lined+=paintParkingArea({},p.points,()=>{},()=>{});
 }
 assert.ok(rendered>=20,'OSM parking polygons survive the map adapter');
-assert.ok(lined>0,'Matsudo surface lots produce white bay dividers');
-console.log('Parking PASS: footprint, asphalt, white lines, exclusions, batched mesh, Geofabrik tile ('+rendered+' areas)');
+assert.ok(lined>0,'Matsudo surface lots produce orange U-shaped bays');
+console.log('Parking PASS: footprint, road-matched asphalt, orange U-shaped stalls, exclusions, batched mesh, Geofabrik tile ('+rendered+' areas)');

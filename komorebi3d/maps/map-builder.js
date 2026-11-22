@@ -7,7 +7,7 @@ import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=food-storefront-20261119';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
-import {paintParkingArea} from '../objects/parking/common.js?v=parking-surface-v1-20261122';
+import {paintParkingArea} from '../objects/parking/common.js?v=parking-orange-u-v2-20261122';
 import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=lawson-storefront-20261119';
 // Step 4-B: keep the Step 3 initial ordering, then reprioritize only unfinished
 // features when the helicopter moves >= 50m. Sorting yields every 512 operations
