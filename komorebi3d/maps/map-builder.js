@@ -3,8 +3,8 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-storefront-20261119';
-import {findMatsudoMcDonaldsBuilding,paintMatsudoMcDonaldsSign} from '../objects/buildings/food/mcdonalds-sign.js?v=matsudo-png-uv-wall-v3-20261122';
+import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint} from '../objects/buildings/food/osm-adapter.js?v=food-poi-level-mcdonalds-20261122';
+import {paintMcDonaldsFacade} from '../objects/buildings/food/mcdonalds-sign.js?v=mcdonalds-level-spans-20261122';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=food-storefront-20261119';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
@@ -183,7 +183,6 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  }
  const convenienceBuildings=matchConvenienceBuildings(map.elements,xy,HALF);
  const foodBuildings=matchFoodBuildings(map.elements,xy,HALF);
- const matsudoMcDonaldsBuilding=findMatsudoMcDonaldsBuilding(map.elements,xy);
  const loveHotelBuildings=matchLoveHotelBuildings(map.elements,xy,HALF);
  const inferredTenantLevels=inferBuildingLevelsFromTenants(map.elements,xy,HALF);
  const roadSegments=[];
@@ -265,11 +264,20 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const tint=resolveLoveHotelColor(e.id,loveHotelBuildings,palette[e.id%palette.length],tags,height,inferredLevels);
    const pinkSpans=resolveLoveHotelFloorSpans(e.id,loveHotelBuildings,tags,height,inferredLevels)||[];
    const buildingMesh=buildings[e.id%palette.length],buildingStart=buildingMesh.positions.length;
-   building(buildingMesh,p,height,tint,
-    resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels),roadSegments,tags,pinkSpans,
-    resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels));
-   if(e.type==='way'&&matsudoMcDonaldsBuilding===e.id)
-    paintMatsudoMcDonaldsSign(quad,buildingMesh,p,height,{levels:Number.parseFloat(tags['building:levels']),texturedFaces});
+   const convenienceSpans=resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels);
+   const foodSpans=resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels);
+   building(buildingMesh,p,height,tint,convenienceSpans,roadSegments,tags,pinkSpans,foodSpans);
+   // Same POI / building association as Yoshinoya and Hidakaya. The tagged
+   // zero-based 'level' owns placement; no station/building/floor IDs here.
+   // Avoid covering another store's facade on a conflicting level.
+   const otherStoreSpans=[...convenienceSpans,...foodSpans];
+   for(const span of resolveMcDonaldsPaint(foodBuildings.get(e.id),tags,height,inferredLevels)){
+    const occupied=otherStoreSpans.some(other=>span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8);
+    if(occupied)continue;
+    paintMcDonaldsFacade(quad,buildingMesh,p,{
+     bottom:span.bottom,top:span.top,texturedFaces,ownerKey:e.type+'/'+e.id
+    });
+   }
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.
