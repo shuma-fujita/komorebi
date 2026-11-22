@@ -147,4 +147,15 @@ assert.equal(image.readUInt32BE(16),554);
 assert.equal(image.readUInt32BE(20),554);
 assert.deepEqual([...image.subarray(41,44)],[245,0,140],
  'The uploaded image corner must be the bright pink used on DAISO walls');
+// Read-only diagnostic: distinguish working code from actual OSM POI data
+// in the checked-in Geofabrik 2km tile, without inventing a missing level.
+const tileRoot='komorebi3d/maps/data/tiles-2km-geofabrik/';
+const tileIndex=JSON.parse(readFileSync(tileRoot+'index.json','utf8'));
+const tile=JSON.parse(readFileSync(tileRoot+tileIndex.tiles['0_0'],'utf8'));
+const realShops=tile.elements.filter(e=>e.tags?.shop&&
+ [e.tags.name,e.tags.brand,e.tags['name:ja'],e.tags['brand:ja']]
+  .some(s=>/daiso|ダイソー/i.test(String(s||''))));
+console.log('DAISO current Geofabrik tile POIs: '+JSON.stringify(
+ realShops.map(e=>({type:e.type,id:e.id,shop:e.tags.shop,
+  name:e.tags.name,brand:e.tags.brand,level:e.tags.level})).slice(0,20)));
 console.log('DAISO PNG facade PASS: name/brand/level, four square UV logos, localStorage, live updates, McDonalds coexistence');
