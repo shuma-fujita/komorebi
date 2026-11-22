@@ -4,11 +4,11 @@
 
 ## 1. 次にやること（優先順）
 
-### ① GitHub Actionsの定時起動を診断する（最優先・結果待ち）
-- **対象：** 毎日10:17 JSTに関東Geofabrik PBFを取得するワークフローA（`.github/workflows/geofabrik-kanto-pbf-manual.yml`）。2026-11-22 10:17 JSTの定時実行は確認できず、調査時点では `schedule` 起動履歴0件。手動実行の成功と自動起動の成功を混同しない。
-- **現在の検証：** 一時的な `.github/workflows/diagnose-schedule-trigger-20261122.yml` が11/22 **13:07〜15:52 JSTに15分間隔で12回**の `schedule` を待つ。PBF取得・JSON生成・Git書き込みはしない。**11/22 16:30 JST以降**にActionsの `event=schedule` と診断runの有無を照合する。実際の検証結果はまだ記録していない。
-- **次の判断：** 起動ありならA本体との差を調べる。0件でもGitHub側の遅延・スキップ・スケジュール登録・actor等を切り分け、原因が確定したと断言しない。A→B（松戸2km生成）→C（比較JSON公開）→Pagesの連鎖と、配信されるJSONの更新は別々に確認する。
-- **必須後片付け：** この一時診断ワークフローは翌年11/22にも実行され得るため、検証後は削除する（削除時もユーザーに変更内容を伝える）。
+### ① Geofabrik関東PBFの次回定時更新を確認する（最優先・未検証）
+- **2026-11-22の事実：** A（`.github/workflows/geofabrik-kanto-pbf-manual.yml`）は毎日10:17 JSTに`schedule`指定。11/22は **16:59 JSTにscheduleイベントで実行**されたが、Geofabrik PBFのダウンロードが **HTTP 404 ×5回で失敗**（[run #45000703536](https://github.com/shuma-fujita/komorebi/actions/runs/45000703536)）。BはA失敗によりSKIPPED。GitHubがなぜこの時刻に起動したかは未特定。遅延と推測できても根因確定とは扱わない。
+- **修正済み：** Geofabrik公式の[関東データ配布ページ](https://download.geofabrik.de/asia/japan/kanto/index.html)が案内する`https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf`へ、Aのcurl取得先と`SOURCE.txt`記録の双方を修正した。Aのcron・ジョブ手順・B/Cへの連携は変更しない。
+- **一時診断の後片付け：** `.github/workflows/diagnose-schedule-trigger-20261122.yml` を削除（Aの`schedule`実行が確認できたため）。13:07〜15:52の診断12回はActions履歴に起動記録なし。再実行予定は残さない。
+- **次の確認：** Aの次回自動実行が成功するか、Aのartifact生成→BのJSON生成→Cのコミット・Pages公開→配信中`index.json`とタイルJSONの更新をそれぞれ検証する。**URL修正後のA実行・自動更新はまだPASS扱いしない。** GitHubの`schedule`は遅延・スキップされ得るため予定時刻直後の不在だけで断定しない。
 
 ### ② 直近の地図・OSM編集変更を実機で確認
 - **地図表示：** A/B各画面右下の読み込み済み `tile_0_0_*.json` ファイル名が、選択した旧／新2km地図に正しく追従するか。`index.json` の選択値を表示し、追加取得はしない。コード実装済み・Safari実機確認待ち。

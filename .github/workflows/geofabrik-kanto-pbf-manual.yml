@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p geofabrik
-          url="https://download.geofabrik.de/asia/japan/kanto-latest.osm.pbf"
+          url="https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf"
           echo "Downloading $url"
           curl --fail --location --show-error --silent \
             --retry 4 --retry-all-errors --retry-delay 8 \
@@ -48,7 +48,7 @@ jobs:
           sha = hashlib.file_digest(p.open("rb"), "sha256").hexdigest()
           (p.parent / "SHA256SUMS").write_text(f"{sha}  {p.name}\n", encoding="utf-8")
           (p.parent / "SOURCE.txt").write_text(
-              "Source: https://download.geofabrik.de/asia/japan/kanto-latest.osm.pbf\n"
+              "Source: https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf\n"
               f"Downloaded at (UTC): {datetime.now(timezone.utc).isoformat()}\n"
               f"Size: {size} bytes\n"
               "Data: © OpenStreetMap contributors (ODbL)\n",
