@@ -158,4 +158,17 @@ const realShops=tile.elements.filter(e=>e.tags?.shop&&
 console.log('DAISO current Geofabrik tile POIs: '+JSON.stringify(
  realShops.map(e=>({type:e.type,id:e.id,shop:e.tags.shop,
   name:e.tags.name,brand:e.tags.brand,level:e.tags.level})).slice(0,20)));
+const actualMatched=matchDaisoBuildings(tile.elements,project,1000);
+const ownerIds=[...actualMatched.keys()];
+console.log('DAISO actual footprint owner IDs: '+JSON.stringify(ownerIds));
+if(realShops.some(e=>e.type==='node'&&/^\\d+$/.test(String(e.tags.level||'')))){
+ const actual3D=buildMap(tile,{halfSize:1000});
+ const actualFaces=actual3D.texturedFaces.filter(f=>f.texture==='daiso');
+ console.log('DAISO actual UV faces: '+JSON.stringify(actualFaces.map(f=>({
+  owner:f.ownerKey,vertices:f.positions.length/3,
+  minY:Math.min(...f.positions.filter((_,i)=>i%3===1)),
+  maxY:Math.max(...f.positions.filter((_,i)=>i%3===1))
+ }))));
+ assert.ok(actualFaces.length>0,'A tagged real-tile DAISO must produce a textured facade');
+}
 console.log('DAISO PNG facade PASS: name/brand/level, four square UV logos, localStorage, live updates, McDonalds coexistence');
