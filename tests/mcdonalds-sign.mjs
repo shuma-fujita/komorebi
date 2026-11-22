@@ -53,10 +53,16 @@ assert.equal(surface.uvs.length,surface.positions.length/3*2);
 const squares=[];
 for(let i=0;i<surface.uvs.length;i+=12){
  const block=surface.uvs.slice(i,i+12);
- if(block.join(',')==='0,0,1,0,1,1,0,0,1,1,0,1')squares.push(i);
+ if(block.join(',')==='1,0,0,0,0,1,1,0,0,1,1,1')squares.push(i);
  else assert.ok(block.every(v=>v===.04),'All non-logo walls sample PNG corner red');
 }
 assert.equal(squares.length,4,'One image on each of four primary walls');
+// McDonald's is visually symmetric, but must use the same exterior-facing
+// U direction as DAISO so non-symmetric future logos are not mirrored.
+for(const index of squares){
+ assert.deepEqual(surface.uvs.slice(index,index+6),[1,0,0,0,0,1]);
+}
+
 for(const i of squares){
  const p=surface.positions.slice(i/12*18,i/12*18+18);
  const vertices=Array.from({length:6},(_,j)=>p.slice(j*3,j*3+3));
