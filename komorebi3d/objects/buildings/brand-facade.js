@@ -7,7 +7,7 @@ function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
   surface.uvs.push(...uv);
  }
 }
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,logoOnlyTexture=false}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -48,7 +48,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
    place(wall,wall.length,top,.07),place(wall,0,top,.07),backgroundColor);
   const isLogoWall=logoWalls.includes(wall);
   if(!isLogoWall){
-   if(useTexture)face(wall,0,wall.length,bottom,top);
+   if(useTexture&&!logoOnlyTexture)face(wall,0,wall.length,bottom,top);
    continue;
   }
   // Preserve original image aspect ratio; square brands retain exact dimensions.
@@ -59,10 +59,13 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   if(useTexture){
    // One continuous UV-mapped wall surface: background bands plus a square
    // logo, preserving image aspect ratio and each facade's center.
-   face(wall,0,left,bottom,top);
-   face(wall,right,wall.length,bottom,top);
-   face(wall,left,right,bottom,logoBottom);
-   face(wall,left,right,logoTop,top);
+   // The base-colored wall, not the image corner, supplies the surrounding color.
+   if(!logoOnlyTexture){
+    face(wall,0,left,bottom,top);
+    face(wall,right,wall.length,bottom,top);
+    face(wall,left,right,bottom,logoBottom);
+    face(wall,left,right,logoTop,top);
+   }
    // Exterior-visible left/right depends on OSM footprint winding.
 // Positive signed area: edge a->b runs visually right-to-left;
 // negative signed area: edge a->b runs visually left-to-right.

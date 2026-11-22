@@ -12,7 +12,7 @@ import {paintDaisoFacade} from '../../variety/daiso-sign.js?v=brand-uv-orientati
 import {paintKaikatsuFacade} from '../../leisure/kaikatsu-sign.js?v=kaikatsu-wall-v1-20261122';
 import {paintGustoFacade} from '../../food/gusto-sign.js?v=gusto-wall-v1-20261122';
 import {paintBamiyanFacade} from '../../food/bamiyan-sign.js?v=bamiyan-wall-v1-20261122';
-import {paintIsomaruFacade} from '../../food/isomaru-sign.js?v=isomaru-wide-v1-20261122';
+import {paintIsomaruFacade} from '../../food/isomaru-sign.js?v=isomaru-white-wall-v1-20261122';
 import {paintTorikizokuFacade} from '../../food/torikizoku-sign.js?v=torikizoku-wall-v1-20261122';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
