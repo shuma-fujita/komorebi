@@ -34,8 +34,12 @@ for(const [name,category,texture] of cases){
  assert.ok(faces[0].positions.every((n,i)=>i%3!==1||(n>=6-1e-8&&n<=9+1e-8)));
 }
 const multi=build(poi(880002,'磯丸水産',{amenity:'pub'},'2;3;4')).texturedFaces;
-assert.equal(multi.length,3,'each explicitly selected floor has one UV facade');
-for(let floor=0;floor<3;floor++)assert.ok(multi[floor].positions.every((n,i)=>i%3!==1||(n>=6+floor*3-1e-8&&n<=9+floor*3+1e-8)));
+assert.equal(multi.length,1,'contiguous upper floors share one centered logo');
+assert.ok(multi[0].positions.every((n,i)=>i%3!==1||(n>=6-1e-8&&n<=15+1e-8)));
+const topLogo=[];
+for(let i=0;i<multi[0].uvs.length;i+=12)if(multi[0].uvs.slice(i,i+12).join(',')==='1,0,0,0,0,1,1,0,0,1,1,1')topLogo.push(i);
+assert.equal(topLogo.length,4);
+for(const i of topLogo){const ps=multi[0].positions.slice(i/12*18,i/12*18+18);assert.ok(Math.abs((ps[1]+ps[7])/2-10.5)<1e-8);}
 assert.equal(build(poi(880002,'磯丸水産',{amenity:'pub'},'')).texturedFaces.length,0);
 assert.equal(build(poi(880002,'磯丸水産',{amenity:'pub'},'6')).texturedFaces.length,0);
 assert.equal(build(poi(880002,'知らない店舗',{amenity:'pub'})).texturedFaces.length,0);

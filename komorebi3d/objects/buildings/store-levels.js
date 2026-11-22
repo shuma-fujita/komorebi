@@ -1,6 +1,6 @@
 // Safe floor-span resolver for image-backed stores. Uses existing zero-based
 // OSM 'level' rules and never paints a whole building when level is missing.
-import {resolveConveniencePaint} from './convenience/osm-adapter.js?v=lawson-storefront-20261119';
+import {resolveConveniencePaint} from './convenience/osm-adapter.js?v=ground-glass-centered-upper-v1-20261123';
 export function resolveImageBrandPaint(stores,tags,height,inferredLevels=null,brandId){
  const matched=(stores||[]).filter(s=>s.brand?.id===brandId);
  if(!matched.length||'min_height' in tags||'building:min_level' in tags)return [];

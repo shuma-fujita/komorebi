@@ -1,6 +1,6 @@
 // McDonald's PNG UV facade. OSM POI name/brand and level determine placement.
 // The existing yellow polygon M remains available for editor-preview fallback.
-import {paintImageFacade} from '../brand-facade.js?v=brand-uv-orientation-v3-20261122';
+import {paintImageFacade} from '../brand-facade.js?v=ground-glass-centered-upper-v1-20261123';
 export const MC_SIGN_BG=0xdb0007;
 export const MC_SIGN_GOLD=0xffcf16;
 const curve=(a,b,c,d,t)=>{

@@ -80,6 +80,7 @@ jobs:
           node tests/kaikatsu-bamiyan-facades.mjs
           node tests/isomaru-wide-facade.mjs
           node tests/industry-independent-logos.mjs
+          node tests/ground-glass-centered-logos.mjs
           node tests/hoshino-coffee-facade.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs

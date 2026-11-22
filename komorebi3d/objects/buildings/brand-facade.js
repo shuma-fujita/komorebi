@@ -1,3 +1,4 @@
+import {paintConvenienceGlazing} from './convenience/common.js?v=convenience-one-sign-v3-20261112';
 // Shared PNG UV facade geometry for any named store. Only data-level
 // geometry is generated here; the fixed Komorebi Engine is left untouched.
 // Texture selection is handled by app-owned Renderer A/B facade layers.
@@ -7,7 +8,7 @@ function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
   surface.uvs.push(...uv);
  }
 }
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04]}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],storefront=false,entrancePoint=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -52,10 +53,11 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
    continue;
   }
   // Preserve original image aspect ratio; square brands retain exact dimensions.
-  const imageHeight=Math.min(2.65,top-bottom-.28,(wall.length-.35)/logoAspectRatio);
+  const imageHeight=storefront?Math.min((top-bottom)*.19, (wall.length-.35)/logoAspectRatio):Math.min(2.65,top-bottom-.28,(wall.length-.35)/logoAspectRatio);
   const imageWidth=imageHeight*logoAspectRatio;
   const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;
-  const logoBottom=(bottom+top)/2-imageHeight/2,logoTop=(bottom+top)/2+imageHeight/2;
+  const logoY=storefront?top-(top-bottom)*.1:(bottom+top)/2;
+  const logoBottom=logoY-imageHeight/2,logoTop=logoY+imageHeight/2;
   if(useTexture){
    // One continuous UV-mapped wall surface: background bands plus a square
    // logo, preserving image aspect ratio and each facade's center.
@@ -82,6 +84,21 @@ face(wall,left,right,logoBottom,logoTop,...uv);
      imagePoint(p2[0],p2[1]),imagePoint(p3[0],p3[1]),color);
     drawFallbackLogo(logoQuad);
    }
+  }
+ }
+ if(storefront){
+  let entranceWall=null,dist=Infinity;
+  if(Array.isArray(entrancePoint)&&entrancePoint.length===2){
+   for(const w of walls){
+    const px=entrancePoint[0]-w.a[0],pz=entrancePoint[1]-w.a[1],t=Math.max(0,Math.min(1,(px*w.dx+pz*w.dz)/(w.length*w.length)));
+    const d=Math.hypot(px-w.dx*t,pz-w.dz*t);
+    if(w.length>=4&&d<dist){dist=d;entranceWall=w;}
+   }
+  }
+  if(!entranceWall)entranceWall=walls.find(w=>w.length>=4)||null;
+  for(const w of walls){
+   const rect=(u0,u1,y0,y1,color,offset=0)=>quad(mesh,place(w,u0,y0,.13+offset),place(w,u1,y0,.13+offset),place(w,u1,y1,.13+offset),place(w,u0,y1,.13+offset),color);
+   paintConvenienceGlazing(rect,{length:w.length,bottom,top:top-(top-bottom)*.2,side:w===entranceWall?'front':'side',backWall:false});
   }
  }
  if(useTexture)texturedFaces.push(surface);
