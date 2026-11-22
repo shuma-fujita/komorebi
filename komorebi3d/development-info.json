@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "松戸駅前マクドナルドの2階壁面にPNGのUVテクスチャをA/Bで描画。四面中央ロゴ、固定Engineは未変更（Safari実機確認待ち）",
+  "matsudo": "マックPNGをPOIのname/brandとlevelで建物の該当階へ描画。localStorage即時更新対応（新方式Safari確認待ち）",
   "common": "Geofabrik関東PBFの取得URLを公式配布先に修正し一時診断を撤去（次回A自動実行は未確認）"
 }
