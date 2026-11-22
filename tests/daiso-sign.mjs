@@ -4,6 +4,10 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {matchDaisoBuildings,resolveDaisoPaint}
  from '../komorebi3d/objects/buildings/variety/osm-adapter.js';
+import {matchConvenienceBuildings,resolveConveniencePaint}
+ from '../komorebi3d/objects/buildings/convenience/osm-adapter.js';
+import {matchFoodBuildings,resolveFoodPaint,resolveMcDonaldsPaint}
+ from '../komorebi3d/objects/buildings/food/osm-adapter.js';
 import {paintDaisoFacade,DAISO_BG}
  from '../komorebi3d/objects/buildings/variety/daiso-sign.js';
 import {buildMap} from '../komorebi3d/maps/map-builder.js';
@@ -171,7 +175,16 @@ for(const id of ownerIds){
    'building:min_level':tags['building:min_level'],min_height:tags.min_height},
   computedHeight:height,
   spans:resolveDaisoPaint(actualMatched.get(id),tags,height)
-   .map(x=>({bottom:x.bottom,top:x.top,brand:x.brand.id}))
+   .map(x=>({bottom:x.bottom,top:x.top,brand:x.brand.id})),
+  convenienceSpans:resolveConveniencePaint(
+   matchConvenienceBuildings(tile.elements,project,1000).get(id),tags,height)
+   .map(x=>({bottom:x.bottom,top:x.top,brand:x.brand?.id})),
+  foodSpans:resolveFoodPaint(
+   matchFoodBuildings(tile.elements,project,1000).get(id),tags,height)
+   .map(x=>({bottom:x.bottom,top:x.top,brand:x.brand?.id})),
+  mcSpans:resolveMcDonaldsPaint(
+   matchFoodBuildings(tile.elements,project,1000).get(id),tags,height)
+   .map(x=>({bottom:x.bottom,top:x.top,brand:x.brand?.id}))
  }));
 }
 if(realShops.some(e=>e.type==='node'&&/^\d+$/.test(String(e.tags.level||'')))){
