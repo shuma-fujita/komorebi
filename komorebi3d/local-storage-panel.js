@@ -73,25 +73,28 @@ export function mountLocalStorageManager(doc=document){
    const row=doc.createElement('article');
    row.className='storage-entry';
    row.dataset.key=item.key;
-   row.appendChild(text('code',item.key,'storage-entry-key'));
-   // For OSM-tag records, use the numeric ID to filter this same inventory.
+   // Keep the full key text visible, with its numeric OSM ID tappable in place.
    const osmMatch=item.key.match(/(?:^|:)(node|way|relation)\/([1-9]\d*)$/);
+   const displayKey=doc.createElement('code');
+   displayKey.className='storage-entry-key';
    if(osmMatch){
     const id=osmMatch[2];
-    const searchButton=text('button','OSM ID: '+id+'  → 検索','storage-search-id');
-    searchButton.type='button';
-    searchButton.title='タップしてこのIDで保存キーを検索';
-    searchButton.setAttribute('aria-label','OSM ID '+id+' で検索');
-    searchButton.style.cssText='display:block;max-width:100%;min-height:40px;margin:7px 0 4px;padding:7px 10px;border:1px solid #557b5c;border-radius:7px;background:#1b3724;color:#d7ffe5;font:700 11px/1.5 ui-monospace,SFMono-Regular,monospace;text-align:left;overflow-wrap:anywhere;white-space:normal;touch-action:manipulation;cursor:pointer;';
-    searchButton.addEventListener('click',()=>{
+    displayKey.appendChild(doc.createTextNode(item.key.slice(0,-id.length)));
+    const idTap=text('button',id,'storage-id-tap');
+    idTap.type='button';
+    idTap.title='タップするとこのIDで検索';
+    idTap.setAttribute('aria-label','OSM ID '+id+' で検索');
+    idTap.style.cssText='display:inline-block;max-width:100%;min-height:32px;margin:0;padding:5px 3px;border:0;border-radius:3px;background:transparent;color:#a6efbe;font:inherit;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere;touch-action:manipulation;cursor:pointer;';
+    idTap.addEventListener('click',()=>{
      filter.value=id;
      feedback.textContent='OSM ID '+id+' で絞り込みました。';
      render();
-     // Reveal the populated search field without opening the iPhone keyboard.
+     // Reveal the populated search without opening the iPhone keyboard.
      filter.scrollIntoView?.({block:'nearest'});
     });
-    row.appendChild(searchButton);
-   }
+    displayKey.appendChild(idTap);
+   }else displayKey.textContent=item.key;
+   row.appendChild(displayKey);
    row.append(
     text('p',keyDescription(item.key),'storage-entry-about'),
     text('p','値 '+(item.value?.length??0).toLocaleString()+'文字','storage-entry-meta'));

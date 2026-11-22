@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "コピー済み建物・テナントの編集は本番OSMを即表示、テストOSMは裏で先読み（実機確認待ち）",
-  "common": "localStorage管理でOSM IDタップからゲーム・モック共通の検索へ即絞り込み（Safari実機確認待ち）"
+  "common": "localStorage管理の保存キー内OSM IDそのものをタップして検索欄へ入力（ゲーム・モック共通／実機確認待ち）"
 }
