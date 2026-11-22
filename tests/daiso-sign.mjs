@@ -93,6 +93,19 @@ assert.equal(paintDaisoFacade((mesh,a,b,c,d,color)=>quads.push({a,b,c,d,color}),
 assert.equal(quads.length,4);
 assert.ok(quads.every(q=>q.color===DAISO_BG));
 assert.equal(uv[0].texture,'daiso');
+// Reversed OSM polygon winding reverses the visible wall direction. The
+// generator must adapt U so the letters remain readable from outside.
+const cwUV=[];
+assert.equal(paintDaisoFacade(()=>{},{},
+ [[0,12],[18,12],[18,0],[0,0]],{bottom:3,top:6,texturedFaces:cwUV}),true);
+const normalUV='1,0,0,0,0,1,1,0,0,1,1,1';
+const reversedUV='0,0,1,0,1,1,0,0,1,1,0,1';
+assert.equal(uv[0].uvs.filter((_,i)=>i%12===0&&
+ uv[0].uvs.slice(i,i+12).join(',')===normalUV).length,4,
+ 'Positive-winding facades sample PNG right-to-left along the edge');
+assert.equal(cwUV[0].uvs.filter((_,i)=>i%12===0&&
+ cwUV[0].uvs.slice(i,i+12).join(',')===reversedUV).length,4,
+ 'Negative-winding facades sample PNG left-to-right along the edge');
 const withoutDaiso=render({shop:'books',name:'架空書店',level:'1'});
 const verts=r=>r.meshes.reduce((sum,m)=>sum+m.positions.length,0);
 assert.equal(verts(full)-verts(withoutDaiso),4*18,
