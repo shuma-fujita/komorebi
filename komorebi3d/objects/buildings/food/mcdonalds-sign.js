@@ -1,7 +1,7 @@
-// Single-site, two-storey wall-sign proof of concept for Matsudo station.
-// Colored polygon artwork instead of a texture: both fixed A/B renderers
-// support positions/normals/colors, but not image UVs in map mesh descriptors.
-// This does not edit OSM data or affect any other McDonald's location.
+// Single-site McDonald's second-floor facade for Matsudo station.
+// Colored polygon artwork instead of external images or textures: both
+// fixed A/B renderers support positions/normals/colors, but not image UVs.
+// This changes neither OSM data nor any other McDonald's location.
 export const MATSUDO_MCDONALDS_POI_ID=2992364618;
 export const MATSUDO_MCDONALDS_BUILDING_ID=72709443;
 export const MC_SIGN_BG=0xc8102e;
@@ -34,7 +34,7 @@ export function findMatsudoMcDonaldsBuilding(elements,project){
 const curve=(a,b,c,d,t)=>{
  const k=1-t;return k*k*k*a+3*k*k*t*b+3*k*t*t*c+t*t*t*d;
 };
-// Draw one golden arch as a smooth thick ribbon on a normalized 2D sign surface.
+// Two curved ribbons form the yellow M without relying on an external logo.
 function goldenArch(quad,controls){
  let previous=null;
  for(let i=0;i<=18;i++){
@@ -54,41 +54,47 @@ function goldenArch(quad,controls){
  }
 }
 export function paintMatsudoMcDonaldsSign(quad,mesh,polygon,height,{levels=9}={}){
- if(!Array.isArray(polygon)||polygon.length<3||!Number.isFinite(height)||
-  !Number.isFinite(levels)||levels<2)return false;
+ if(!Array.isArray(polygon)||polygon.length<4||!Number.isFinite(height)||
+  !Number.isFinite(levels)||levels<2||!polygon.every(p=>p.length===2&&p.every(Number.isFinite)))return false;
  const floor=height/levels;
- if(floor<MC_SIGN_HEIGHT_M+.28)return false;
- // Station-facing facade: for PIAZA Matsudo the north-most wall faces JR Matsudo.
- let wall=null;
- for(let i=0;i<polygon.length;i++){
-  const a=polygon[i],b=polygon[(i+1)%polygon.length];
-  const dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz);
-  if(length<MC_SIGN_WIDTH_M+1.5)continue;
-  const midpointZ=(a[1]+b[1])/2;
-  if(!wall||midpointZ<wall.midpointZ)wall={a,dx,dz,length,midpointZ};
- }
- if(!wall)return false;
+ if(floor<1.5)return false;
  let twiceArea=0;
  for(let i=0;i<polygon.length;i++){
   const p=polygon[i],q=polygon[(i+1)%polygon.length];
   twiceArea+=p[0]*q[1]-q[0]*p[1];
  }
  if(Math.abs(twiceArea)<.01)return false;
- const outward=Math.sign(twiceArea),{a,dx,dz,length}=wall;
- const h=MC_SIGN_HEIGHT_M,w=MC_SIGN_WIDTH_M;
- const y0=floor+(floor-h)/2;
- const place=(u,y,offset)=>[a[0]+dx*u/length+outward*dz/length*offset,
-  y,a[1]+dz*u/length-outward*dx/length*offset];
- const imagePoint=(x,y,offset)=>place((length-w)/2+w/2+x*1.23,y0+h/2+y*.92,offset);
- // Red panel stands 7 cm clear of the facade.
- const left=(length-w)/2,right=(length+w)/2;
- quad(mesh,place(left,y0,.07),place(right,y0,.07),
-  place(right,y0+h,.07),place(left,y0+h,.07),MC_SIGN_BG);
- const logoQuad=(p0,p1,p2,p3,color)=>quad(mesh,
-  imagePoint(p0[0],p0[1],.12),imagePoint(p1[0],p1[1],.12),
-  imagePoint(p2[0],p2[1],.12),imagePoint(p3[0],p3[1],.12),color);
- // Twin arches create the recognizable McDonald's M, with no text glyphs.
- goldenArch(logoQuad,[[-1,-.92],[-.84,1.46],[-.20,1.46],[0,-.86]]);
- goldenArch(logoQuad,[[0,-.86],[.20,1.46],[.84,1.46],[1,-.92]]);
+ const outward=Math.sign(twiceArea);
+ const walls=polygon.map((a,i)=>{
+  const b=polygon[(i+1)%polygon.length];
+  const dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz);
+  return {a,dx,dz,length,i};
+ }).filter(w=>w.length>.1);
+ // Cover every edge of the second floor, including small setback edges.
+ // Pick only four main walls for logos (longest faces if the OSM outline has
+ // more than four segments), preventing repeated M logos around one corner.
+ const logoWalls=[...walls].filter(w=>w.length>=1.2)
+  .sort((a,b)=>b.length-a.length||a.i-b.i).slice(0,4);
+ if(logoWalls.length!==4)return false;
+ const place=(wall,u,y,offset)=>{
+  const {a,dx,dz,length}=wall;
+  return [a[0]+dx*u/length+outward*dz/length*offset,
+   y,a[1]+dz*u/length-outward*dx/length*offset];
+ };
+ for(const wall of walls){
+  quad(mesh,place(wall,0,floor,.07),place(wall,wall.length,floor,.07),
+   place(wall,wall.length,2*floor,.07),place(wall,0,2*floor,.07),MC_SIGN_BG);
+ }
+ for(const wall of logoWalls){
+  // Center the M in each main wall; shrink it automatically on short faces.
+  const sx=Math.min(1.23,(wall.length-.3)/2.3);
+  const sy=Math.min(.92,(floor-.25)/2.2);
+  const imagePoint=(x,y)=>place(wall,wall.length/2+x*sx,1.5*floor+y*sy,.12);
+  const logoQuad=(p0,p1,p2,p3,color)=>quad(mesh,
+   imagePoint(p0[0],p0[1]),imagePoint(p1[0],p1[1]),
+   imagePoint(p2[0],p2[1]),imagePoint(p3[0],p3[1]),color);
+  goldenArch(logoQuad,[[-1,-.92],[-.84,1.46],[-.20,1.46],[0,-.86]]);
+  goldenArch(logoQuad,[[0,-.86],[.20,1.46],[.84,1.46],[1,-.92]]);
+ }
  return true;
 }
