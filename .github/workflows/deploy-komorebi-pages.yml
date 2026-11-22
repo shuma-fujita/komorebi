@@ -41,6 +41,8 @@ jobs:
           node --check komorebi3d/maps/map-labels.js
           node --check komorebi3d/maps/osm-pending-tag-visual.js
           node --check komorebi3d/local-storage-panel.js
+          node --check komorebi3d/objects/buildings/food/osm-adapter.js
+          node --check komorebi3d/objects/buildings/food/mcdonalds.js
           node --check komorebi3d/objects/buildings/food/mcdonalds-sign.js
           node --check komorebi3d/objects/parking/const.js
           node --check komorebi3d/objects/parking/osm-adapter.js
