@@ -22,6 +22,7 @@ const building={type:'way',id:987654321,version:2,tags:{
 const node={type:'node',id:123456789,version:1,...coord(0,0),
  tags:{shop:'variety_store',name:'DAISO 松戸テスト',level:'1'}};
 const mapFor=(tags=node.tags,extras=[])=>({source:'OpenStreetMap contributors',
+ tile:{id:'0_0',gridX:0,gridY:0,sizeM:2000},
  elements:[building,{...node,tags:{...tags}},...extras]});
 const render=(tags=node.tags,extras=[])=>
  buildMap(mapFor(tags,extras),{latitude:lat,longitude:lon,halfSize:1000});
