@@ -3,14 +3,13 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=store-floor-zones-v1-20261123';
+import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=ground-glass-centered-upper-v1-20261123';
 import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=ground-glass-centered-upper-v1-20261123';
-import {paintFoodWall} from '../objects/buildings/food/common.js?v=store-floor-zones-v1-20261123';
+import {paintFoodWall} from '../objects/buildings/food/common.js?v=ground-glass-centered-upper-v1-20261123';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
 import {paintParkingArea} from '../objects/parking/common.js?v=parking-orange-u-inward-v3-20261122';
-import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=store-floor-zones-v1-20261123';
-import {matchFloorTenants,floorDistricts,paintFloorDistricts} from '../objects/buildings/store-floor-zones.js?v=upper-vector-logo-only-v1-20261123';
+import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=ground-glass-centered-upper-v1-20261123';
 // Step 4-B: keep the Step 3 initial ordering, then reprioritize only unfinished
 // features when the helicopter moves >= 50m. Sorting yields every 512 operations
 // so the browser can enforce the existing per-frame time budget.
@@ -185,7 +184,6 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  const convenienceBuildings=matchConvenienceBuildings(map.elements,xy,HALF);
  const foodBuildings=matchFoodBuildings(map.elements,xy,HALF);
  const logoBuildings=matchLogoBuildings(map.elements,xy,HALF);
- const tenantBuildings=matchFloorTenants(map.elements,xy,HALF,convenienceBuildings,foodBuildings);
  const loveHotelBuildings=matchLoveHotelBuildings(map.elements,xy,HALF);
  const inferredTenantLevels=inferBuildingLevelsFromTenants(map.elements,xy,HALF);
  const roadSegments=[];
@@ -267,31 +265,8 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const tint=resolveLoveHotelColor(e.id,loveHotelBuildings,palette[e.id%palette.length],tags,height,inferredLevels);
    const pinkSpans=resolveLoveHotelFloorSpans(e.id,loveHotelBuildings,tags,height,inferredLevels)||[];
    const buildingMesh=buildings[e.id%palette.length],buildingStart=buildingMesh.positions.length;
-   const floors=floorDistricts(tenantBuildings.get(e.id),tags,height,inferredLevels);
-   // Only floors shared by multiple tenants, or ground-floor unnamed-brand
-   // tenants, need the new rectangular zoning renderer. All other floors keep
-   // their already-proven facade rendering and centered-upper logo behavior.
-   const hasSharedFloor=floors.some(f=>f.stores.length>1);
-   // A shared floor must not create extra logos above/below the shared floor.
-   const zoned=floors.filter(f=>hasSharedFloor||
-    f.stores.some(s=>!s.brand.texture));
-   const floorKey=(bottom)=>bottom.toFixed(7);
-   const zonedKeys=new Set(zoned.map(f=>floorKey(f.bottom)));
-   const filterStores=stores=>(stores||[]).map(store=>{
-    const spans=resolveConveniencePaint([store],tags,height,inferredLevels);
-    const keep=spans.filter(span=>!zonedKeys.has(floorKey(span.bottom)));
-    // Never invent floors: a fully-zoned POI gets an empty level string so
-    // the old renderer skips it.
-    if(keep.length===spans.length)return store;
-    const floorH=spans[0]?.top-spans[0]?.bottom;
-    const values=keep.map(span=>Math.round(span.bottom/floorH));
-    return {...store,level:values.join(';')};
-   });
-   const oldConvenience=filterStores(convenienceBuildings.get(e.id));
-   const oldFood=filterStores(foodBuildings.get(e.id));
-   const oldLogos=filterStores(logoBuildings.get(e.id));
-   const convenienceSpans=resolveConveniencePaint(oldConvenience,tags,height,inferredLevels);
-   const foodSpans=resolveFoodPaint(oldFood,tags,height,inferredLevels);
+   const convenienceSpans=resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels);
+   const foodSpans=resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels);
    building(buildingMesh,p,height,tint,convenienceSpans,roadSegments,tags,pinkSpans,foodSpans);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
@@ -300,7 +275,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // building when a tenant lacks level. Treating that speculative fallback
    // as a real occupancy block would hide correctly tagged McD / DAISO floors.
    const otherStoreSpans=[];
-   for(const stores of [oldConvenience,oldFood])
+   for(const stores of [convenienceBuildings.get(e.id),foodBuildings.get(e.id)])
     for(const store of stores||[]){
      if(['mcdonalds','gusto','torikizoku','bamiyan','isomaru'].includes(store.brand?.id))continue; // Image pass owns these brands.
      const levels=String(store.level??'').split(';').map(s=>s.trim());
@@ -312,9 +287,8 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
     span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8);
    // Industry-independent logo pass; legacy window/glazing paints stay intact.
    // Only explicitly occupied floors block a logo; no fabricated full-tower owners.
-   paintLogoBuilding(quad,buildingMesh,p,oldLogos,tags,height,
+   paintLogoBuilding(quad,buildingMesh,p,logoBuildings.get(e.id),tags,height,
     inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans);
-   if(zoned.length)paintFloorDistricts(quad,buildingMesh,p,zoned,texturedFaces,e.type+'/'+e.id,floors);
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.

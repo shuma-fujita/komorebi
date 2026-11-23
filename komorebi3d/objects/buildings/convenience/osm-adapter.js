@@ -102,7 +102,7 @@ export function matchConvenienceBuildings(elements,project,halfSize){
   }
   if(!best)continue;
   if(!matched.has(best.id))matched.set(best.id,[]);
-  matched.get(best.id).push({brand,level:element.tags?.level,point,osmId:element.id,tags:element.tags});
+  matched.get(best.id).push({brand,level:element.tags?.level});
  }
  return matched;
 }
@@ -199,40 +199,15 @@ function paintBrandStripe(quad,mesh,a,b,bottom,top,brand){
   }
  }
 }
-// For upper floors use a single fixed-size sign centered in each contiguous
-// run, never a sliding-door storefront on every floor.
-function paintUpperSign(quad,mesh,a,b,bottom,top,brand,outward){
- const dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz);
- const width=Math.min(3.7,length-.1),height=Math.min(1.3,top-bottom-.2);
- if(!brand.sign||width<CONVENIENCE_DOOR_WIDTH_M||height<.3)return;
- const start=(length-width)/2,low=(bottom+top-height)/2;
- const point=(u,y,off=0)=>[a[0]+dx*(start+u)/length+outward*dz/length*(.09+off),
-  y,a[1]+dz*(start+u)/length-outward*dx/length*(.09+off)];
- const rect=(u0,u1,y0,y1,color,off=0)=>{
-  quad(mesh,point(u0,y0,off),point(u1,y0,off),point(u1,y1,off),point(u0,y1,off),color);
- };
- paintConvenienceSign(rect,(p0,p1,p2,p3,color)=>quad(mesh,p0,p1,p2,p3,color),
-  point,brand.sign,{length:width,bottom:low,top:low+height,entrance:true});
-}
 export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facadeSide='side',outward=1){
  const wall=(bottom,top,color)=>{
   if(top>bottom+1e-8)
    quad(mesh,[a[0],bottom,a[1]],[b[0],bottom,b[1]],[b[0],top,b[1]],[a[0],top,a[1]],color);
  };
- const groups=[];
- for(const span of spans||[]){
-  const last=groups.at(-1);
-  if(last&&span.bottom>0&&last.bottom>0&&last.brand.id===span.brand.id&&
-   Math.abs(last.top-span.bottom)<1e-8)last.top=span.top;
-  else groups.push({...span});
- }
  let cursor=0;
- for(const span of groups){
+ for(const span of spans||[]){
   if(span.bottom>cursor)wall(cursor,span.bottom,baseColor);
-  if(span.bottom>1e-8){
-   paintBrandStripe(quad,mesh,a,b,span.bottom,span.top,span.brand);
-   paintUpperSign(quad,mesh,a,b,span.bottom,span.top,span.brand,outward);
-  }else if(!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand))
+  if(!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand))
    paintBrandStripe(quad,mesh,a,b,span.bottom,span.top,span.brand);
   cursor=Math.max(cursor,span.top);
  }
