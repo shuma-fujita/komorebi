@@ -14,6 +14,24 @@ export function keyDescription(key){
  if(key.startsWith('komorebi3d:osm-review-storage-check:v1:'))return '旧形式：動作確認のタグ変更記録（自動移行なし）';
  return 'サイト内の保存データ（用途はキー名・内容で確認）';
 }
+// Display only OSM names already present in the saved record; never guess
+// a business name from its ID or query a remote API.
+export function storedOsmName(key,value){
+ if(!key.startsWith(PREFIX)||typeof value!=='string'||sensitiveKey(key)||sensitiveValue(value))return '';
+ try{
+  const record=JSON.parse(value);
+  if(!record||typeof record!=='object'||Array.isArray(record))return '';
+  const candidates=[record.tags,record.changes,record.baseTags];
+  for(const tags of candidates){
+   if(!tags||typeof tags!=='object'||Array.isArray(tags))continue;
+   for(const field of ['name','name:ja']){
+    const name=tags[field];
+    if(typeof name==='string'&&name.trim())return name.trim();
+   }
+  }
+ }catch{}
+ return '';
+}
 export function listLocalStorage(storage=localStorage){
  const keys=[];
  for(let i=0;i<storage.length;i++){
@@ -42,7 +60,7 @@ const text=(tag,value,className)=>{
  return el;
 };
 // OSM ID tap presets the search field in both game and mock; never copies or modifies stored data.
-export function mountLocalStorageManager(doc=document){
+export function mountLocalStorageManager(doc=document,{readOnly=false}={}){
  const panel=doc.getElementById('storage-panel');
  if(!panel||panel.dataset.storageMounted==='true')return null;
  panel.dataset.storageMounted='true';
@@ -64,7 +82,7 @@ export function mountLocalStorageManager(doc=document){
    return;
   }
   const q=filter.value.trim().toLocaleLowerCase();
-  const visible=rows.filter(item=>item.key.toLocaleLowerCase().includes(q));
+  const visible=rows.filter(item=>item.key.toLocaleLowerCase().includes(q)||storedOsmName(item.key,item.value).toLocaleLowerCase().includes(q));
   count.textContent='保存済み '+rows.length+'件 / 表示 '+visible.length+'件';
   if(!visible.length){
    entries.appendChild(text('p',rows.length?'一致するキーはありません。':'localStorageにはまだ保存がありません。','storage-entry-empty'));
@@ -86,9 +104,17 @@ export function mountLocalStorageManager(doc=document){
     filter.scrollIntoView?.({block:'nearest'});
    });
    row.appendChild(keyButton);
-   row.append(
-    text('p',keyDescription(item.key),'storage-entry-about'),
-    text('p','値 '+(item.value?.length??0).toLocaleString()+'文字','storage-entry-meta'));
+   row.appendChild(text('p',keyDescription(item.key),'storage-entry-about'));
+   const meta=text('p','値 '+(item.value?.length??0).toLocaleString()+'文字','storage-entry-meta');
+   const name=storedOsmName(item.key,item.value);
+   if(name){
+    // Preserve the original meta line: use only its unused right-hand space.
+    meta.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;';
+    const nameLabel=text('span',name,'storage-entry-name');
+    nameLabel.style.cssText='font:700 12px/1.5 system-ui,-apple-system,sans-serif;color:#d7ffe5;text-align:right;overflow-wrap:anywhere;min-width:0;';
+    meta.appendChild(nameLabel);
+   }
+   row.appendChild(meta);
    const details=doc.createElement('details');
    const toggle=text('summary','保存内容を確認');
    const pre=text('pre','');
@@ -106,6 +132,10 @@ export function mountLocalStorageManager(doc=document){
     }catch(error){pre.textContent='読み取りエラー: '+String(error.message||error);}
    });
    row.appendChild(details);
+   if(readOnly){
+    entries.appendChild(row);
+    continue;
+   }
    const remove=text('button','このキーを削除','storage-delete');
    remove.type='button';
    const ask=doc.createElement('div');

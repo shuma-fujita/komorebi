@@ -39,7 +39,7 @@ assert.ok(layoutSource.includes("parked.appendChild(panel)"),'Unused panels rema
 assert.ok(layoutSource.includes("panel-shown"),'Layout announces adding a previously hidden panel');
 assert.ok(layoutSource.includes("onGripDown"),'Existing info-icon drag removal remains intact');
 const mockScript=read('komorebi3d/mock-ui.js');
-assert.ok(mockScript.indexOf('mountLocalStorageManager(document);')<
+assert.ok(mockScript.indexOf('mountLocalStorageManager(document,{readOnly:true});')<
  mockScript.indexOf('mountDefaultPanelLayoutEditor(document);'),
  'Mock must mount the manager before the hidden panel is parked');
 const dev=read('komorebi3d/dev.html');
@@ -95,17 +95,29 @@ assert.equal(manager.includes('clipboard.writeText'),false,'Tapping a storage ke
 assert.ok(manager.includes("const keyButton=text('button',item.key,'storage-entry-key')"),'Full storage key is tappable');
 assert.ok(manager.includes("keyButton.addEventListener('click'"),'Key tap has a handler');
 assert.ok(manager.includes('filter.value=item.key;'),'Entire key, not a parsed ID, is sent to search');
+const {storedOsmName}=await import('../komorebi3d/local-storage-panel.js');
+const sampleKey='komorebi3d:osm-tag-changes:v2:node/10294624701';
+assert.equal(storedOsmName(sampleKey,JSON.stringify({tags:{name:'日高屋'},changes:{level:'0'}})),'日高屋');
+assert.equal(storedOsmName(sampleKey,JSON.stringify({changes:{name:'吉野家'}})),'吉野家');
+assert.equal(storedOsmName(sampleKey,JSON.stringify({tags:{'name:ja':'とんかつとん一'}})),'とんかつとん一');
+assert.equal(storedOsmName(sampleKey,JSON.stringify({changes:{level:'0'}})),'');
+assert.equal(storedOsmName('unrelated-key',JSON.stringify({tags:{name:'日高屋'}})),'');
+assert.equal(storedOsmName(sampleKey,'invalid-json'),'');
+assert.ok(manager.includes("const nameLabel=text('span',name,'storage-entry-name')"),'OSM name appears on meta row');
+assert.ok(manager.includes('storedOsmName(item.key,item.value).toLocaleLowerCase().includes(q)'),'Name is searchable');
 assert.ok(manager.includes("render();\n    filter.scrollIntoView?."),'Key tap filters immediately');
 assert.equal(manager.includes('osmMatch'),false,'No OSM-only condition');
 assert.equal(manager.includes('storage-id-tap'),false,'No nested ID-only control');
-assert.ok(mockScript.includes('mountLocalStorageManager(document);'),'Mock mounts manager');
+assert.ok(mockScript.includes('mountLocalStorageManager(document,{readOnly:true});'),'Mock mounts read-only manager');
 assert.ok(dev.includes('mountLocalStorageManager(document);'),'Game mounts manager');
-assert.ok(dev.includes('storage-key-tap-search-20261122'),'Game references current module');
-assert.ok(mockScript.includes('storage-key-tap-search-20261122'),'Mock references same module');
+assert.ok(dev.includes('storage-name-readonly-v1-20261123'),'Game references current module');
+assert.ok(mockScript.includes('storage-name-readonly-v1-20261123'),'Mock references same module');
 assert.ok(read('komorebi3d/mock.html').includes('mock-storage-key-search-20261122'),'Mock entry references updated script');
 assert.ok(read('komorebi3d/build-ui.mjs').includes('mock-storage-key-search-20261122'),'Mock generator matches script');
 
 assert.ok(manager.includes("remove.addEventListener('click'"));
+assert.ok(manager.includes("if(readOnly){"),'Mock must skip real deletion controls');
+assert.match(manager,/if\(readOnly\)\{\s*entries\.appendChild\(row\);\s*continue;/,'Read-only rows return before delete handlers');
 assert.ok(manager.includes("clear.hidden=!filter.value.length"),'Clear button is shown only while input has content');
 assert.ok(manager.includes("clear.addEventListener('click'"),'Clear button responds to user taps');
 assert.ok(manager.includes("filter.value=''"),'Clear button resets the query');

@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "とんかつとん一を共通画像ロゴ店舗に追加。提供された黄色ロゴと同系色の外壁を使い、OSMのname・levelで表示（Safari未確認）",
-  "common": "Geofabrik関東PBFの取得URLを公式配布先に修正し一時診断を撤去（次回A自動実行は未確認）"
+  "common": "localStorage管理の値文字数の右側にOSM店舗名を表示・名前検索対応。mockは読み取り専用にして実データ削除を防止（Safari未確認）"
 }
