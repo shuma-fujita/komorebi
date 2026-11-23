@@ -123,35 +123,44 @@ function validPositiveNumber(value){
 }
 // Return sorted wall spans. Null brand means the ordinary building facade.
 // Missing both height and floor count, or contradictory metadata, paints the whole wall.
-// Unknown/malformed levels never claim a building. Conflicting tenants are
-// handled by per-store facades rather than promoting one brand to every floor.
 export function resolveConveniencePaint(stores,tags,height,inferredLevels=null){
- if(!stores?.length||'min_height'in tags||'building:min_level'in tags)return [];
+ if(!stores?.length)return [];
+ const whole=brand=>[{bottom:0,top:height,brand}];
+ const first=stores[0].brand;
+ if('min_height'in tags||'building:min_level'in tags)return whole(first);
  const explicitHeight=validPositiveNumber(tags.height);
  const declaredLevels=tags['building:levels'];
  const levelCount=declaredLevels===undefined?null:validPositiveNumber(declaredLevels);
  const validInferred=Number.isSafeInteger(inferredLevels)&&inferredLevels>0;
  if((explicitHeight===null&&levelCount===null&&!validInferred)||
-    (declaredLevels!==undefined&&(levelCount===null||!Number.isInteger(levelCount))))return [];
+    (declaredLevels!==undefined&&(levelCount===null||!Number.isInteger(levelCount))))return whole(first);
+ // For inferred buildings, use the same 4m floors used to build its geometry.
  const floorHeight=levelCount!==null?height/levelCount:validInferred?height/inferredLevels:3;
- if(!Number.isFinite(floorHeight)||floorHeight<=0)return [];
+ if(!Number.isFinite(floorHeight)||floorHeight<=0)return whole(first);
  const spans=[];
  for(const store of stores){
   const levels=parseLevels(store.level);
-  if(!Array.isArray(levels))continue;
+  if(levels===null||levels==='invalid')return whole(first);
   for(const level of levels){
-   if(level<0||levelCount!==null&&level>=levelCount)continue;
+   if(level<0)continue; // Underground geometry does not exist yet.
    const bottom=level*floorHeight,top=Math.min(height,(level+1)*floorHeight);
-   if(bottom>=height-1e-8||top<=bottom)continue;
-   // Separate upper-level logos are handled by the image layer.
+   if(levelCount!==null&&level>=levelCount||bottom>=height-1e-8||top<=bottom)return whole(first);
    spans.push({bottom,top,brand:store.brand});
   }
  }
- spans.sort((a,b)=>a.bottom-b.bottom||a.top-b.top||a.brand.id.localeCompare(b.brand.id));
+ spans.sort((a,b)=>a.bottom-b.bottom||a.top-b.top);
+ for(let i=0;i<spans.length;i++){
+  for(let j=i+1;j<spans.length&&spans[j].bottom<spans[i].top-1e-8;j++){
+   if(spans[i].brand.id!==spans[j].brand.id)return whole(first);
+  }
+ }
+ // Duplicate same-brand store nodes or levels must not double-paint a wall.
  const unique=[];
  for(const span of spans){
-  if(unique.some(other=>span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8))continue;
-  unique.push({...span});
+  const previous=unique[unique.length-1];
+  if(previous&&previous.brand.id===span.brand.id&&span.bottom<previous.top-1e-8)
+   previous.top=Math.max(previous.top,span.top);
+  else unique.push({...span});
  }
  return unique;
 }
