@@ -2,14 +2,13 @@
 import {matchStoreBuildings} from '../store-matching.js?v=store-poi-brand-v1-20261122';
 import {resolveImageBrandPaint} from '../store-levels.js?v=store-poi-level-v1-20261122';
 import {resolveConveniencePaint} from '../convenience/osm-adapter.js?v=lawson-image-v1-20261123';
-import {yoshinoya} from './yoshinoya.js?v=food-storefront-20261119';
-import {hidakaya} from './hidakaya.js?v=food-storefront-20261119';
 import {mcdonalds} from './mcdonalds.js?v=mcdonalds-poi-level-v2-20261122';
 import {gusto} from './gusto.js?v=food-gusto-v1-20261122';
 import {torikizoku} from './torikizoku.js?v=food-torikizoku-v1-20261122';
 import {bamiyan} from './bamiyan.js?v=food-bamiyan-v1-20261122';
 import {isomaru} from './isomaru.js?v=isomaru-wide-v1-20261122';
-const brands=[yoshinoya,hidakaya,mcdonalds,gusto,torikizoku,bamiyan,isomaru];
+// Hidakaya and Yoshinoya now belong to the category-independent image-logo pass.
+const brands=[mcdonalds,gusto,torikizoku,bamiyan,isomaru];
 const normalize=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 function identifyFood(tags){
  const amenity=tags?.amenity;
