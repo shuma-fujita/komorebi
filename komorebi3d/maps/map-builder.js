@@ -3,9 +3,9 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls} from './entrance-wall-selection.js?v=frontage-connector-v2-20261123';
+import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls} from './entrance-wall-selection.js?v=frontage-nearby-v1-20261123';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-image-logo-v1-20261123';
-import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=frontage-bridge-v1-20261123';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=frontage-nearby-v1-20261123';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=occupancy-facade-modes-v1-20261123';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';

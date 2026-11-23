@@ -135,6 +135,31 @@ for(let i=0;i<irregularFaces[0].uvs.length;i+=12)
 assert.equal(irregularLogoCount,1,
  'Real irregular footprint emits one logo UV surface regardless of winding');
 
+// Real OSM way 130218292 (AMS BLDG.), rounded local metre geometry.
+// Face 9 is a close duplicate of face 11 across blocked face 10 (5m).
+// Face 5 belongs to another road direction and keeps its own logo.
+const amsOutline=[[0,0],[-9.04,-2.46],[-8.96,-2.93],[-14.37,-4.9],
+ [-14.63,-4],[-29.36,-8.62],[-26.87,-17.32],[-6.32,-11.34],
+ [-6.04,-12.16],[-2,-10.92],[-2.5,-8.93],[2.31,-7.56]];
+const amsRoads=[[[-47.34,27.36],[-34.35,-15.85]],
+ [[11.55,-27.45],[-3.53,24.2]]];
+const amsBlocked=new Set([0,2,4,8,10]);
+const amsLogos=selectLogoWalls(amsOutline,amsRoads,[],amsBlocked);
+assert.deepEqual(amsLogos,[5,11],
+ 'Nearby same-road logos merge without losing another street-facing wall');
+const amsFaces=[];
+paintImageFacade(()=>{}, {},amsOutline,{bottom:3,top:6,
+ texture:'test',backgroundColor:0xf5ca01,texturedFaces:amsFaces,
+ blockedWalls:amsBlocked,logoWallIndices:amsLogos});
+let amsUVs=0;
+for(let i=0;i<amsFaces[0].uvs.length;i+=12)
+ if(logoUVPatterns.has(amsFaces[0].uvs.slice(i,i+12).join(',')))amsUVs++;
+assert.equal(amsUVs,2,'Two distinct road-side UV logos remain');
+const distantParallel=[[0,0],[10,0],[10,10],[20,10],
+ [20,0],[30,0],[30,20],[0,20]];
+assert.deepEqual(selectLogoWalls(distantParallel,[[[-10,-6],[40,-6]]],[]),[0,2,4],
+ 'Separated parallel frontages remain independent');
+
 // A tiny 45-degree chamfer at a TRUE right-angle corner is not a bridge.
 const chamfer=[[0,0],[19.5,0],[20,.5],[20,20],[0,20]];
 assert.deepEqual(selectLogoWalls(chamfer,[[[0,-8],[20,-8]],[[28,0],[28,20]]],[]).sort((a,b)=>a-b),[0,2],

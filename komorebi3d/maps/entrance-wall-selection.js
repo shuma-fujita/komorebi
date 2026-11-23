@@ -113,7 +113,7 @@ export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=
 // A sign belongs to a continuous street-facing frontage, not to each
 // individual OSM edge or an arbitrary compass direction. Consecutive curved
 // edges form one frontage; a sharp building corner starts another one.
-// Separate non-adjacent frontages remain independent even when parallel.
+// Distant parallel facades stay independent; nearby hidden gaps may merge.
 const FRONTAGE_CORNER_COS=Math.cos(70*Math.PI/180);
 const SHORT_CONNECTOR_M=1;
 const MAX_CONNECTOR_RUN_M=2;
@@ -178,6 +178,38 @@ function frontageRepresentative(drawable){
  const comfortable=Math.min(3,Math.max(...drawable.map(edge=>edge.len)));
  return centralEdge(drawable.filter(edge=>edge.len>=comfortable-1e-8)).i;
 }
+// Collapse nearby fragments on the SAME road side, not every parallel wall.
+// Short occlusions can split a frontage without creating another storefront.
+const NEAR_SIDE_COS=Math.cos(25*Math.PI/180);
+const NEAR_SIDE_GAP_M=7,NEAR_SIDE_OFFSET_M=6,NEAR_SIDE_ROAD_GAP_M=15;
+function nearbyRoadSide(a,b,polygon){
+ const x=a.wall,y=b.wall;
+ if(!x.roadEligible||!y.roadEligible||
+  x.normal[0]*y.normal[0]+x.normal[1]*y.normal[1]<NEAR_SIDE_COS)return false;
+ const n=polygon.length;
+ const gapAfter=(first,second)=>{
+  let distance=0;
+  for(let i=(first.run.at(-1).i+1)%n;i!==second.run[0].i;i=(i+1)%n){
+   const p=polygon[i],q=polygon[(i+1)%n];
+   distance+=Math.hypot(q[0]-p[0],q[1]-p[1]);
+   if(distance>NEAR_SIDE_GAP_M)return distance;
+  }
+  return distance;
+ };
+ if(Math.min(gapAfter(a,b),gapAfter(b,a))>NEAR_SIDE_GAP_M)return false;
+ const dx=y.mid[0]-x.mid[0],dz=y.mid[1]-x.mid[1];
+ if(Math.abs(dx*x.normal[0]+dz*x.normal[1])>NEAR_SIDE_OFFSET_M)return false;
+ return Math.hypot(x.road.point[0]-y.road.point[0],
+  x.road.point[1]-y.road.point[1])<=NEAR_SIDE_ROAD_GAP_M;
+}
+function uniqueRoadFrontages(frontages,polygon){
+ const kept=[];
+ // Prefer the wider wall when two close fragments compete.
+ const ranked=frontages.slice().sort((a,b)=>b.wall.len-a.wall.len||a.wall.i-b.wall.i);
+ for(const candidate of ranked)
+  if(!kept.some(other=>nearbyRoadSide(candidate,other,polygon)))kept.push(candidate);
+ return kept.map(item=>item.wall.i).sort((a,b)=>a-b);
+}
 export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null){
  // Recognize whole contiguous frontages BEFORE asking whether each tiny OSM
  // wall individually faces the road. Otherwise a short / oblique middle wall
@@ -187,8 +219,11 @@ export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=
  const groups=frontageGroups(structure,polygon?.length||0);
  const roadGroups=groups.filter(run=>run.some(edge=>edge.roadEligible));
  const selected=roadGroups.length?roadGroups:groups;
- return selected.flatMap(run=>{
+ const candidates=selected.flatMap(run=>{
   const drawable=run.filter(edge=>edge.len>=1.2);
-  return drawable.length?[frontageRepresentative(drawable)]:[];
+  if(!drawable.length)return [];
+  const i=frontageRepresentative(drawable);
+  return [{run,wall:run.find(edge=>edge.i===i)}];
  });
+ return uniqueRoadFrontages(candidates,polygon);
 }

@@ -2,7 +2,7 @@
 // geometry is generated here; the fixed Komorebi Engine is left untouched.
 // Texture selection is handled by app-owned Renderer A/B facade layers.
 import {paintConvenienceGlazing,entranceLogoSize,paintConvenienceFasciaDividers} from './convenience/common.js?v=occupancy-facade-modes-v1-20261123';
-import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=frontage-connector-v2-20261123';
+import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=frontage-nearby-v1-20261123';
 // Shared flush-mount facade: tiny depth bias avoids z-fighting with the original
 // building wall. UV background and logo always occupy the same image plane.
 const WALL_COLOR_OFFSET_M=.01;
