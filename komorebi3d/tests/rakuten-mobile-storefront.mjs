@@ -35,7 +35,7 @@ test('Rakuten logo is only on entrance face directly above glazing, other walls 
  assert.equal(logo.length,6);
  assert.ok(logo.every(v=>v.y>=2.4&&v.y<=3));
  assert.ok(logo.every(v=>Math.abs(v.z)<.3));
- assert.ok(quads.some(q=>q[4]===0xe4007f));
+ assert.ok(quads.some(q=>q[4]===0xe80288));
 });
 test('Rakuten does not put a logo on unrelated walls without an eligible entrance',()=>{
  const faces=[];

@@ -3,7 +3,7 @@
 // surfaces on the building wall, not free-standing sign boards.
 const TEXTURE_URLS=Object.freeze({
  lawson:new URL('../assets/textures/brands/lawson.png?v=brand-png-20261123',import.meta.url).href,
- rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=brand-png-20261123',import.meta.url).href,
+ rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=rakuten-crop-png-v1-20261123',import.meta.url).href,
  yoshinoya:new URL('../assets/textures/brands/yoshinoya.png?v=brand-png-20261123',import.meta.url).href,
  hidakaya:new URL('../assets/textures/brands/hidakaya.png?v=brand-png-20261123',import.meta.url).href,
  tonkatsuTonichi:new URL('../assets/textures/brands/tonkatsu-tonichi.png?v=brand-png-20261123',import.meta.url).href,
