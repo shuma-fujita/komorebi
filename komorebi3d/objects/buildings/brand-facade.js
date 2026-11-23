@@ -9,7 +9,7 @@ function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
   surface.uvs.push(...uv);
  }
 }
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -38,7 +38,8 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  const glassTop=withGroundGlass?bottom+(groundGlassTop-bottom)*.8:bottom;
  const logoAreaBottom=withGroundGlass?glassTop:bottom;
  const facadeLogoWalls=withGroundGlass&&Number.isInteger(entranceEdgeIndex)
-  ?walls.filter(w=>w.i===entranceEdgeIndex):logoWalls;
+  ?walls.filter(w=>w.i===entranceEdgeIndex)
+  :logoOnGroundFasciaOnly&&withGroundGlass?[]:logoWalls;
  const surface={texture,ownerKey,positions:[],uvs:[]};
  // Sample a uniform background pixel from each brand's own artwork.
  const place=(wall,u,y,offset)=>{
@@ -74,11 +75,17 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
    continue;
   }
   // Preserve original image aspect ratio; square brands retain exact dimensions.
-  const imageHeight=Math.min(2.65,top-logoAreaBottom-.28,(wall.length-.35)/logoAspectRatio);
+  // Optional convenience-style placement keeps the image immediately above
+  // the automatic door, inside the ground-floor fascia rather than the upper wall.
+  const fasciaOnly=logoOnGroundFasciaOnly&&withGroundGlass;
+  const imageAreaTop=fasciaOnly?groundGlassTop:top;
+  const imageHeight=Math.min(2.65,imageAreaTop-logoAreaBottom-(fasciaOnly?.08:.28),
+   (wall.length-.35)/logoAspectRatio);
+  if(imageHeight<=0)continue;
   const imageWidth=imageHeight*logoAspectRatio;
   const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;
-  const logoBottom=(logoAreaBottom+top)/2-imageHeight/2;
-  const logoTop=(logoAreaBottom+top)/2+imageHeight/2;
+  const logoBottom=(logoAreaBottom+imageAreaTop)/2-imageHeight/2;
+  const logoTop=(logoAreaBottom+imageAreaTop)/2+imageHeight/2;
   if(useTexture){
    // One continuous UV-mapped wall surface: background bands plus a square
    // logo, preserving image aspect ratio and each facade's center.

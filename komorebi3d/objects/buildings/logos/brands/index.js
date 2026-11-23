@@ -9,6 +9,7 @@ import {isomaru} from '../../food/isomaru.js?v=isomaru-wide-v1-20261122';
 import {torikizoku} from '../../food/torikizoku.js?v=food-torikizoku-v1-20261122';
 import {hoshino} from './hoshino.js?v=hoshino-coffee-logo-v1-20261123';
 import {lawson} from './lawson.js?v=lawson-image-v1-20261123';
+import {rakutenMobile} from './rakuten-mobile.js?v=rakuten-mobile-v1-20261123';
 import {paintMcDonaldsFacade} from '../../food/mcdonalds-sign.js?v=ground-fascia-logo-v1-20261123';
 import {paintDaisoFacade} from '../../variety/daiso-sign.js?v=ground-fascia-logo-v1-20261123';
 import {paintKaikatsuFacade} from '../../leisure/kaikatsu-sign.js?v=ground-fascia-logo-v1-20261123';
@@ -18,6 +19,7 @@ import {paintIsomaruFacade} from '../../food/isomaru-sign.js?v=ground-fascia-log
 import {paintTorikizokuFacade} from '../../food/torikizoku-sign.js?v=ground-fascia-logo-v1-20261123';
 import {paintHoshinoFacade} from './hoshino-sign.js?v=ground-fascia-logo-v1-20261123';
 import {paintLawsonFacade} from './lawson-sign.js?v=ground-fascia-logo-v1-20261123';
+import {paintRakutenMobileFacade} from './rakuten-mobile-sign.js?v=rakuten-mobile-v1-20261123';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},
@@ -27,5 +29,6 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:isomaru,paint:paintIsomaruFacade},
  {brand:torikizoku,paint:paintTorikizokuFacade},
  {brand:hoshino,paint:paintHoshinoFacade},
- {brand:lawson,paint:paintLawsonFacade}
+ {brand:lawson,paint:paintLawsonFacade},
+ {brand:rakutenMobile,paint:paintRakutenMobileFacade}
 ]);
