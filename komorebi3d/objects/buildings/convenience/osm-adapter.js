@@ -193,7 +193,7 @@ export function resolveOsmConvenienceRoofColor(spans,tags,height,baseColor){
  return convenienceRoofColor({hasStore:true,singleStorey,baseColor});
 }
 
-export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facadeSide='side',outward=1){
+export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facadeSide='side',outward=1,blocked=false){
  const wall=(bottom,top,color)=>{
   if(top>bottom+1e-8)
    quad(mesh,[a[0],bottom,a[1]],[b[0],bottom,b[1]],[b[0],top,b[1]],[a[0],top,a[1]],color);
@@ -202,7 +202,7 @@ export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facade
  for(const span of spans||[]){
   if(span.bottom>cursor)wall(cursor,span.bottom,baseColor);
   // Missing or unrenderable signs must not resurrect retired wall stripes.
-  if(!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand))
+  if(blocked||!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand))
    wall(span.bottom,span.top,baseColor);
   cursor=Math.max(cursor,span.top);
  }

@@ -1,5 +1,5 @@
 // Orange facade matching the supplied white-on-orange Kaikatsu CLUB artwork.
-import {paintImageFacade} from '../brand-facade.js?v=ground-fascia-logo-v1-20261123';
+import {paintImageFacade} from '../brand-facade.js?v=wall-occlusion-v1-20261123';
 export const KAIKATSU_BG=0xec661b;
 export function paintKaikatsuFacade(quad,mesh,polygon,options={}){
  return paintImageFacade(quad,mesh,polygon,{

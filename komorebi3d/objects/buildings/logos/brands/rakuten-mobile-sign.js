@@ -1,6 +1,6 @@
 // User-provided Rakuten logo artwork, cropped to its pink rectangle.
 // Reuse shared convenience glazing, entrance placement and UV facade geometry.
-import {paintImageFacade} from '../facade.js?v=rakuten-mobile-v1-20261123';
+import {paintImageFacade} from '../facade.js?v=wall-occlusion-v1-20261123';
 export const RAKUTEN_MOBILE_BG=0xe4007f;
 export const RAKUTEN_MOBILE_ASPECT=256/95;
 export function paintRakutenMobileFacade(quad,mesh,polygon,options={}){

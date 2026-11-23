@@ -67,7 +67,23 @@ function centralEdge(run){
  const a=run[n/2-1],b=run[n/2];
  return a.len>=b.len?a:b;
 }
-export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=4){
+// Shared adjacent-building occlusion for any storefront surface, even short edges.
+export function blockedBuildingWalls(polygon,otherBuildings=[]){
+ const blocked=new Set();
+ if(!Array.isArray(polygon)||polygon.length<3)return blocked;
+ const area=polygon.reduce((sum,a,i)=>{const b=polygon[(i+1)%polygon.length];return sum+a[0]*b[1]-b[0]*a[1];},0);
+ const outward=area>=0?1:-1;
+ polygon.forEach((a,i)=>{
+  const b=polygon[(i+1)%polygon.length],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);
+  if(len<1e-7)return;
+  const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+  const near=[mid[0]+outward*dz/len*NEAR_BUILDING_M,
+   mid[1]-outward*dx/len*NEAR_BUILDING_M];
+  if(crossesFootprint(mid,near,otherBuildings))blocked.add(i);
+ });
+ return blocked;
+}
+export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=4,blockedWalls=null){
  if(!Array.isArray(polygon)||polygon.length<3)return -1;
  const area=polygon.reduce((sum,a,i)=>{const b=polygon[(i+1)%polygon.length];return sum+a[0]*b[1]-b[0]*a[1];},0);
  const outward=area>=0?1:-1;
@@ -76,12 +92,11 @@ export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=
   return {i,len,mid:[(a[0]+b[0])/2,(a[1]+b[1])/2],
    normal:len?[outward*dz/len,-outward*dx/len]:[0,0]};
  });
+ const occluded=blockedWalls instanceof Set?blockedWalls:blockedBuildingWalls(polygon,otherBuildings);
  const wide=edges.filter(edge=>edge.len>=doorWidth-1e-7);
  if(!wide.length)return -1;
  const candidates=wide.map(edge=>{
-  const near=[edge.mid[0]+edge.normal[0]*NEAR_BUILDING_M,
-   edge.mid[1]+edge.normal[1]*NEAR_BUILDING_M];
-  const blocked=crossesFootprint(edge.mid,near,otherBuildings);
+  const blocked=occluded.has(edge.i);
   const road=roadFacing(edge,roads);
   const roadBlocked=road&&crossesFootprint(edge.mid,road.point,otherBuildings);
   return {...edge,blocked,road,roadBlocked};
@@ -92,6 +107,6 @@ export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=
  // all-blocked buildings use remaining wide walls rather than no door.
  let remaining=candidates.filter(e=>!e.blocked&&e.road&&!e.roadBlocked);
  if(!remaining.length)remaining=candidates.filter(e=>!e.blocked);
- if(!remaining.length)remaining=candidates;
+ // Never reinstate a face that is physically blocked by another building.
  return middleEntranceEdge(remaining,edges.length);
 }

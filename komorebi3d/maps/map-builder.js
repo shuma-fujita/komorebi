@@ -3,10 +3,10 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {selectEntranceWall} from './entrance-wall-selection.js?v=entrance-filter-midpoint-v1-20261123';
+import {selectEntranceWall,blockedBuildingWalls} from './entrance-wall-selection.js?v=wall-occlusion-v1-20261123';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-image-logo-v1-20261123';
-import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=tonkatsu-tonichi-v1-20261123';
-import {paintFoodWall} from '../objects/buildings/food/common.js?v=no-legacy-stripes-20261123';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=wall-occlusion-v1-20261123';
+import {paintFoodWall} from '../objects/buildings/food/common.js?v=wall-occlusion-v1-20261123';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
 import {paintParkingArea} from '../objects/parking/common.js?v=parking-orange-u-inward-v3-20261122';
@@ -110,7 +110,7 @@ function top(m,p,h,t){
  }
  if(idx.length===3){const a=p[idx[0]],b=p[idx[1]],c=p[idx[2]];if(ccw)tri(m,[a[0],h,a[1]],[c[0],h,c[1]],[b[0],h,b[1]],t);else tri(m,[a[0],h,a[1]],[b[0],h,b[1]],[c[0],h,c[1]],t);}
 }
-function building(m,p,h,t,spans,front,tags,pinkSpans=[],foodSpans=[]){
+function building(m,p,h,t,spans,front,tags,pinkSpans=[],foodSpans=[],blockedWalls=new Set()){
  const n=p.length,area=signedArea(p),outward=area>0?1:-1;
  const edges=p.map((a,i)=>{
   const b=p[(i+1)%n],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz)||1;
@@ -123,7 +123,7 @@ function building(m,p,h,t,spans,front,tags,pinkSpans=[],foodSpans=[]){
  }
  for(let i=0;i<n;i++){
   const e=edges[i],side=i===front?'front':i===back?'back':'side';
-  paintFoodWall(quad,m,e.a,e.b,h,t,spans,foodSpans,side,outward);
+  paintFoodWall(quad,m,e.a,e.b,h,t,spans,foodSpans,side,outward,blockedWalls.has(i));
   paintLoveHotelWall(quad,m,e.a,e.b,pinkSpans,LOVE_HOTEL_COLOR,outward);
  }
  top(m,p,h,resolveOsmConvenienceRoofColor(spans,tags,h,t));
@@ -285,8 +285,9 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
      for(const other of buildingCells.get(cellKey(x,z))||[])
       if(other.id!==e.id)nearby.set(other.id,other.points);
    const nearbyBuildings=[...nearby.values()];
-   const frontEdge=selectEntranceWall(p,roadSegments,nearbyBuildings,CONVENIENCE_DOOR_WIDTH_M);
-   building(buildingMesh,p,height,tint,convenienceSpans,frontEdge,tags,pinkSpans,foodSpans);
+   const blockedWalls=blockedBuildingWalls(p,nearbyBuildings);
+   const frontEdge=selectEntranceWall(p,roadSegments,nearbyBuildings,CONVENIENCE_DOOR_WIDTH_M,blockedWalls);
+   building(buildingMesh,p,height,tint,convenienceSpans,frontEdge,tags,pinkSpans,foodSpans,blockedWalls);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
    // Only explicit tenant levels can reserve a floor against a PNG logo.
@@ -307,7 +308,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // Industry-independent logo pass; legacy window/glazing paints stay intact.
    // Only explicitly occupied floors block a logo; no fabricated full-tower owners.
    paintLogoBuilding(quad,buildingMesh,p,logoBuildings.get(e.id),tags,height,
-    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge);
+    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls);
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.

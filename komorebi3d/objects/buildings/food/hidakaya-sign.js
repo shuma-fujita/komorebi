@@ -1,5 +1,5 @@
 // Shared image facade; keep all non-logo walls white.
-import {paintImageFacade} from '../brand-facade.js?v=food-image-logo-v1-20261123';
+import {paintImageFacade} from '../brand-facade.js?v=wall-occlusion-v1-20261123';
 export const HIDAKAYA_BG=0xffffff;
 export const HIDAKAYA_ASPECT=320/75;
 export function paintHidakayaFacade(quad,mesh,polygon,options={}){

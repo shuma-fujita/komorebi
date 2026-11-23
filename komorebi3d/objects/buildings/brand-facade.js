@@ -9,7 +9,7 @@ function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
   surface.uvs.push(...uv);
  }
 }
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -31,6 +31,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  const logoWalls=[...walls].filter(w=>w.length>=1.2)
   .sort((a,b)=>b.length-a.length||a.i-b.i).slice(0,4);
  if(logoWalls.length!==4)return false;
+ if(walls.every(w=>blockedWalls?.has(w.i)))return false;
  const useTexture=Array.isArray(texturedFaces);
  const withGroundGlass=Number.isFinite(groundGlassTop)&&groundGlassTop>bottom+1e-8&&groundGlassTop<=top+1e-8;
  // A branded ground floor reserves its upper 20% as the fascia.
@@ -54,6 +55,8 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   texturedQuad(surface,a,b,c,d,uv0,uv1,uv2,uv3);
  }
  for(const wall of walls){
+  // Keep the original building wall material on physically obstructed faces.
+  if(blockedWalls?.has(wall.i))continue;
   // This base-colored quad is also the safe fallback while the PNG loads.
   const wallBottom=logoAreaBottom;
   if(top>wallBottom+1e-8)
