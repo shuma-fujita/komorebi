@@ -80,6 +80,25 @@ for(const painter of [paintIsomaruFacade,paintKaikatsuFacade]){
   'Image texture never paints over glazing');
  assert.ok(multi.face.positions.every((n,i)=>i%3!==1||n>=0&&n<=12));
 }
+// Regression: Yoshinoya's newer artwork is orange at the upper-left
+// but white at the bottom. Non-logo UV patches must sample the orange area.
+const yoshi=draw(paintYoshinoyaFacade,{bottom:0,top:3,groundGlassTop:3});
+const paintedBackground=[];
+for(let i=0;i<yoshi.face.uvs.length;i+=12){
+ const vertices=yoshi.face.uvs.slice(i,i+12);
+ if(!fullLogo.has(vertices.join(',')))paintedBackground.push(...vertices);
+}
+assert.ok(paintedBackground.length>0);
+for(let i=0;i<paintedBackground.length;i+=2){
+ assert.equal(paintedBackground[i],.04);
+ assert.equal(paintedBackground[i+1],.75,
+  'Yoshinoya background must sample orange top, never white bottom stripe');
+}
+// Other brands preserve their independently configured background coordinates.
+const hida=draw(paintHidakayaFacade,{bottom:0,top:3,groundGlassTop:3});
+assert.ok(hida.face.uvs.some((v,i)=>i%2===1&&v===.5),
+ 'Hidakaya background UV must remain unchanged');
+
 // The shared gray sign-band separators must be present on actual image-logo
 // storefronts, not just the glazing. These continue the door/window uprights.
 const door=conveniencePanelLayout(24,{entrance:true}).door;
