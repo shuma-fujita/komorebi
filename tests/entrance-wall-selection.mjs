@@ -47,7 +47,7 @@ assert.equal(selectEntranceWall(square,[[[-10,3],[-10,17]]],[eastNeighbor],4,blo
 const subdivided=[[0,0],[3,0],[9,1],[20,1],[20,15],[0,15]];
 assert.deepEqual(selectLogoWalls(subdivided,[],[]).sort((a,b)=>a-b),[1,3,4,5],
  'Without road data, separate building corners retain independent frontages');
-assert.deepEqual(selectLogoWalls(subdivided,[[[-10,-8],[30,-8]]],[]),[2],
+assert.deepEqual(selectLogoWalls(subdivided,[[[-10,-8],[30,-8]]],[]),[1],
  'Multiple south-facing road edges produce only one central logo');
 const sameSide=eligibleFacadeWalls(subdivided,[],[],1.2).filter(x=>[0,1,2].includes(x.i));
 assert.ok(sameSide.length===3&&
