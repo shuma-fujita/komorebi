@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import {middleEntranceEdge,selectEntranceWall,blockedBuildingWalls,eligibleFacadeWalls,selectLogoWalls} from '../komorebi3d/maps/entrance-wall-selection.js';
+import {paintImageFacade} from '../komorebi3d/objects/buildings/brand-facade.js';
 const e=(i,len)=>({i,len});
 assert.equal(middleEntranceEdge([e(0,8),e(1,7),e(2,9)],4),1,'Three continuous edges: middle');
 assert.equal(middleEntranceEdge([e(0,8),e(1,7),e(2,9),e(3,6)],4),2,
@@ -108,7 +109,6 @@ assert.equal(selectEntranceWall(narrow,[],[],4),-1,
 // Glazing and UV signs must honor the identical blocked set while leaving
 // the original building-color polygon in place.
 const {paintConvenienceWall}=await import('../komorebi3d/objects/buildings/convenience/osm-adapter.js');
-const {paintImageFacade}=await import('../komorebi3d/objects/buildings/brand-facade.js');
 const blank=[],blockedPaint=[];
 const fakeBrand={id:'sample',sign:{background:0x123456,upper:0x123456,lower:0x123456}};
 const wall=(out,obstructed)=>paintConvenienceWall((mesh,...args)=>out.push(args),{},
