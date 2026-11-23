@@ -1,13 +1,15 @@
 // Shared PNG UV facade geometry for any named store. Only data-level
 // geometry is generated here; the fixed Komorebi Engine is left untouched.
 // Texture selection is handled by app-owned Renderer A/B facade layers.
+import {paintConvenienceGlazing} from './convenience/common.js?v=no-legacy-stripes-20261123';
+
 function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
  for(const [p,uv] of [[a,ua],[b,ub],[c,uc],[a,ua],[c,uc],[d,ud]]){
   surface.positions.push(...p);
   surface.uvs.push(...uv);
  }
 }
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04]}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -30,6 +32,9 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   .sort((a,b)=>b.length-a.length||a.i-b.i).slice(0,4);
  if(logoWalls.length!==4)return false;
  const useTexture=Array.isArray(texturedFaces);
+ const withGroundGlass=Number.isFinite(groundGlassTop)&&groundGlassTop>bottom+1e-8&&groundGlassTop<=top+1e-8;
+ const facadeLogoWalls=withGroundGlass&&Number.isInteger(entranceEdgeIndex)
+  ?walls.filter(w=>w.i===entranceEdgeIndex):logoWalls;
  const surface={texture,ownerKey,positions:[],uvs:[]};
  // Sample a uniform background pixel from each brand's own artwork.
  const place=(wall,u,y,offset)=>{
@@ -37,18 +42,31 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   return [a[0]+dx*u/length+outward*dz/length*offset,
    y,a[1]+dz*u/length-outward*dx/length*offset];
  };
- function face(w,u0,u1,y0,y1,uv0=backgroundUV,uv1=backgroundUV,uv2=backgroundUV,uv3=backgroundUV){
-  const a=place(w,u0,y0,.075),b=place(w,u1,y0,.075);
-  const c=place(w,u1,y1,.075),d=place(w,u0,y1,.075);
+ function face(w,u0,u1,y0,y1,uv0=backgroundUV,uv1=backgroundUV,uv2=backgroundUV,uv3=backgroundUV,offset=.075){
+  if(u1<=u0||y1<=y0)return;
+  const a=place(w,u0,y0,offset),b=place(w,u1,y0,offset);
+  const c=place(w,u1,y1,offset),d=place(w,u0,y1,offset);
   texturedQuad(surface,a,b,c,d,uv0,uv1,uv2,uv3);
  }
  for(const wall of walls){
   // This base-colored quad is also the safe fallback while the PNG loads.
-  quad(mesh,place(wall,0,bottom,.07),place(wall,wall.length,bottom,.07),
-   place(wall,wall.length,top,.07),place(wall,0,top,.07),backgroundColor);
-  const isLogoWall=logoWalls.includes(wall);
+  const wallBottom=withGroundGlass?groundGlassTop:bottom;
+  if(top>wallBottom+1e-8)
+   quad(mesh,place(wall,0,wallBottom,.07),place(wall,wall.length,wallBottom,.07),
+    place(wall,wall.length,top,.07),place(wall,0,top,.07),backgroundColor);
+  if(withGroundGlass){
+   // Existing convenience glass panels, with exactly one entrance edge.
+   const rect=(u0,u1,y0,y1,tint,offset=0)=>{
+    if(u1<=u0||y1<=y0)return;
+    quad(mesh,place(wall,u0,y0,.09+offset),place(wall,u1,y0,.09+offset),
+     place(wall,u1,y1,.09+offset),place(wall,u0,y1,.09+offset),tint);
+   };
+   paintConvenienceGlazing(rect,{length:wall.length,bottom,top:groundGlassTop,
+    side:wall.i===entranceEdgeIndex?'front':'side'});
+  }
+  const isLogoWall=facadeLogoWalls.includes(wall);
   if(!isLogoWall){
-   if(useTexture)face(wall,0,wall.length,bottom,top);
+   if(useTexture)face(wall,0,wall.length,wallBottom,top);
    continue;
   }
   // Preserve original image aspect ratio; square brands retain exact dimensions.
@@ -59,10 +77,10 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   if(useTexture){
    // One continuous UV-mapped wall surface: background bands plus a square
    // logo, preserving image aspect ratio and each facade's center.
-   face(wall,0,left,bottom,top);
-   face(wall,right,wall.length,bottom,top);
-   face(wall,left,right,bottom,logoBottom);
-   face(wall,left,right,logoTop,top);
+   face(wall,0,left,wallBottom,top);
+   face(wall,right,wall.length,wallBottom,top);
+   face(wall,left,right,wallBottom,logoBottom);
+   face(wall,left,right,Math.max(wallBottom,logoTop),top);
    // Exterior-visible left/right depends on OSM footprint winding.
 // Positive signed area: edge a->b runs visually right-to-left;
 // negative signed area: edge a->b runs visually left-to-right.
@@ -70,7 +88,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
 const uv=outward>0
  ? [[1,0],[0,0],[0,1],[1,1]]
  : [[0,0],[1,0],[1,1],[0,1]];
-face(wall,left,right,logoBottom,logoTop,...uv);
+face(wall,left,right,logoBottom,logoTop,...uv,withGroundGlass?.14:.075);
   }else{
    // Editor preview / PNG-load fallback. McDonald's supplies its classic
    // arch painter; DAISO keeps the solid pink facade if PNG is unavailable.

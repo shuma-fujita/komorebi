@@ -59,7 +59,8 @@ for(const [name,level,low,high,center] of [
  assert.equal(faces[0].texture,name==='快活CLUB'?'kaikatsu':'isomaru');
  assert.ok(faces[0].positions.every((n,i)=>i%3!==1||(n>=low-1e-8&&n<=high+1e-8)));
  const logos=logoCenters(faces[0]);
- assert.equal(logos.centers.length,4,'One unchanged-size logo on each of four exterior faces');
+ assert.equal(logos.centers.length,level.startsWith('0;')?1:4,
+  'Ground-inclusive groups use entrance face only; upper-only groups keep four faces');
  for(const y of logos.centers)assert.ok(Math.abs(y-center)<1e-8,'Logo must be vertically centered');
  for(const h of logos.heights)assert.ok(Math.abs(h-baseHeight)<1e-8,'Logo size must not grow across floors');
 }
