@@ -117,7 +117,7 @@ function building(m,p,h,t,spans,front,tags,pinkSpans=[],foodSpans=[]){
   return {a,b,len,mid:[(a[0]+b[0])/2,(a[1]+b[1])/2],normal:[outward*dz/len,-outward*dx/len]};
  });
  let back=-1,bestDot=.35;
- for(let i=0;i<n;i++)if(i!==front){
+ for(let i=0;front>=0&&i<n;i++)if(i!==front){
   const dot=-(edges[front].normal[0]*edges[i].normal[0]+edges[front].normal[1]*edges[i].normal[1]);
   if(dot>bestDot){bestDot=dot;back=i;}
  }
