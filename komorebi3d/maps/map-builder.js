@@ -298,7 +298,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // building when a tenant lacks level. Treating that speculative fallback
    // as a real occupancy block would hide correctly tagged McD / DAISO floors.
    const otherStoreSpans=[];
-   for(const stores of [oldConvenience,oldFood]
+   for(const stores of [oldConvenience,oldFood])
     for(const store of stores||[]){
      if(['mcdonalds','gusto','torikizoku','bamiyan','isomaru'].includes(store.brand?.id))continue; // Image pass owns these brands.
      const levels=String(store.level??'').split(';').map(s=>s.trim());
