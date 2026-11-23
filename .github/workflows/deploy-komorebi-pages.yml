@@ -79,6 +79,7 @@ jobs:
           node tests/restaurant-image-facades.mjs
           node tests/kaikatsu-bamiyan-facades.mjs
           node tests/isomaru-wide-facade.mjs
+          node tests/brand-png-assets.mjs
           node tests/logo-ground-glass.mjs
           node tests/entrance-wall-selection.mjs
           node tests/industry-independent-logos.mjs

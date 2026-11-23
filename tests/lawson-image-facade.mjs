@@ -68,5 +68,5 @@ const edited=buildMap(scene(poi('ローソン 松戸駅前店','0')),
  {latitude:lat,longitude:lon,halfSize:200});
 assert.equal(edited.texturedFaces[0].texture,'lawson',
  'A locally supplied level=0 is handled without any store-specific fallback');
-assert.ok(readFileSync('komorebi3d/assets/textures/brands/lawson.webp').subarray(0,4).equals(Buffer.from('RIFF')));
+assert.ok(readFileSync('komorebi3d/assets/textures/brands/lawson.png').subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')));
 console.log('Lawson image transition PASS: normal logo, glass, floor groups, variants, strict OSM levels');

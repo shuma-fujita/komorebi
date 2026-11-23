@@ -51,7 +51,7 @@ for(let i=0;i<face.uvs.length;i+=12){
 assert.equal(logos,4);
 const reversed=[];paintHoshinoFacade(()=>{},{},[...poly].reverse(),{bottom:3,top:6,texturedFaces:reversed});
 assert.equal(reversed[0].uvs.filter((_,i)=>i%12===0&&uvA.includes(reversed[0].uvs.slice(i,i+12).join(','))).length,4);
-const asset=readFileSync('komorebi3d/assets/textures/brands/hoshino.webp');
-assert.equal(asset.toString('ascii',0,4),'RIFF');
-assert.equal(asset.toString('ascii',8,12),'WEBP');
+const asset=readFileSync('komorebi3d/assets/textures/brands/hoshino.png');
+assert.deepEqual(asset.subarray(0,8),Buffer.from('89504e470d0a1a0a','hex'));
+
 console.log('Hoshino Coffee facade PASS: cafe/restaurant/shop/office, floors, color, UV, artwork');

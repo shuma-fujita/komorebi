@@ -2,19 +2,19 @@
 // Main city mesh snapshots remain unchanged; these are zero-thickness UV
 // surfaces on the building wall, not free-standing sign boards.
 const TEXTURE_URLS=Object.freeze({
- lawson:new URL('../assets/textures/brands/lawson.webp',import.meta.url).href,
- rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.webp',import.meta.url).href,
- yoshinoya:new URL('../assets/textures/brands/yoshinoya.webp?v=logo-refresh-20261123',import.meta.url).href,
- hidakaya:new URL('../assets/textures/brands/hidakaya.webp?v=logo-refresh-20261123',import.meta.url).href,
- tonkatsuTonichi:new URL('../assets/textures/brands/tonkatsu-tonichi.webp',import.meta.url).href,
+ lawson:new URL('../assets/textures/brands/lawson.png?v=brand-png-20261123',import.meta.url).href,
+ rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=brand-png-20261123',import.meta.url).href,
+ yoshinoya:new URL('../assets/textures/brands/yoshinoya.png?v=brand-png-20261123',import.meta.url).href,
+ hidakaya:new URL('../assets/textures/brands/hidakaya.png?v=brand-png-20261123',import.meta.url).href,
+ tonkatsuTonichi:new URL('../assets/textures/brands/tonkatsu-tonichi.png?v=brand-png-20261123',import.meta.url).href,
  mcdonalds:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  daiso:new URL('../assets/textures/brands/daiso.png',import.meta.url).href,
  gusto:new URL('../assets/textures/brands/gusto.png',import.meta.url).href,
  torikizoku:new URL('../assets/textures/brands/torikizoku.png',import.meta.url).href,
  bamiyan:new URL('../assets/textures/brands/bamiyan.png',import.meta.url).href,
  kaikatsu:new URL('../assets/textures/brands/kaikatsu.png',import.meta.url).href,
- isomaru:new URL('../assets/textures/brands/isomaru.webp',import.meta.url).href,
- hoshino:new URL('../assets/textures/brands/hoshino.webp',import.meta.url).href
+ isomaru:new URL('../assets/textures/brands/isomaru.png?v=brand-png-20261123',import.meta.url).href,
+ hoshino:new URL('../assets/textures/brands/hoshino.png?v=brand-png-20261123',import.meta.url).href
 });
 
 function perspective(fov,aspect,near,far){
