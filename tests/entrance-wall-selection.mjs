@@ -79,6 +79,31 @@ assert.equal(paintImageFacade(()=>{},{},curved,{
 }),true);
 assert.equal(curvedFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,1,
  'Actual curved facade places one UV logo, not one per bend');
+// Reproduction of the missing center-frontage logo: short OSM connector
+// walls break the old (filter-to-1.2m FIRST) algorithm into two logos even
+// though the entire street-facing wall is one continuous, gentle frontage.
+const bridge=[[0,0],[8,0],[8.5,-.12],[9,-.2],[9.5,-.12],[10,0],
+ [18,0],[18,12],[0,12]];
+const bridgeRoad=[[[-8,-9],[27,-9]]];
+const bridgeRoadEligible=eligibleFacadeWalls(bridge,bridgeRoad,[],1.2)
+ .filter(edge=>edge.roadEligible).map(edge=>edge.i);
+assert.ok(bridgeRoadEligible.includes(0)&&bridgeRoadEligible.includes(5),
+ 'Two large sides are independently road-facing');
+assert.ok(!bridgeRoadEligible.some(i=>i>=1&&i<=4),
+ 'Tiny middle walls are individually ineligible for logo placement');
+const bridged=selectLogoWalls(bridge,bridgeRoad,[]);
+assert.equal(bridged.length,1,
+ 'Tiny center connector walls must not split one shop front into two logos');
+assert.ok([0,5].includes(bridged[0]),
+ 'The representative remains on a wall wide enough for a real logo');
+const bridgeFaces=[];
+paintImageFacade(()=>{}, {},bridge,{
+ bottom:3,top:6,texture:'test',backgroundColor:0x664422,
+ texturedFaces:bridgeFaces,logoWallIndices:bridged
+});
+assert.equal(bridgeFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,1,
+ 'Actual storefront texture has just one logo across the bridged frontage');
+
 // Torikizoku style: two separate sharp street faces, each retaining a logo.
 const twoRoads=[[[0,-8],[20,-8]],[[28,0],[28,20]]];
 assert.deepEqual(selectLogoWalls(square,twoRoads,[]).sort((a,b)=>a-b),[0,1],

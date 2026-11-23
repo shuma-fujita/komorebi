@@ -140,24 +140,33 @@ function frontageGroups(edges,edgeCount){
  }
  return groups;
 }
-function frontageRepresentative(run){
- // Find the center of the WHOLE road frontage, rather than its longest edge.
- // Avoid placing a microscopic logo on a tiny OSM connector at the center.
- const length=run.reduce((sum,edge)=>sum+edge.len,0);
- const longest=Math.max(...run.map(edge=>edge.len));
+function frontageRepresentative(drawable,fullRun=drawable){
+ // Center uses the COMPLETE frontage, including tiny connector edges and
+ // locally road-ineligible walls. Only placement is limited by sign width.
+ const length=fullRun.reduce((sum,edge)=>sum+edge.len,0);
+ const longest=Math.max(...drawable.map(edge=>edge.len));
  const comfortable=Math.min(3,longest);
+ const eligible=new Set(drawable.map(edge=>edge.i));
  let offset=0;
- return run.map(edge=>{
+ return fullRun.flatMap(edge=>{
   const center=offset+edge.len/2;
   offset+=edge.len;
-  return {edge,distance:Math.abs(center-length/2),fits:edge.len>=comfortable-1e-8};
+  return eligible.has(edge.i)?
+   [{edge,distance:Math.abs(center-length/2),fits:edge.len>=comfortable-1e-8}]:[];
  }).sort((a,b)=>Number(b.fits)-Number(a.fits)||
   a.distance-b.distance||b.edge.len-a.edge.len||a.edge.i-b.edge.i)[0].edge.i;
 }
 export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null){
- const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,1.2,blockedWalls);
- const roadCandidates=candidates.filter(edge=>edge.roadEligible);
- const visible=roadCandidates.length?roadCandidates:candidates;
- return frontageGroups(visible,polygon?.length||0)
-  .map(frontageRepresentative);
+ // Recognize whole contiguous frontages BEFORE asking whether each tiny OSM
+ // wall individually faces the road. Otherwise a short / oblique middle wall
+ // creates two separate signs on the sides of one continuous storefront.
+ // Unblocked walls too short for a logo still bridge the visual frontage.
+ const structure=eligibleFacadeWalls(polygon,roads,otherBuildings,0,blockedWalls);
+ const groups=frontageGroups(structure,polygon?.length||0);
+ const roadGroups=groups.filter(run=>run.some(edge=>edge.roadEligible));
+ const selected=roadGroups.length?roadGroups:groups;
+ return selected.flatMap(run=>{
+  const drawable=run.filter(edge=>edge.len>=1.2);
+  return drawable.length?[frontageRepresentative(drawable,run)]:[];
+ });
 }
