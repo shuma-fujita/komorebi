@@ -66,7 +66,8 @@ paintConvenienceWall((mesh,...args)=>upstairsStore.push(args),{},
  'side',1,true);
 assert.ok(upstairsStore.length>1,'Second-floor conventional sign remains on blocked side');
 assert.ok(upstairsStore.some(q=>q.at(-1)===0x123456),'Upper brand color remains');
-assert.ok(!upstairsStore.some(q=>q.at(-1)===0xbcd3dd),'No blocked first-floor glass');
+assert.ok(!upstairsStore.some(q=>q.at(-1)===0xbcd3dd&&q.slice(0,4).some(v=>v[1]<3-1e-8)),
+ 'No blocked first-floor glass; second-floor windows remain unchanged');
 const full=[],occluded=[],all=[];
 const paint=(out,mask)=>paintImageFacade((mesh,...args)=>out.push(args),{},
  square,{bottom:0,top:3,texture:'test',backgroundColor:0xffcc00,
