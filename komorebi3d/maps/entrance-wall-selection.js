@@ -115,46 +115,68 @@ export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=
 // edges form one frontage; a sharp building corner starts another one.
 // Separate non-adjacent frontages remain independent even when parallel.
 const FRONTAGE_CORNER_COS=Math.cos(70*Math.PI/180);
+const SHORT_CONNECTOR_M=1;
+const MAX_CONNECTOR_RUN_M=2;
+const CONNECTOR_SAME_SIDE_COS=Math.cos(35*Math.PI/180);
 function frontageGroups(edges,edgeCount){
  if(!edges.length||!Number.isInteger(edgeCount)||edgeCount<3)return [];
  const byIndex=new Map(edges.map(edge=>[edge.i,edge]));
+ const next=i=>(i+1)%edgeCount,prev=i=>(i+edgeCount-1)%edgeCount;
+ const forcedJoin=new Set(),forcedBreak=new Set();
+ // Tiny OSM jogs can point almost sideways despite connecting two walls
+ // facing the same direction. Compare the walls on BOTH sides of the jog.
+ // A chamfer at a real corner must never merge perpendicular storefronts.
+ for(const first of edges){
+  if(first.len>=SHORT_CONNECTOR_M)continue;
+  const before=byIndex.get(prev(first.i));
+  if(!before||before.len<SHORT_CONNECTOR_M)continue;
+  const run=[];let index=first.i,after=null;
+  for(let n=0;n<edgeCount;n++,index=next(index)){
+   const edge=byIndex.get(index);
+   if(!edge)break;
+   if(edge.len>=SHORT_CONNECTOR_M){after=edge;break;}
+   run.push(edge);
+  }
+  if(!after||!run.length)continue;
+  const span=run.reduce((sum,edge)=>sum+edge.len,0);
+  if(span>MAX_CONNECTOR_RUN_M)continue;
+  const alignment=before.normal[0]*after.normal[0]+before.normal[1]*after.normal[1];
+  if(alignment>CONNECTOR_SAME_SIDE_COS){
+   forcedJoin.add(before.i);
+   for(const edge of run)forcedJoin.add(edge.i);
+  }else if(alignment<=FRONTAGE_CORNER_COS){
+   forcedBreak.add(run.at(-1).i);
+  }
+ }
  const joined=(i,j)=>{
   const a=byIndex.get(i),b=byIndex.get(j);
-  return !!a&&!!b&&
+  if(!a||!b||forcedBreak.has(i))return false;
+  return forcedJoin.has(i)||
    a.normal[0]*b.normal[0]+a.normal[1]*b.normal[1]>FRONTAGE_CORNER_COS;
  };
- const starts=edges.filter(edge=>!joined((edge.i+edgeCount-1)%edgeCount,edge.i));
+ const starts=edges.filter(edge=>!joined(prev(edge.i),edge.i));
  // A completely smooth closed outline is one continuous frontage.
  if(!starts.length)starts.push(edges.reduce((a,b)=>a.i<b.i?a:b));
  const visited=new Set(),groups=[];
  for(const start of starts){
   if(visited.has(start.i))continue;
   const run=[];
-  for(let i=start.i;!visited.has(i);i=(i+1)%edgeCount){
+  for(let i=start.i;!visited.has(i);i=next(i)){
    const edge=byIndex.get(i);
    if(!edge)break;
    run.push(edge);visited.add(i);
-   if(!joined(i,(i+1)%edgeCount))break;
+   if(!joined(i,next(i)))break;
   }
   if(run.length)groups.push(run);
  }
  return groups;
 }
-function frontageRepresentative(drawable,fullRun=drawable){
- // Center uses the COMPLETE frontage, including tiny connector edges and
- // locally road-ineligible walls. Only placement is limited by sign width.
- const length=fullRun.reduce((sum,edge)=>sum+edge.len,0);
- const longest=Math.max(...drawable.map(edge=>edge.len));
- const comfortable=Math.min(3,longest);
- const eligible=new Set(drawable.map(edge=>edge.i));
- let offset=0;
- return fullRun.flatMap(edge=>{
-  const center=offset+edge.len/2;
-  offset+=edge.len;
-  return eligible.has(edge.i)?
-   [{edge,distance:Math.abs(center-length/2),fits:edge.len>=comfortable-1e-8}]:[];
- }).sort((a,b)=>Number(b.fits)-Number(a.fits)||
-  a.distance-b.distance||b.edge.len-a.edge.len||a.edge.i-b.edge.i)[0].edge.i;
+function frontageRepresentative(drawable){
+ // Count walls large enough to carry a readable sign, not tiny OSM
+ // subdivisions. Pick the middle face (longer middle on even counts),
+ // rather than the midpoint in metres dominated by one oversized wall.
+ const comfortable=Math.min(3,Math.max(...drawable.map(edge=>edge.len)));
+ return centralEdge(drawable.filter(edge=>edge.len>=comfortable-1e-8)).i;
 }
 export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null){
  // Recognize whole contiguous frontages BEFORE asking whether each tiny OSM
@@ -167,6 +189,6 @@ export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=
  const selected=roadGroups.length?roadGroups:groups;
  return selected.flatMap(run=>{
   const drawable=run.filter(edge=>edge.len>=1.2);
-  return drawable.length?[frontageRepresentative(drawable,run)]:[];
+  return drawable.length?[frontageRepresentative(drawable)]:[];
  });
 }

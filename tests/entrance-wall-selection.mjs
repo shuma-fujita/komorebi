@@ -104,6 +104,35 @@ paintImageFacade(()=>{}, {},bridge,{
 assert.equal(bridgeFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,1,
  'Actual storefront texture has just one logo across the bridged frontage');
 
+// Real Matsudo Geofabrik footprint (13 sides, metres relative to its POI).
+// The 0.44m sideways jog must join parallel neighbours; only the central
+// sufficiently wide face gets a sign. No store ID or name enters production logic.
+const irregular=[[1.011,16.754],[6.385,-2.772],[2.845,-9.117],[1.463,-9.462],
+ [1.535,-9.896],[-2.240,-10.631],[-2.438,-10.186],[-3.305,-10.375],
+ [-6.114,1.558],[-5.066,1.870],[-6.032,5.622],[-5.445,5.855],[-7.495,14.817]];
+const irregularRoads=[[[8.4,4.4],[9.9,6.6]],[[-51.8,-24.7],[3.1,-11.5]],
+ [[3.1,-11.5],[7,-8.8]],[[7,-8.8],[9,-5.4]],
+ [[8.4,4.4],[4.1,19.9]],[[5.2,10.8],[8,1.2]]];
+const irregularBlocked=new Set([7,9,11,12]);
+const irregularLogos=selectLogoWalls(irregular,irregularRoads,[],irregularBlocked);
+assert.deepEqual(irregularLogos,[1],
+ 'Tiny sharp jogs between near-parallel faces form one frontage with a middle logo');
+assert.equal(selectEntranceWall(irregular,irregularRoads,[],4,irregularBlocked),0,
+ 'Logo grouping does not alter the existing automatic door selector');
+const irregularFaces=[];
+paintImageFacade(()=>{}, {},irregular,{
+ bottom:3,top:6,texture:'test',backgroundColor:0x664422,
+ texturedFaces:irregularFaces,blockedWalls:irregularBlocked,
+ logoWallIndices:irregularLogos
+});
+assert.equal(irregularFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,1,
+ 'Real irregular footprint emits one logo UV surface');
+
+// A tiny 45-degree chamfer at a TRUE right-angle corner is not a bridge.
+const chamfer=[[0,0],[19.5,0],[20,.5],[20,20],[0,20]];
+assert.deepEqual(selectLogoWalls(chamfer,[[[0,-8],[20,-8]],[[28,0],[28,20]]],[]).sort((a,b)=>a-b),[0,2],
+ 'Perpendicular street frontages remain separate despite a tiny corner chamfer');
+
 // Torikizoku style: two separate sharp street faces, each retaining a logo.
 const twoRoads=[[[0,-8],[20,-8]],[[28,0],[28,20]]];
 assert.deepEqual(selectLogoWalls(square,twoRoads,[]).sort((a,b)=>a-b),[0,1],
