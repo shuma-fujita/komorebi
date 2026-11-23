@@ -5,9 +5,13 @@ import {paintKaikatsuFacade} from '../komorebi3d/objects/buildings/leisure/kaika
 import {paintHidakayaFacade} from '../komorebi3d/objects/buildings/food/hidakaya-sign.js';
 import {paintYoshinoyaFacade} from '../komorebi3d/objects/buildings/food/yoshinoya-sign.js';
 import {paintLogoBuilding} from '../komorebi3d/objects/buildings/logos/osm-adapter.js';
+import {imageFacadeMode} from '../komorebi3d/objects/buildings/brand-facade.js';
 import {entranceLogoSize,conveniencePanelLayout,paintConvenienceFasciaDividers} from '../komorebi3d/objects/buildings/convenience/common.js';
 
 const polygon=[[0,0],[24,0],[24,20],[0,20]];
+assert.equal(imageFacadeMode({bottom:0,top:3,groundGlassTop:3}),'ground-only');
+assert.equal(imageFacadeMode({bottom:0,top:6,groundGlassTop:3}),'ground-and-upper');
+assert.equal(imageFacadeMode({bottom:3,top:6}),'upper-only');
 const shared=entranceLogoSize(24,.6,1.5,{fit:true});
 assert.ok(Math.abs(shared.height-.546)<1e-8,'Image logo height matches legacy 91% fascia scale');
 assert.ok(Math.abs(shared.width-.819)<1e-8,'Image logo respects image aspect ratio');
@@ -71,7 +75,13 @@ for(const painter of [paintIsomaruFacade,paintKaikatsuFacade]){
  assert.ok(ground.quads.filter(q=>q.color===0xbcd3dd).every(q=>q.c[1]<=2.4+1e-8),
   'Glass ends at 80% of ground floor height');
  const multi=draw(painter,{bottom:0,top:12,groundGlassTop:3});
- assert.deepEqual(logos(multi.face),[7.2],'Four-floor group centers its logo on fascia + upper walls');
+ assert.deepEqual(logos(multi.face),[7.2],'Multi-floor entrance has one logo on its continuous facade');
+ assert.ok(multi.face.positions.some((y,i)=>i%3===1&&Math.abs(y-(7.2-1.325))<1e-8),
+  'Multi-floor entrance uses the larger 2.65m-tall brand logo');
+ assert.ok(!multi.quads.some(q=>q.color===0x8c9497||q.color===0xc3c9cb),
+  'Multi-floor glazing and fascia omit convenience-only gray seams');
+ assert.ok(multi.quads.some(q=>q.color===0xb7d0db),
+  'Multi-floor entrance retains automatic sliding doors');
  checkFlushUV(multi.face,.012);
  assert.ok(multi.quads.some(q=>q.color===0xbcd3dd));
  assert.ok(multi.quads.every(q=>q.color!==0xbcd3dd||q.c[1]<=2.4+1e-8),
@@ -125,6 +135,9 @@ for(const painter of [paintHidakayaFacade,paintYoshinoyaFacade]){
  }
  assert.ok(facadeSeams.every(q=>q.a[2]<-.012),
   'Gray fascia separators sit in front of the flush-mounted UV image');
+ const multi=draw(painter,{bottom:0,top:6,groundGlassTop:3});
+ assert.equal(multi.quads.filter(q=>q.color===0xc3c9cb||q.color===0x8c9497).length,0,
+  'Any image brand: upper-contiguous occupancy omits gray storefront separators');
  const obstructed=draw(painter,{bottom:0,top:3,groundGlassTop:3,blockedWalls:new Set([0])});
  assert.equal(obstructed.quads.filter(q=>q.color===0xc3c9cb).length,0,
   'Neighbor-blocked entrance facade must not gain gray separators');

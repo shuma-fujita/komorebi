@@ -59,7 +59,8 @@ const baseHeight=logoCenters(baseline[0]).heights[0];
 const groundBaseline=build(poi(880002,'磯丸水産',{amenity:'pub'},'0')).texturedFaces;
 assert.equal(groundBaseline.length,1);
 const groundHeight=logoCenters(groundBaseline[0]).heights[0];
-assert.ok(groundHeight<baseHeight,'Ground entrance sign now uses the shared convenience fascia size');
+assert.ok(groundHeight<baseHeight,'Ground-only stores use the compact convenience sign');
+assert.ok(Math.abs(baseHeight-2.65)<1e-8,'Full-size upper-floor brand logo remains 2.65m');
 for(const [name,level,low,high,center] of [
  ['磯丸水産','2;3;4',6,15,10.5], // Three floors -> middle floor
  ['磯丸水産','0;1;2',0,9,5.7],  // Ground joins the upper levels
@@ -74,8 +75,8 @@ for(const [name,level,low,high,center] of [
  assert.equal(logos.centers.length,level.startsWith('0;')?1:4,
   'Ground-inclusive groups use entrance face only; upper-only groups keep four faces');
  for(const y of logos.centers)assert.ok(Math.abs(y-center)<1e-8,'Logo must be vertically centered');
- for(const h of logos.heights)assert.ok(Math.abs(h-(level.startsWith('0;')?groundHeight:baseHeight))<1e-8,
-  'Image logo size stays fixed within ground-entry or upper-only mode');
+ for(const h of logos.heights)assert.ok(Math.abs(h-baseHeight)<1e-8,
+  'Ground+upper groups restore the full-size brand logo; upper-only stays unchanged');
 }
 const split=build(poi(880002,'磯丸水産',{amenity:'pub'},'0;1;3;4')).texturedFaces;
 assert.equal(split.length,2,'Non-contiguous groups keep separate centered logos');

@@ -25,7 +25,8 @@ test('Rakuten logo is only on entrance face directly above glazing, other walls 
  assert.equal(faces.length,1);
  const surface=faces[0];
  assert.equal(surface.texture,'rakutenMobile');
- // Full-image UV corners only occur on the entrance face, inside the 0.6 m fascia.
+ // Even when Rakuten extends upstairs, one entrance-side logo occupies the
+ // continuous branded wall above glass, rather than the tiny 1F sign band.
  const vertices=[];
  for(let i=0;i<surface.positions.length;i+=3)vertices.push({
   x:surface.positions[i],y:surface.positions[i+1],z:surface.positions[i+2],
@@ -33,9 +34,27 @@ test('Rakuten logo is only on entrance face directly above glazing, other walls 
  });
  const logo=vertices.filter(v=>(v.u===0||v.u===1)&&(v.v===0||v.v===1));
  assert.equal(logo.length,6);
- assert.ok(logo.every(v=>v.y>=2.4&&v.y<=3));
+ assert.ok(logo.every(v=>v.y>2.4&&v.y<6));
+ assert.ok(logo.some(v=>v.y>3),'Multi-floor Rakuten uses the upper brand wall');
+ assert.ok(!quads.some(q=>q[4]===0xc3c9cb||q[4]===0x8c9497));
+ assert.ok(quads.some(q=>q[4]===0xb7d0db));
  assert.ok(logo.every(v=>Math.abs(v.z)<.3));
  assert.ok(quads.some(q=>q[4]===0xe80288));
+});
+test('Rakuten ground-only entry keeps the compact convenience band and gray seams',()=>{
+ const quads=[],faces=[];
+ assert.equal(paintRakutenMobileFacade((...args)=>quads.push(args),{},polygon,{
+  bottom:0,top:3,groundGlassTop:3,entranceEdgeIndex:0,texturedFaces:faces
+ }),true);
+ const ys=[];
+ for(let i=0;i<faces[0].uvs.length;i+=12){
+  const u=faces[0].uvs.slice(i,i+12).join(',');
+  if(['1,0,0,0,0,1,1,0,0,1,1,1','0,0,1,0,1,1,0,0,1,1,0,1'].includes(u))
+   ys.push(faces[0].positions[i/12*18+1]);
+ }
+ assert.equal(ys.length,1);
+ assert.ok(ys.every(y=>y>2.4&&y<3));
+ assert.ok(quads.some(q=>q[4]===0x8c9497));
 });
 test('Rakuten does not put a logo on unrelated walls without an eligible entrance',()=>{
  const faces=[];

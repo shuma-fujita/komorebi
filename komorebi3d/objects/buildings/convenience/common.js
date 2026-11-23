@@ -154,7 +154,7 @@ export function drawConvenienceRoof(part,quad,brandId,{width=8,depth=6,height=4,
 // Reusable geometry-only facade glazing. Coordinates are along a flat wall:
 // rect(start,end,bottom,top,color,outwardOffset). The caller supplies its wall
 // orientation; neither the glazing nor the door knows about OSM.
-export function paintConvenienceGlazing(rect,{length,bottom=0,top,side='front',backWall=false,doorWidth=CONVENIENCE_DOOR_WIDTH_M}){
+export function paintConvenienceGlazing(rect,{length,bottom=0,top,side='front',backWall=false,doorWidth=CONVENIENCE_DOOR_WIDTH_M,grayEntranceSeams=true}){
  if(!(length>0&&top>bottom))return false;
  const layout=conveniencePanelLayout(length,{entrance:side==='front',doorWidth});
  const frame=.065,glassBottom=bottom+.06,glass=0xbcd3dd,frameColor=0x273b47;
@@ -170,11 +170,13 @@ export function paintConvenienceGlazing(rect,{length,bottom=0,top,side='front',b
   rect(start,start+frame,glassBottom,top,frameColor,.018);
   rect(end-frame,end,glassBottom,top,frameColor,.018);
   rect(length/2-frame/2,length/2+frame/2,glassBottom,top,frameColor,.019);
-  // Same visible gray seam between automatic doors and adjacent windows
-  // for legacy convenience signs and image-logo storefronts.
-  const seamColor=0x8c9497,seamWidth=.065;
-  for(const x of [start,end])
-   rect(x-seamWidth/2,x+seamWidth/2,glassBottom,top,seamColor,.03);
+  // The 1F-only convenience mode has gray entrance separators. A shop
+  // continuing upstairs keeps its glass/doors but omits those gray strips.
+  if(grayEntranceSeams){
+   const seamColor=0x8c9497,seamWidth=.065;
+   for(const x of [start,end])
+    rect(x-seamWidth/2,x+seamWidth/2,glassBottom,top,seamColor,.03);
+  }
   const handleY=bottom+(top-bottom)*.46,handleH=Math.min(.32,(top-bottom)*.16);
   rect(length/2-.12,length/2-.095,handleY,handleY+handleH,0x304957,.025);
   rect(length/2+.095,length/2+.12,handleY,handleY+handleH,0x304957,.025);
