@@ -57,15 +57,22 @@ const wall=(out,obstructed)=>paintConvenienceWall((mesh,...args)=>out.push(args)
  'side',1,obstructed);
 wall(blank,false);wall(blockedPaint,true);
 assert.ok(blank.length>1,'Accessible walls still draw storefront glass and signage');
-assert.equal(blockedPaint.length,1,'Obstructed convenience wall is plain building color');
-assert.equal(blockedPaint[0].at(-1),0x8899aa);
+assert.ok(blockedPaint.length>1,'Blocked side retains upper storefront sign');
+assert.ok(blockedPaint.some(q=>q.at(-1)===0x8899aa),'Blocked glass zone uses building color');
+assert.ok(!blockedPaint.some(q=>q.at(-1)===0xbcd3dd),'Blocked side has no glazing');
 const full=[],occluded=[],all=[];
 const paint=(out,mask)=>paintImageFacade((mesh,...args)=>out.push(args),{},
  square,{bottom:0,top:3,texture:'test',backgroundColor:0xffcc00,
  texturedFaces:[],groundGlassTop:3,entranceEdgeIndex:3,blockedWalls:mask});
 assert.equal(paint(full,new Set()),true);
 assert.equal(paint(occluded,blocked),true);
-assert.ok(full.length>occluded.length,'Occluded image facades do not render glass or color overlays');
-assert.equal(paint(all,new Set([0,1,2,3])),false,'Fully occluded logo storefront stays plain');
-assert.equal(all.length,0,'No overlays for fully blocked storefronts');
-console.log('Shared neighbor-occlusion: entrance, conventional glass, image glass, and wall-color fallback PASS');
+assert.ok(full.length>occluded.length,'Occluded image facades omit only glass');
+assert.equal(paint(all,new Set([0,1,2,3])),true,'Upper facade stays colored even if all glass is occluded');
+assert.ok(all.length>=4,'Every upper fascia keeps its brand color');
+const upstairs=[],upstairsFaces=[];
+assert.equal(paintImageFacade((mesh,...args)=>upstairs.push(args),{},square,{bottom:3,top:6,
+ texture:'test',backgroundColor:0xffcc00,texturedFaces:upstairsFaces,blockedWalls:blocked}),true);
+assert.equal(upstairs.length,4,'Second floor brand color wraps all four walls');
+assert.equal(upstairsFaces[0].uvs.filter((v,i)=>v===1&&i%12===0).length,4,
+ 'Second floor keeps all four image logos even beside a building');
+console.log('Shared neighbor-occlusion: only lower glazing blocked; upper signs and brand wraps remain PASS');

@@ -31,7 +31,6 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  const logoWalls=[...walls].filter(w=>w.length>=1.2)
   .sort((a,b)=>b.length-a.length||a.i-b.i).slice(0,4);
  if(logoWalls.length!==4)return false;
- if(walls.every(w=>blockedWalls?.has(w.i)))return false;
  const useTexture=Array.isArray(texturedFaces);
  const withGroundGlass=Number.isFinite(groundGlassTop)&&groundGlassTop>bottom+1e-8&&groundGlassTop<=top+1e-8;
  // A branded ground floor reserves its upper 20% as the fascia.
@@ -55,14 +54,13 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   texturedQuad(surface,a,b,c,d,uv0,uv1,uv2,uv3);
  }
  for(const wall of walls){
-  // Keep the original building wall material on physically obstructed faces.
-  if(blockedWalls?.has(wall.i))continue;
+  // Obstruction affects only the glazed lower zone, not the upper fascia/logo.
   // This base-colored quad is also the safe fallback while the PNG loads.
   const wallBottom=logoAreaBottom;
   if(top>wallBottom+1e-8)
    quad(mesh,place(wall,0,wallBottom,.07),place(wall,wall.length,wallBottom,.07),
     place(wall,wall.length,top,.07),place(wall,0,top,.07),backgroundColor);
-  if(withGroundGlass){
+  if(withGroundGlass&&!blockedWalls?.has(wall.i)){
    // Existing convenience glass panels, with exactly one entrance edge.
    const rect=(u0,u1,y0,y1,tint,offset=0)=>{
     if(u1<=u0||y1<=y0)return;

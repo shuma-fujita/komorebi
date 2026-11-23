@@ -164,7 +164,7 @@ export function resolveConveniencePaint(stores,tags,height,inferredLevels=null){
  return unique;
 }
 
-function convenienceStoreFacade(quad,mesh,a,b,bottom,top,side,outward,brand){
+function convenienceStoreFacade(quad,mesh,a,b,bottom,top,side,outward,brand,{blocked=false,baseColor=0xa8afb5}={}){
  if(!brand.sign)return false;
  const dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz);
  if(length<.1||top-bottom<.2)return false;
@@ -179,7 +179,8 @@ function convenienceStoreFacade(quad,mesh,a,b,bottom,top,side,outward,brand){
  };
  paintConvenienceSign(rect,(p0,p1,p2,p3,t)=>quad(mesh,p0,p1,p2,p3,t),
    point,brand.sign,{length,bottom:signBottom,top,entrance});
- paintConvenienceGlazing(rect,{length,bottom,top:signBottom,
+ if(blocked)rect(0,length,bottom,signBottom,baseColor);
+ else paintConvenienceGlazing(rect,{length,bottom,top:signBottom,
    side:entrance?'front':side==='back'?'back':'side',backWall:true});
  return true;
 }
@@ -202,7 +203,7 @@ export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facade
  for(const span of spans||[]){
   if(span.bottom>cursor)wall(cursor,span.bottom,baseColor);
   // Missing or unrenderable signs must not resurrect retired wall stripes.
-  if(blocked||!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand))
+  if(!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand,{blocked,baseColor}))
    wall(span.bottom,span.top,baseColor);
   cursor=Math.max(cursor,span.top);
  }
