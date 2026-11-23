@@ -80,6 +80,7 @@ jobs:
           node tests/kaikatsu-bamiyan-facades.mjs
           node tests/isomaru-wide-facade.mjs
           node tests/logo-ground-glass.mjs
+          node tests/entrance-wall-selection.mjs
           node tests/industry-independent-logos.mjs
           node tests/no-legacy-stripes.mjs
           node tests/lawson-image-facade.mjs

@@ -3,6 +3,7 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
+import {selectEntranceWall} from './entrance-wall-selection.js?v=entrance-filter-midpoint-v1-20261123';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=no-legacy-stripes-20261123';
 import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=ground-fascia-logo-v1-20261123';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=no-legacy-stripes-20261123';
@@ -109,22 +110,12 @@ function top(m,p,h,t){
  }
  if(idx.length===3){const a=p[idx[0]],b=p[idx[1]],c=p[idx[2]];if(ccw)tri(m,[a[0],h,a[1]],[c[0],h,c[1]],[b[0],h,b[1]],t);else tri(m,[a[0],h,a[1]],[b[0],h,b[1]],[c[0],h,c[1]],t);}
 }
-function building(m,p,h,t,spans,roadSegments,tags,pinkSpans=[],foodSpans=[]){
+function building(m,p,h,t,spans,front,tags,pinkSpans=[],foodSpans=[]){
  const n=p.length,area=signedArea(p),outward=area>0?1:-1;
  const edges=p.map((a,i)=>{
   const b=p[(i+1)%n],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz)||1;
   return {a,b,len,mid:[(a[0]+b[0])/2,(a[1]+b[1])/2],normal:[outward*dz/len,-outward*dx/len]};
  });
- let front=edges.reduce((best,e,i)=>e.len>edges[best].len?i:best,0),score=Infinity;
- const eligible=edges.some(e=>e.len>=CONVENIENCE_DOOR_WIDTH_M);
- // The shared-width opening must fit on its chosen edge. Short edges cannot host doors.
- for(let i=0;i<n;i++)for(const [a,b] of roadSegments){
-  if(eligible&&edges[i].len<CONVENIENCE_DOOR_WIDTH_M)continue;
-  const mx=edges[i].mid[0],mz=edges[i].mid[1],dx=b[0]-a[0],dz=b[1]-a[1];
-  const t=Math.max(0,Math.min(1,((mx-a[0])*dx+(mz-a[1])*dz)/(dx*dx+dz*dz||1)));
-  const dist=Math.hypot(mx-a[0]-t*dx,mz-a[1]-t*dz);
-  if(dist<score){score=dist;front=i;}
- }
  let back=-1,bestDot=.35;
  for(let i=0;i<n;i++)if(i!==front){
   const dot=-(edges[front].normal[0]*edges[i].normal[0]+edges[front].normal[1]*edges[i].normal[1]);
@@ -187,6 +178,26 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  const logoBuildings=matchLogoBuildings(map.elements,xy,HALF);
  const loveHotelBuildings=matchLoveHotelBuildings(map.elements,xy,HALF);
  const inferredTenantLevels=inferBuildingLevelsFromTenants(map.elements,xy,HALF);
+ // All buildings participate in common obstruction checks, regardless of brand.
+ // Preproject them once rather than repeatedly scanning OSM geometry per wall.
+ const buildingCells=new Map(),CELL=50;
+ const cellKey=(x,z)=>x+','+z;
+ for(const way of map.elements){
+  if(!way.tags?.building||way.tags.building==='no'||!Array.isArray(way.geometry)||
+   way.geometry.length<4)continue;
+  const points=way.geometry.map(xy);
+  if(Math.hypot(points[0][0]-points.at(-1)[0],points[0][1]-points.at(-1)[1])>.5)continue;
+  points.pop();
+  if(points.length<3)continue;
+  const xs=points.map(p=>p[0]),zs=points.map(p=>p[1]);
+  const other={id:way.id,points};
+  for(let x=Math.floor(Math.min(...xs)/CELL);x<=Math.floor(Math.max(...xs)/CELL);x++)
+   for(let z=Math.floor(Math.min(...zs)/CELL);z<=Math.floor(Math.max(...zs)/CELL);z++){
+    const key=cellKey(x,z);
+    if(!buildingCells.has(key))buildingCells.set(key,[]);
+    buildingCells.get(key).push(other);
+   }
+ }
  const roadSegments=[];
  for(const way of map.elements){
   if(!way.tags?.highway||['construction','proposed'].includes(way.tags.highway))continue;
@@ -268,7 +279,14 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const buildingMesh=buildings[e.id%palette.length],buildingStart=buildingMesh.positions.length;
    const convenienceSpans=resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels);
    const foodSpans=resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels);
-   const frontEdge=building(buildingMesh,p,height,tint,convenienceSpans,roadSegments,tags,pinkSpans,foodSpans);
+   const nearby=new Map();
+   for(let x=Math.floor((minX-35)/CELL);x<=Math.floor((maxX+35)/CELL);x++)
+    for(let z=Math.floor((minZ-35)/CELL);z<=Math.floor((maxZ+35)/CELL);z++)
+     for(const other of buildingCells.get(cellKey(x,z))||[])
+      if(other.id!==e.id)nearby.set(other.id,other.points);
+   const nearbyBuildings=[...nearby.values()];
+   const frontEdge=selectEntranceWall(p,roadSegments,nearbyBuildings,CONVENIENCE_DOOR_WIDTH_M);
+   building(buildingMesh,p,height,tint,convenienceSpans,frontEdge,tags,pinkSpans,foodSpans);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
    // Only explicit tenant levels can reserve a floor against a PNG logo.
