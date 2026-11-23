@@ -43,6 +43,7 @@ jobs:
           node --check komorebi3d/local-storage-panel.js
           node --check komorebi3d/objects/buildings/store-matching.js
           node --check komorebi3d/objects/buildings/store-levels.js
+          node --check komorebi3d/objects/buildings/store-floor-zones.js
           node --check komorebi3d/objects/buildings/brand-facade.js
           node --check komorebi3d/objects/buildings/logos/brands/index.js
           node --check komorebi3d/objects/buildings/logos/matching.js
@@ -81,6 +82,7 @@ jobs:
           node tests/isomaru-wide-facade.mjs
           node tests/industry-independent-logos.mjs
           node tests/ground-glass-centered-logos.mjs
+          node tests/multi-tenant-floor-zones.mjs
           node tests/hoshino-coffee-facade.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs
