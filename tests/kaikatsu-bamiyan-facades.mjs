@@ -61,7 +61,8 @@ for(const [fn,texture,color] of [
 assert.equal(build(map({...kai.tags,level:''},{...bam.tags,level:''})).texturedFaces.length,0);
 assert.equal(build(map({...kai.tags,level:'bad'},{...bam.tags,level:'6'})).texturedFaces.length,0);
 assert.equal(build(map({...kai.tags,name:'別店舗'},{...bam.tags,name:'別店舗'})).texturedFaces.length,0);
-assert.equal(build(map({...kai.tags,level:'2'},{...bam.tags,level:'2'})).texturedFaces.length,1);
+assert.deepEqual([...new Set(build(map({...kai.tags,level:'2'},{...bam.tags,level:'2'}))
+ .texturedFaces.map(f=>f.texture))].sort(),['bamiyan','kaikatsu']);
 assert.deepEqual(build(map({...kai.tags,brand:'Kaikatsu CLUB',name:'別店舗'},
  {...bam.tags,brand:'Bamiyan',name:'別店舗'})).texturedFaces.map(f=>f.texture).sort(),['bamiyan','kaikatsu']);
 assert.equal(matchKaikatsuBuildings([building,{...kai,tags:{name:'快活CLUB',level:'1'}}],project,1000).size,0);

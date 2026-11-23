@@ -89,8 +89,9 @@ assert.equal(build(map({...gust.tags,level:'6'}, {...tori.tags,level:'7'})).text
 assert.equal(build(map({...gust.tags,name:'別のお店'})).texturedFaces.length,1);
 assert.equal(build(map({...gust.tags,name:'Gusto South',level:'0'},
  {...tori.tags,name:'TORIKIZOKU West',level:'2'})).texturedFaces.length,2);
-assert.equal(build(map({...gust.tags,level:'2'}, {...tori.tags,level:'2'})).texturedFaces.length,1,
- 'Two logos with the same explicit level may not overlap');
+assert.deepEqual([...new Set(build(map({...gust.tags,level:'2'}, {...tori.tags,level:'2'}))
+ .texturedFaces.map(f=>f.texture))].sort(),['gusto','torikizoku'],
+ 'Two logos on the same floor render in separate rectangles');
 // Real Matsudo uses amenity=pub for Torikizoku; do not require restaurant.
 assert.equal(matchFoodBuildings([building,{...tori,tags:{
  amenity:'pub',name:'鳥貴族',level:'2'}}],project,1000)
