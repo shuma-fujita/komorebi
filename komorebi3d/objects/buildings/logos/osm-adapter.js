@@ -15,14 +15,28 @@ export function identifyLogoBrand(tags={}){
 export function matchLogoBuildings(elements,project,halfSize){
  return matchLogoFootprints(elements,project,halfSize,identifyLogoBrand);
 }
+// Merge only touching floors of the same logo brand. Ground level belongs to
+// the same group when it is contiguous with upper levels: no separate fascia.
+// The existing image painter keeps its original maximum physical logo size.
+export function contiguousLogoGroups(spans){
+ const groups=[];
+ for(const span of [...spans].sort((a,b)=>a.bottom-b.bottom||a.top-b.top)){
+  const previous=groups.at(-1);
+  if(previous&&span.bottom<=previous.top+1e-8)
+   previous.top=Math.max(previous.top,span.top);
+  else groups.push({...span});
+ }
+ return groups;
+}
 export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[]){
  let count=0;
  for(const {brand,paint} of LOGO_BRANDS){
-  // Resolve brands independently; malformed metadata on one tenant cannot mask another.
-  for(const span of resolveLogoLevels(stores,tags,height,inferredLevels,brand.id)){
-   if(occupied.some(other=>span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8))continue;
-   if(paint(quad,mesh,polygon,{bottom:span.bottom,top:span.top,texturedFaces,ownerKey})){
-    occupied.push(span);count++;
+  // Preserve per-brand OSM validation and existing occupied-floor protection.
+  const spans=resolveLogoLevels(stores,tags,height,inferredLevels,brand.id);
+  for(const group of contiguousLogoGroups(spans)){
+   if(occupied.some(other=>group.bottom<other.top-1e-8&&group.top>other.bottom+1e-8))continue;
+   if(paint(quad,mesh,polygon,{bottom:group.bottom,top:group.top,texturedFaces,ownerKey})){
+    occupied.push(group);count++;
    }
   }
  }
