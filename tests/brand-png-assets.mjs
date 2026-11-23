@@ -41,7 +41,7 @@ function rgbaAt(image,positions){
  }
  const decoded=inflateSync(Buffer.concat(blocks));
  const stride=width*4,previous=Buffer.alloc(stride),pixels=[];
- let offset=0;
+ let offset=0,whitePixels=0;
  for(let y=0;y<height;y++){
   const filter=decoded[offset++],line=Buffer.alloc(stride);
   for(let i=0;i<stride;i++){
@@ -57,20 +57,25 @@ function rgbaAt(image,positions){
    assert.ok(filter<=4,'valid PNG row filter');
    line[i]=(decoded[offset++]+predictor)&255;
   }
+  if(y>height*.2&&y<height*.8)
+   for(let x=Math.floor(width*.08);x<Math.ceil(width*.92);x++){
+    const i=x*4;
+    if(line[i]>230&&line[i+1]>220&&line[i+2]>220)whitePixels++;
+   }
   for(const [x,py] of positions)
    if(py===y)pixels.push({x,y,color:[...line.subarray(x*4,x*4+4)]});
   line.copy(previous);
  }
+ pixels.whitePixels=whitePixels;
  return pixels;
 }
 const rakuten=png('komorebi3d/assets/textures/brands/rakuten-mobile.png');
 const w=rakuten.width,h=rakuten.height;
 const samples=rgbaAt(rakuten,[[0,0],[w-1,0],[0,h-1],[w-1,h-1],[0,Math.floor(h/2)],[w-1,Math.floor(h/2)],[Math.floor(w/2),0],[Math.floor(w/2),Math.floor(h/2)]]);
+assert.ok(samples.whitePixels>100,'Rakuten white letters remain legible across the sign');
 for(const {x,y,color} of samples){
- if(x===Math.floor(w/2)&&y===Math.floor(h/2))
-  assert.ok(color[0]>225&&color[1]>220&&color[2]>220,
-   'Rakuten white letters remain legible');
- else assert.deepEqual(color,[228,0,127,255],
+ if(x===Math.floor(w/2)&&y===Math.floor(h/2))continue;
+ assert.deepEqual(color,[228,0,127,255],
   'Rakuten image outline matches wall magenta at '+x+','+y);
 }
 const moduleSource=readFileSync('komorebi3d/maps/map-facade-textures.js','utf8');
