@@ -29,5 +29,5 @@ const reversed=[];paintIsomaruFacade(()=>{},{},[...corners].reverse(),{bottom:6,
 assert.equal(reversed[0].uvs.filter((_,i)=>i%12===0&&uvA.includes(reversed[0].uvs.slice(i,i+12).join(','))).length,4);
 assert.equal(buildMap(map({...store.tags,level:''}),{latitude:lat,longitude:lon,halfSize:1000}).texturedFaces.length,0);
 assert.equal(buildMap(map({...store.tags,level:'6'}),{latitude:lat,longitude:lon,halfSize:1000}).texturedFaces.length,0);
-const asset=readFileSync('komorebi3d/assets/textures/brands/isomaru.webp');assert.equal(asset.toString('ascii',0,4),'RIFF');assert.equal(asset.toString('ascii',8,12),'WEBP');assert.equal(asset.readUInt16LE(26)>0,true);
+const asset=readFileSync('komorebi3d/assets/textures/brands/isomaru.png');assert.deepEqual(asset.subarray(0,8),Buffer.from('89504e470d0a1a0a','hex'));assert.ok(asset.readUInt32BE(16)>0);
 console.log('Isomaru wide facade PASS');
