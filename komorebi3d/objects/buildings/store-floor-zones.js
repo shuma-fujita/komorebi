@@ -128,7 +128,9 @@ function drawPart(quad,mesh,p,span,store,entrance,centerY,texturedFaces,ownerKey
    if(xb>xa&&yb>ya){
     textured(xa,xb,span.bottom,ya,solid);
     textured(xa,xb,yb,span.top,solid);
-    const u0=(xa-x0)/width,u1=(xb-x0)/width,v0=(ya-y0)/h,v1=(yb-y0)/h;
+    const clamp01=n=>Math.max(0,Math.min(1,n));
+    const u0=clamp01((xa-x0)/width),u1=clamp01((xb-x0)/width);
+    const v0=clamp01((ya-y0)/h),v1=clamp01((yb-y0)/h);
     const uv=outward>0?[[1-u0,v0],[1-u1,v0],[1-u1,v1],[1-u0,v1]]:
      [[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
     textured(xa,xb,ya,yb,uv);

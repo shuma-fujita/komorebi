@@ -51,6 +51,14 @@ const upper=map(poi(81,-14,-2,'ガスト',{level:'1;2;3'}),poi(82,15,4,'星乃�
 const upperRender=render(upper);
 assert.ok(upperRender.texturedFaces.some(f=>f.texture==='gusto'));
 assert.ok(upperRender.texturedFaces.some(f=>f.texture==='hoshino'));
+const gustoUV=upperRender.texturedFaces.filter(f=>f.texture==='gusto')
+ .flatMap(face=>{const r=[];for(let i=0;i<face.uvs.length;i+=12)
+  if(face.uvs.slice(i,i+12).some(v=>v!==.04))r.push(face.positions.slice(i/12*18,i/12*18+18));
+ return r;});
+assert.ok(gustoUV.length>0,'Gusto keeps a centered mark with its middle floor shared');
+assert.ok(gustoUV.every(points=>points.every((value,i)=>i%3!==1||value>=6-1e-8&&value<=9+1e-8)),
+ 'No duplicate Gusto logo on the first or last upper floor');
+
 const missing=map(poi(90,0,0,'星乃珈琲店',{level:''}));
 assert.equal(render(missing).texturedFaces.length,0);
 console.log('Multi-tenant floor districts PASS: 1/2/3/4 shops, separate glass, logos, upper, missing level');

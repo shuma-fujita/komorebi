@@ -271,8 +271,10 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // Only floors shared by multiple tenants, or ground-floor unnamed-brand
    // tenants, need the new rectangular zoning renderer. All other floors keep
    // their already-proven facade rendering and centered-upper logo behavior.
-   const zoned=floors.filter(f=>f.stores.length>1||
-    f.bottom<1e-7&&f.stores.some(s=>s.brand.id==='unbranded'));
+   const hasSharedFloor=floors.some(f=>f.stores.length>1);
+   // A shared floor must not create extra logos above/below the shared floor.
+   const zoned=floors.filter(f=>hasSharedFloor||
+    f.bottom<1e-7&&f.stores.some(s=>!s.brand.texture));
    const floorKey=(bottom)=>bottom.toFixed(7);
    const zonedKeys=new Set(zoned.map(f=>floorKey(f.bottom)));
    const filterStores=stores=>(stores||[]).map(store=>{
