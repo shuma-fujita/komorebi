@@ -116,12 +116,15 @@ assert.equal(render(node.tags,[otherTenant]).texturedFaces.length,0,
  'DAISO must not paint over an existing convenience-store facade');
 const unknownFloorYoshinoya={type:'node',id:222999888,version:1,...coord(1,0),
  tags:{amenity:'fast_food',name:'吉野家'}};
-assert.equal(render(node.tags,[unknownFloorYoshinoya]).texturedFaces.length,1,
- 'A legacy food storefront with UNKNOWN level may not block an explicit DAISO floor');
+assert.deepEqual(render(node.tags,[unknownFloorYoshinoya]).texturedFaces.map(f=>f.texture),['daiso'],
+ 'A logo tenant with UNKNOWN level may not block an explicitly leveled DAISO floor');
 const knownFloorYoshinoya={...unknownFloorYoshinoya,
  tags:{...unknownFloorYoshinoya.tags,level:'1'}};
-assert.equal(render(node.tags,[knownFloorYoshinoya]).texturedFaces.length,0,
- 'A shop with the same explicit level still reserves the wall');
+assert.deepEqual(render(node.tags,[knownFloorYoshinoya]).texturedFaces.map(f=>f.texture),['daiso'],
+ 'One explicit shared floor must have one image facade, never both DAISO and Yoshinoya');
+assert.deepEqual(render({...node.tags,name:'架空書店'},[knownFloorYoshinoya])
+ .texturedFaces.map(f=>f.texture),['yoshinoya'],
+ 'Yoshinoya must paint its own level when DAISO is absent');
 const otherMc={type:'node',id:444333222,version:1,...coord(2,0),
  tags:{amenity:'fast_food',name:'マクドナルド',level:'2'}};
 assert.deepEqual(render(node.tags,[otherMc]).texturedFaces.map(s=>s.texture).sort(),

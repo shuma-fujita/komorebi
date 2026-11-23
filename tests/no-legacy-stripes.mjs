@@ -10,7 +10,12 @@ import {hidakaya} from '../komorebi3d/objects/buildings/food/hidakaya.js';
 import {paintConvenienceWall} from '../komorebi3d/objects/buildings/convenience/osm-adapter.js';
 import {paintFoodWall} from '../komorebi3d/objects/buildings/food/common.js';
 
-const brands=[sevenEleven,familymart,ministop,lawson,lawsonStore100,yoshinoya,hidakaya];
+// Only legacy convenience storefronts retain signs. Food image brands use UV instead.
+const brands=[sevenEleven,familymart,ministop,lawson,lawsonStore100];
+for(const brand of [yoshinoya,hidakaya]){
+ assert.equal(Object.hasOwn(brand,'sign'),false,brand.id+' must not resurrect legacy sign glyphs');
+ assert.equal(Object.hasOwn(brand,'stripes'),false,brand.id+' must not resurrect stripes');
+}
 const a=[0,0],b=[8,0],baseColor=0xa8afb5;
 for(const brand of brands){
  assert.ok(brand.sign,brand.id+' must retain its storefront sign');
@@ -31,4 +36,4 @@ const partial=[];
 paintConvenienceWall((mesh,...args)=>partial.push(args),{},a,b,9,baseColor,[{bottom:3,top:6,brand:fallback}]);
 assert.equal(partial.length,3,'Fallback keeps untouched floors and plain occupied wall');
 assert.ok(partial.every(args=>args.at(-1)===baseColor));
-console.log('Legacy stripe removal PASS: 7 brands, glass, doors, signs and plain-wall fallback');
+console.log('Legacy stripe removal PASS: 5 convenience signs, 2 retired food signs, plain-wall fallback');

@@ -20,7 +20,9 @@ const cases=[
  ['ガスト 松戸店',{shop:'yes'},'gusto'],
  ['バーミヤン 松戸店',{amenity:'pub'},'bamiyan'],
  ['鳥貴族 松戸店',{shop:'yes'},'torikizoku'],
- ['磯丸水産 松戸駅前店',{},'isomaru']
+ ['磯丸水産 松戸駅前店',{},'isomaru'],
+ ['吉野家 松戸駅前店',{amenity:'fast_food'},'yoshinoya'],
+ ['熱烈中華食堂日高屋 松戸店',{amenity:'restaurant'},'hidakaya']
 ];
 for(const [name,category,texture] of cases){
  const tenant=poi(880002,name,category);
@@ -82,4 +84,4 @@ assert.equal(resolveFoodPaint(matchFoodBuildings(map(mcd).elements,project,1000)
 const painted=[];
 const matched=matchLogoBuildings(map(mcd).elements,project,1000).get(building.id);
 assert.equal(paintLogoBuilding(()=>{}, {},[[0,0],[24,0],[24,20],[0,20]],matched,building.tags,18,null,painted,'way/880001',[]),1);
-console.log('Industry-independent logos: 10 categories, 7 brands, multi-floor, guards and legacy PASS');
+console.log('Industry-independent logos: category independence, Yoshinoya/Hidakaya migration, multi-floor and guards PASS');
