@@ -54,7 +54,11 @@ export function paintConvenienceFasciaDividers(rect,{length,bottom,top,entrance=
  if(!(length>0&&top>bottom))return false;
  const layout=conveniencePanelLayout(length,{entrance});
  const frame=.065;
- paintConvenienceFasciaDividers(rect,{length,bottom,top,entrance});
+ for(let i=1;i<layout.segments.length;i++){
+  const boundary=layout.segments[i].start;
+  if(layout.door&&Math.abs(boundary-length/2)<.00001)continue;
+  rect(boundary-frame/2,boundary+frame/2,bottom,top,0xc3c9cb,.008);
+ }
  return true;
 }
 
@@ -64,7 +68,6 @@ export function paintConvenienceSign(rect,quad,point,sign,{length,bottom,top,ent
  if(!sign||!(length>0&&top>bottom))return false;
  const layout=conveniencePanelLayout(length,{entrance});
  const bandHeight=top-bottom;
- const frame=.065;
  // One regular sign directly above each window.
  for(const seg of layout.segments){
   rect(seg.start,seg.end,bottom,top,sign.background);
@@ -76,11 +79,7 @@ export function paintConvenienceSign(rect,quad,point,sign,{length,bottom,top,ent
    rect(seg.start,seg.end,bottom,bottom+bandHeight*.11,sign.lower,.006);
   }
  }
- for(let i=1;i<layout.segments.length;i++){
-  const boundary=layout.segments[i].start;
-  if(layout.door&&Math.abs(boundary-length/2)<.00001)continue;
-  rect(boundary-frame/2,boundary+frame/2,bottom,top,0xc3c9cb,.008);
- }
+ paintConvenienceFasciaDividers(rect,{length,bottom,top,entrance});
  if(!layout.door)return true;
  const start=layout.door.start,end=layout.door.end;
  rect(start,end,bottom,top,sign.logo?.background??sign.background,.012);
