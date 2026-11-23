@@ -13,6 +13,14 @@ function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
   surface.uvs.push(...uv);
  }
 }
+// A shared occupancy rule determines the facade, never a brand-name condition.
+export function imageFacadeMode({bottom,top,groundGlassTop}={}){
+ const ground=Number.isFinite(bottom)&&Number.isFinite(top)&&Number.isFinite(groundGlassTop)&&
+  groundGlassTop>bottom+1e-8&&groundGlassTop<=top+1e-8;
+ if(!ground)return 'upper-only';
+ return top>groundGlassTop+1e-8?'ground-and-upper':'ground-only';
+}
+
 export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
@@ -36,7 +44,9 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   .sort((a,b)=>b.length-a.length||a.i-b.i).slice(0,4);
  if(logoWalls.length!==4)return false;
  const useTexture=Array.isArray(texturedFaces);
- const withGroundGlass=Number.isFinite(groundGlassTop)&&groundGlassTop>bottom+1e-8&&groundGlassTop<=top+1e-8;
+ const facadeMode=imageFacadeMode({bottom,top,groundGlassTop});
+ const withGroundGlass=facadeMode!=='upper-only';
+ const isGroundOnly=facadeMode==='ground-only';
  // A branded ground floor reserves its upper 20% as the fascia.
  // The glazing ends below it; logos occupy only fascia + contiguous upper walls.
  const glassTop=withGroundGlass?bottom+(groundGlassTop-bottom)*.8:bottom;
@@ -83,8 +93,8 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
      place(wall,u1,y1,.09+offset),place(wall,u0,y1,.09+offset),tint);
    };
    paintConvenienceGlazing(rect,{length:wall.length,bottom,top:glassTop,
-    side:wall.i===entranceEdgeIndex?'front':'side'});
-   if(wall.i===entranceEdgeIndex){
+    side:wall.i===entranceEdgeIndex?'front':'side',grayEntranceSeams:isGroundOnly});
+   if(isGroundOnly&&wall.i===entranceEdgeIndex){
     // The glass-frame seam must continue through the fascia above the
     // automatic doors, just as it does on Seven-Eleven / FamilyMart.
     // Keep separators slightly ahead of the shared flush UV image layer.
@@ -107,11 +117,11 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   // Preserve original image aspect ratio; square brands retain exact dimensions.
   // Optional convenience-style placement keeps the image immediately above
   // the automatic door, inside the ground-floor fascia rather than the upper wall.
-  const fasciaOnly=logoOnGroundFasciaOnly&&withGroundGlass;
+  const fasciaOnly=logoOnGroundFasciaOnly&&isGroundOnly;
   const imageAreaTop=fasciaOnly?groundGlassTop:top;
-  // A ground-floor logo uses the exact same physical sign-size rule as
-  // FamilyMart / 7-Eleven, regardless of brand, while retaining its center.
-  const entranceSize=withGroundGlass
+  // Convenience-scale signs apply to ground-only occupancy; continuous
+  // upper-storey branding restores the full-height logo above the door.
+  const entranceSize=isGroundOnly
    ?entranceLogoSize(wall.length,groundGlassTop-logoAreaBottom,logoAspectRatio,{fit:true})
    :null;
   const imageHeight=entranceSize
