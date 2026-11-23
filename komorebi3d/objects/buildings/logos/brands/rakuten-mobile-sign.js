@@ -1,6 +1,6 @@
 // User-provided Rakuten logo artwork, cropped around the wordmark.
 // Reuse shared convenience glazing, entrance placement and UV facade geometry.
-import {paintImageFacade} from '../facade.js?v=logo-direction-dedup-v1-20261123';
+import {paintImageFacade} from '../facade.js?v=frontage-runs-v1-20261123';
 export const RAKUTEN_MOBILE_BG=0xe80288;
 export const RAKUTEN_MOBILE_ASPECT=720/253;
 export function paintRakutenMobileFacade(quad,mesh,polygon,options={}){

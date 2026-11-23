@@ -1,5 +1,5 @@
 // The white Hoshino Coffee mark on its coffee-brown facade, using common UV rules.
-import {paintImageFacade} from '../facade.js?v=logo-direction-dedup-v1-20261123';
+import {paintImageFacade} from '../facade.js?v=frontage-runs-v1-20261123';
 export const HOSHINO_BG=0x522f19;
 export const HOSHINO_ASPECT=288/192;
 export function paintHoshinoFacade(quad,mesh,polygon,options={}){

@@ -110,23 +110,54 @@ export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=
  return middleEntranceEdge(roadCandidates.length?roadCandidates:candidates,polygon?.length||0);
 }
 
-// One logo for each distinct outward-facing direction, regardless of how many
-// tiny OSM edges make up the facade. A 45-degree sector keeps curved corners
-// from creating clusters of repeated logos while preserving perpendicular
-// street faces. Match every wall to a chosen representative, not transitively
-// to its neighbors (which could accidentally merge opposite street fronts).
-const LOGO_SAME_DIRECTION_COS=Math.cos(Math.PI/4);
+// A sign belongs to a continuous street-facing frontage, not to each
+// individual OSM edge or an arbitrary compass direction. Consecutive curved
+// edges form one frontage; a sharp building corner starts another one.
+// Separate non-adjacent frontages remain independent even when parallel.
+const FRONTAGE_CORNER_COS=Math.cos(70*Math.PI/180);
+function frontageGroups(edges,edgeCount){
+ if(!edges.length||!Number.isInteger(edgeCount)||edgeCount<3)return [];
+ const byIndex=new Map(edges.map(edge=>[edge.i,edge]));
+ const joined=(i,j)=>{
+  const a=byIndex.get(i),b=byIndex.get(j);
+  return !!a&&!!b&&
+   a.normal[0]*b.normal[0]+a.normal[1]*b.normal[1]>FRONTAGE_CORNER_COS;
+ };
+ const starts=edges.filter(edge=>!joined((edge.i+edgeCount-1)%edgeCount,edge.i));
+ // A completely smooth closed outline is one continuous frontage.
+ if(!starts.length)starts.push(edges.reduce((a,b)=>a.i<b.i?a:b));
+ const visited=new Set(),groups=[];
+ for(const start of starts){
+  if(visited.has(start.i))continue;
+  const run=[];
+  for(let i=start.i;!visited.has(i);i=(i+1)%edgeCount){
+   const edge=byIndex.get(i);
+   if(!edge)break;
+   run.push(edge);visited.add(i);
+   if(!joined(i,(i+1)%edgeCount))break;
+  }
+  if(run.length)groups.push(run);
+ }
+ return groups;
+}
+function frontageRepresentative(run){
+ // Find the center of the WHOLE road frontage, rather than its longest edge.
+ // Avoid placing a microscopic logo on a tiny OSM connector at the center.
+ const length=run.reduce((sum,edge)=>sum+edge.len,0);
+ const longest=Math.max(...run.map(edge=>edge.len));
+ const comfortable=Math.min(3,longest);
+ let offset=0;
+ return run.map(edge=>{
+  const center=offset+edge.len/2;
+  offset+=edge.len;
+  return {edge,distance:Math.abs(center-length/2),fits:edge.len>=comfortable-1e-8};
+ }).sort((a,b)=>Number(b.fits)-Number(a.fits)||
+  a.distance-b.distance||b.edge.len-a.edge.len||a.edge.i-b.edge.i)[0].edge.i;
+}
 export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null){
  const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,1.2,blockedWalls);
  const roadCandidates=candidates.filter(edge=>edge.roadEligible);
- const sorted=(roadCandidates.length?roadCandidates:candidates)
-  .sort((a,b)=>b.len-a.len||a.i-b.i);
- const selected=[];
- for(const edge of sorted){
-  if(selected.some(other=>
-   edge.normal[0]*other.normal[0]+edge.normal[1]*other.normal[1]
-    >=LOGO_SAME_DIRECTION_COS-1e-9))continue;
-  selected.push(edge);
- }
- return selected.map(edge=>edge.i);
+ const visible=roadCandidates.length?roadCandidates:candidates;
+ return frontageGroups(visible,polygon?.length||0)
+  .map(frontageRepresentative);
 }

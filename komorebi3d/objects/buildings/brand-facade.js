@@ -2,7 +2,7 @@
 // geometry is generated here; the fixed Komorebi Engine is left untouched.
 // Texture selection is handled by app-owned Renderer A/B facade layers.
 import {paintConvenienceGlazing,entranceLogoSize,paintConvenienceFasciaDividers} from './convenience/common.js?v=occupancy-facade-modes-v1-20261123';
-import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=logo-direction-dedup-v1-20261123';
+import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=frontage-runs-v1-20261123';
 // Shared flush-mount facade: tiny depth bias avoids z-fighting with the original
 // building wall. UV background and logo always occupy the same image plane.
 const WALL_COLOR_OFFSET_M=.01;
@@ -39,8 +39,8 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   const dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz);
   return {a,dx,dz,length,i};
  }).filter(w=>w.length>.1);
- // The shared wall selector already removes physically blocked sides and
- // deduplicates nearby facade directions. Call it here too for editor previews
+ // The shared wall selector groups contiguous road frontages and excludes
+ // obstructed faces. Call it here too for editor previews
  // and direct painters which do not receive the map's road-aware selection.
  const selectedIndices=Array.isArray(logoWallIndices)
   ?logoWallIndices:selectLogoWalls(polygon,[],[],blockedWalls);

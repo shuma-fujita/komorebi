@@ -46,24 +46,44 @@ assert.equal(selectEntranceWall(square,[[[-10,3],[-10,17]]],[eastNeighbor],4,blo
 // creates ONE visual logo direction, never one logo per footprint edge.
 const subdivided=[[0,0],[3,0],[9,1],[20,1],[20,15],[0,15]];
 assert.deepEqual(selectLogoWalls(subdivided,[],[]).sort((a,b)=>a-b),[2,3,4,5],
- 'Nearly parallel south-side edges share the one longest representative');
+ 'Without road data, separate building corners retain independent frontages');
 assert.deepEqual(selectLogoWalls(subdivided,[[[-10,-8],[30,-8]]],[]),[2],
- 'Multiple south-facing road edges produce only one logo');
+ 'Multiple south-facing road edges produce only one central logo');
 const sameSide=eligibleFacadeWalls(subdivided,[],[],1.2).filter(x=>[0,1,2].includes(x.i));
 assert.ok(sameSide.length===3&&
  sameSide.every(e=>e.normal[0]*sameSide[0].normal[0]+
   e.normal[1]*sameSide[0].normal[1]>.9),
  'Split OSM walls share a similar outward direction');
-// Distinct facades are not limited to four: a genuinely hexagonal building
-// can retain six independent street directions without a magic count cap.
+// A smooth many-sided polygon is one visual frontage unless road eligibility
+// or sharp building corners separate it. We do not force one per compass angle.
 const hexagon=Array.from({length:6},(_,i)=>{
  const angle=2*Math.PI*i/6;
  return [20*Math.cos(angle),20*Math.sin(angle)];
 });
-assert.equal(selectLogoWalls(hexagon,[],[]).length,6,
- 'No artificial maximum count: six genuinely distinct directions remain');
+assert.equal(selectLogoWalls(hexagon,[],[]).length,1,
+ 'Smooth cyclic facade produces one logo, even across several directions');
 assert.deepEqual(selectLogoWalls(hexagon,[],[],new Set([0,2,4])).sort((a,b)=>a-b),[1,3,5],
- 'Blocked building faces never produce a logo, even with many directions');
+ 'Occluded edges split otherwise smooth facade into three separate frontages');
+
+// Lawson/Hoshino style: a gently curved street frontage made from five
+// OSM wall segments. A prominent central logo, not repeated end logos.
+const curved=[[0,0],[8,0],[13,-2],[18,-2],[23,0],[31,0],[31,18],[0,18]];
+const curvedRoad=[[[-6,-10],[38,-10]]];
+assert.deepEqual(selectLogoWalls(curved,curvedRoad,[]),[2],
+ 'Curved road-facing storefront has ONE sign on its central wall');
+const curvedFaces=[];
+assert.equal(paintImageFacade(()=>{},{},curved,{
+ bottom:3,top:6,texture:'test',backgroundColor:0x0066aa,texturedFaces:curvedFaces,
+ logoWallIndices:selectLogoWalls(curved,curvedRoad,[])
+}),true);
+assert.equal(curvedFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,1,
+ 'Actual curved facade places one UV logo, not one per bend');
+// Torikizoku style: two separate sharp street faces, each retaining a logo.
+const twoRoads=[[[0,-8],[20,-8]],[[28,0],[28,20]]];
+assert.deepEqual(selectLogoWalls(square,twoRoads,[]).sort((a,b)=>a-b),[0,1],
+ 'Two perpendicular road fronts remain independent facade groups');
+assert.deepEqual(selectLogoWalls(square,twoRoads,[eastNeighbor],blocked),[0],
+ 'A neighboring building still excludes its blocked road-facing frontage');
 
 const boxed=[
  [[.2,-2],[20,-2],[20,-.2],[.2,-.2]],
@@ -156,6 +176,6 @@ assert.equal(paintImageFacade(()=>{}, {},hexagon,{
 }),true);
 const logoCount=multiFaces[0].uvs.filter((v,i)=>
  i%12===0&&v===1).length;
-assert.equal(logoCount,6,
- 'The renderer itself keeps all six distinct directions, not only the selector');
+assert.equal(logoCount,1,
+ 'The renderer uses the same single continuous frontage as the selector');
 console.log('Shared neighbor-occlusion: ground glass + fascia blocked; upper branding remains PASS');

@@ -1,5 +1,5 @@
 // Shared image facade; orange sampled from the user's artwork.
-import {paintImageFacade} from '../brand-facade.js?v=logo-direction-dedup-v1-20261123';
+import {paintImageFacade} from '../brand-facade.js?v=frontage-runs-v1-20261123';
 export const YOSHINOYA_BG=0xe08831;
 export const YOSHINOYA_ASPECT=646/320;
 export function paintYoshinoyaFacade(quad,mesh,polygon,options={}){
