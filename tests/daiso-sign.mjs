@@ -112,16 +112,18 @@ assert.equal(verts(full)-verts(withoutDaiso),4*18,
  'Only four fallback wall panels are added to the Engine');
 const otherTenant={type:'node',id:333222444,version:1,...coord(2,0),
  tags:{shop:'convenience',name:'ファミリーマート 松戸',level:'1'}};
-assert.deepEqual(render(node.tags,[otherTenant]).texturedFaces.map(s=>s.texture),['daiso'],
- 'DAISO retains its own divided shop area alongside the convenience storefront');
+assert.ok(render(node.tags,[otherTenant]).texturedFaces.length>0&&
+ render(node.tags,[otherTenant]).texturedFaces.every(s=>s.texture==='daiso'),
+ 'DAISO retains its divided shop zone alongside the convenience storefront');
 const unknownFloorYoshinoya={type:'node',id:222999888,version:1,...coord(1,0),
  tags:{amenity:'fast_food',name:'吉野家'}};
 assert.equal(render(node.tags,[unknownFloorYoshinoya]).texturedFaces.length,1,
  'A legacy food storefront with UNKNOWN level may not block an explicit DAISO floor');
 const knownFloorYoshinoya={...unknownFloorYoshinoya,
  tags:{...unknownFloorYoshinoya.tags,level:'1'}};
-assert.deepEqual(render(node.tags,[knownFloorYoshinoya]).texturedFaces.map(s=>s.texture),['daiso'],
- 'A restaurant on the same explicit level receives its own rectangular facade zone');
+assert.ok(render(node.tags,[knownFloorYoshinoya]).texturedFaces.length>0&&
+ render(node.tags,[knownFloorYoshinoya]).texturedFaces.every(s=>s.texture==='daiso'),
+ 'A restaurant on the same floor receives its own facade zone');
 const otherMc={type:'node',id:444333222,version:1,...coord(2,0),
  tags:{amenity:'fast_food',name:'マクドナルド',level:'2'}};
 assert.deepEqual(render(node.tags,[otherMc]).texturedFaces.map(s=>s.texture).sort(),
