@@ -1,5 +1,5 @@
 // Show the original complete wide artwork without cropping the edge waves.
-import {paintImageFacade} from '../brand-facade.js?v=isomaru-background-sample-v1-20261122';
+import {paintImageFacade} from '../brand-facade.js?v=logo-ground-glass-v1-20261123';
 export const ISOMARU_BG=0xffffff;
 export const ISOMARU_ASPECT=192/128;
 export function paintIsomaruFacade(quad,mesh,polygon,options={}){

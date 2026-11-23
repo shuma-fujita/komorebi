@@ -28,14 +28,17 @@ export function contiguousLogoGroups(spans){
  }
  return groups;
 }
-export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[]){
+export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[],entranceEdgeIndex=null){
  let count=0;
  for(const {brand,paint} of LOGO_BRANDS){
   // Preserve per-brand OSM validation and existing occupied-floor protection.
   const spans=resolveLogoLevels(stores,tags,height,inferredLevels,brand.id);
   for(const group of contiguousLogoGroups(spans)){
    if(occupied.some(other=>group.bottom<other.top-1e-8&&group.top>other.bottom+1e-8))continue;
-   if(paint(quad,mesh,polygon,{bottom:group.bottom,top:group.top,texturedFaces,ownerKey})){
+   const ground=spans.find(span=>Math.abs(span.bottom)<1e-8);
+   const groundGlassTop=group.bottom<1e-8&&ground?ground.top:null;
+   if(paint(quad,mesh,polygon,{bottom:group.bottom,top:group.top,texturedFaces,ownerKey,
+    groundGlassTop,entranceEdgeIndex})){
     occupied.push(group);count++;
    }
   }

@@ -4,7 +4,7 @@ import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=br
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=no-legacy-stripes-20261123';
-import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=contiguous-logo-centers-20261123';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=logo-ground-glass-v1-20261123';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=no-legacy-stripes-20261123';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
@@ -136,6 +136,7 @@ function building(m,p,h,t,spans,roadSegments,tags,pinkSpans=[],foodSpans=[]){
   paintLoveHotelWall(quad,m,e.a,e.b,pinkSpans,LOVE_HOTEL_COLOR,outward);
  }
  top(m,p,h,resolveOsmConvenienceRoofColor(spans,tags,h,t));
+ return front;
 }
 function strip(m,points,width,t,y=.045){
  for(let i=1;i<points.length;i++){
@@ -267,7 +268,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const buildingMesh=buildings[e.id%palette.length],buildingStart=buildingMesh.positions.length;
    const convenienceSpans=resolveConveniencePaint(convenienceBuildings.get(e.id),tags,height,inferredLevels);
    const foodSpans=resolveFoodPaint(foodBuildings.get(e.id),tags,height,inferredLevels);
-   building(buildingMesh,p,height,tint,convenienceSpans,roadSegments,tags,pinkSpans,foodSpans);
+   const frontEdge=building(buildingMesh,p,height,tint,convenienceSpans,roadSegments,tags,pinkSpans,foodSpans);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
    // Only explicit tenant levels can reserve a floor against a PNG logo.
@@ -288,7 +289,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // Industry-independent logo pass; legacy window/glazing paints stay intact.
    // Only explicitly occupied floors block a logo; no fabricated full-tower owners.
    paintLogoBuilding(quad,buildingMesh,p,logoBuildings.get(e.id),tags,height,
-    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans);
+    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge);
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.
