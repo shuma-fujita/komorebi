@@ -82,6 +82,8 @@ jobs:
           node tests/logo-ground-glass.mjs
           node tests/industry-independent-logos.mjs
           node tests/no-legacy-stripes.mjs
+          node tests/lawson-image-facade.mjs
+          node komorebi3d/tests/lawson-storefront.mjs
           node tests/hoshino-coffee-facade.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs

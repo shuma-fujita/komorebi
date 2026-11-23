@@ -7,7 +7,7 @@ import {matchConvenienceBuildings,resolveConveniencePaint} from '../objects/buil
 
 const geometry=[{lat:0,lon:0},{lat:0,lon:10},{lat:10,lon:10},{lat:10,lon:0},{lat:0,lon:0}];
 const project=p=>[p.lon,p.lat];
-for(const brand of [lawson,lawsonStore100]){
+for(const brand of [lawsonStore100]){
  test(brand.id+' uses common sign renderer with complete letters, logo and entrance',()=>{
   const sign=brand.sign;
   assert.ok(sign.logo?.quads.length>0);
@@ -32,4 +32,12 @@ test('Lawson Store 100 is preferred to generic Lawson for its name',()=>{
  const building={type:'way',id:1,geometry,tags:{building:'yes','building:levels':'2'}};
  const matched=matchConvenienceBuildings([building,node],project,100);
  assert.equal(matched.get(1)?.[0]?.brand.id,'lawson-store100');
+});
+
+test('Standard Lawson is not claimed by the legacy dedicated city storefront',()=>{
+ const node={type:'node',id:20,lat:5,lon:5,tags:{shop:'convenience',brand:'ローソン',level:'0'}};
+ const building={type:'way',id:1,geometry,tags:{building:'yes','building:levels':'3'}};
+ assert.equal(matchConvenienceBuildings([building,node],project,100).has(1),false);
+ // Old brand artwork remains available for Forest, but is not used by the city.
+ assert.ok(lawson.sign?.logo);
 });

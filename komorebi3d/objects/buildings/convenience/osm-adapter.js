@@ -6,11 +6,10 @@ import {sevenEleven} from './seven-eleven.js?v=seven-sign-green-bands-v2-2026111
 import {familymart} from './familymart.js?v=convenience-sign-v1-20261112';
 import {lawsonStore100} from './lawson-store100.js?v=lawson-storefront-20261119';
 import {ministop} from './ministop.js?v=ministop-white-logo-v2-20261112';
-import {lawson} from './lawson.js?v=lawson-storefront-20261119';
 // Distance tolerance in centimetres; edit 100 to adjust the allowed POI offset.
 export const CONVENIENCE_MATCH_TOLERANCE_CM=BUILDING_POI_OUTSIDE_TOLERANCE_METRES*100;
-// Specific Lawson sub-brands must be resolved before the general Lawson name.
-const brands=[sevenEleven,familymart,lawsonStore100,ministop,lawson];
+// Standard Lawson now uses the shared image-logo facade. Keep Store 100 dedicated.
+const brands=[sevenEleven,familymart,lawsonStore100,ministop];
 const normalized=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 function identifyBrand(tags){
  if(tags.shop!=='convenience')return null;

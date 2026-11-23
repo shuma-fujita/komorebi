@@ -1,6 +1,6 @@
 // Unified brand-logo pipeline. OSM category is *not* the brand identity.
 // A named POI may be a restaurant, pub, shop, office, leisure facility, etc.
-import {LOGO_BRANDS} from './brands/index.js?v=hoshino-coffee-logo-v1-20261123';
+import {LOGO_BRANDS} from './brands/index.js?v=lawson-image-v1-20261123';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=logos-unified-v1-20261122';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()
@@ -10,7 +10,11 @@ export function identifyLogoBrand(tags={}){
  // Distinctive brand identifier is safe even if a POI has no name or category.
  if(tags['brand:wikidata']==='Q38076')return LOGO_BRANDS.find(e=>e.brand.id==='mcdonalds')?.brand??null;
  const names=nameKeys.map(k=>normalize(tags[k])).filter(Boolean);
- return LOGO_BRANDS.find(e=>names.some(name=>e.brand.names.some(alias=>name.startsWith(normalize(alias)))))?.brand??null;
+ // Brand=LAWSON is also used by variants: a named sub-brand takes precedence.
+ const otherLawson=names.some(name=>['ローソンストア100','ローソン100','lawsonstore100','lawson100',
+  'ナチュラルローソン','naturallawson'].some(prefix=>name.startsWith(normalize(prefix))));
+ return LOGO_BRANDS.find(e=>(e.brand.id!=='lawson'||!otherLawson)&&
+  names.some(name=>e.brand.names.some(alias=>name.startsWith(normalize(alias)))))?.brand??null;
 }
 export function matchLogoBuildings(elements,project,halfSize){
  return matchLogoFootprints(elements,project,halfSize,identifyLogoBrand);

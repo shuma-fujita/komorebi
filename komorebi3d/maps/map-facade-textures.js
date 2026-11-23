@@ -2,6 +2,7 @@
 // Main city mesh snapshots remain unchanged; these are zero-thickness UV
 // surfaces on the building wall, not free-standing sign boards.
 const TEXTURE_URLS=Object.freeze({
+ lawson:new URL('../assets/textures/brands/lawson.webp',import.meta.url).href,
  mcdonalds:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  daiso:new URL('../assets/textures/brands/daiso.png',import.meta.url).href,
  gusto:new URL('../assets/textures/brands/gusto.png',import.meta.url).href,
