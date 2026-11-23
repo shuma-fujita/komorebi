@@ -3,8 +3,13 @@ import assert from 'node:assert/strict';
 import {paintIsomaruFacade} from '../komorebi3d/objects/buildings/food/isomaru-sign.js';
 import {paintKaikatsuFacade} from '../komorebi3d/objects/buildings/leisure/kaikatsu-sign.js';
 import {paintLogoBuilding} from '../komorebi3d/objects/buildings/logos/osm-adapter.js';
+import {entranceLogoSize} from '../komorebi3d/objects/buildings/convenience/common.js';
 
 const polygon=[[0,0],[24,0],[24,20],[0,20]];
+const shared=entranceLogoSize(24,.6,1.5,{fit:true});
+assert.ok(Math.abs(shared.height-.546)<1e-8,'Image logo height matches legacy 91% fascia scale');
+assert.ok(Math.abs(shared.width-.819)<1e-8,'Image logo respects image aspect ratio');
+assert.deepEqual(entranceLogoSize(24,.6,1.24),{width:.6*.91*1.24,height:.6*.91});
 const fullLogo=new Set(['1,0,0,0,0,1,1,0,0,1,1,1','0,0,1,0,1,1,0,0,1,1,0,1']);
 function logos(face){
  const centers=[];
@@ -53,7 +58,12 @@ for(const painter of [paintIsomaruFacade,paintKaikatsuFacade]){
  assert.equal(logos(ground.face).length,1,'Ground-only facade has one entrance-side logo');
  assert.ok(ground.quads.some(q=>q.color===0xbcd3dd),'Ground must contain existing glass panes');
  assert.ok(ground.quads.some(q=>q.color===0xb7d0db),'Ground must contain existing sliding doors');
+ assert.ok(ground.quads.some(q=>q.color===0x8c9497),'Gray door/window seam is shared');
  checkFlushUV(ground.face,.012);
+ // A legacy 4m door sign and UV entrance logo share the same 91% fascia sizing.
+ const logoVertices=ground.face.positions.filter((_,i)=>i%3===1);
+ assert.ok(logoVertices.some(y=>Math.abs(y-(2.7-.546/2))<1e-8),
+  'Ground UV logo uses the shared convenience-sign height');
  assert.deepEqual(logos(ground.face),[2.7],
   'One-floor logo is centered in the fascia, not on a glass pane');
  assert.ok(ground.quads.filter(q=>q.color===0xbcd3dd).every(q=>q.c[1]<=2.4+1e-8),

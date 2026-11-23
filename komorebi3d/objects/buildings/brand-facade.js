@@ -1,7 +1,7 @@
 // Shared PNG UV facade geometry for any named store. Only data-level
 // geometry is generated here; the fixed Komorebi Engine is left untouched.
 // Texture selection is handled by app-owned Renderer A/B facade layers.
-import {paintConvenienceGlazing} from './convenience/common.js?v=no-legacy-stripes-20261123';
+import {paintConvenienceGlazing,entranceLogoSize} from './convenience/common.js?v=shared-entrance-fascia-v1-20261123';
 // Shared flush-mount facade: tiny depth bias avoids z-fighting with the original
 // building wall. UV background and logo always occupy the same image plane.
 const WALL_COLOR_OFFSET_M=.01;
@@ -95,10 +95,16 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   // the automatic door, inside the ground-floor fascia rather than the upper wall.
   const fasciaOnly=logoOnGroundFasciaOnly&&withGroundGlass;
   const imageAreaTop=fasciaOnly?groundGlassTop:top;
-  const imageHeight=Math.min(2.65,imageAreaTop-logoAreaBottom-(fasciaOnly?.08:.28),
-   (wall.length-.35)/logoAspectRatio);
+  // A ground-floor logo uses the exact same physical sign-size rule as
+  // FamilyMart / 7-Eleven, regardless of brand, while retaining its center.
+  const entranceSize=withGroundGlass
+   ?entranceLogoSize(wall.length,groundGlassTop-logoAreaBottom,logoAspectRatio,{fit:true})
+   :null;
+  const imageHeight=entranceSize
+   ?entranceSize.height
+   :Math.min(2.65,imageAreaTop-logoAreaBottom-.28,(wall.length-.35)/logoAspectRatio);
   if(imageHeight<=0)continue;
-  const imageWidth=imageHeight*logoAspectRatio;
+  const imageWidth=entranceSize?entranceSize.width:imageHeight*logoAspectRatio;
   const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;
   const logoBottom=(logoAreaBottom+imageAreaTop)/2-imageHeight/2;
   const logoTop=(logoAreaBottom+imageAreaTop)/2+imageHeight/2;

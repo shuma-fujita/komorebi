@@ -24,6 +24,7 @@ for(const brand of brands){
  paintConvenienceWall((mesh,...args)=>draws.push(args),{},a,b,4,baseColor,[{bottom:0,top:4,brand}],'front');
  assert.ok(draws.length>4,brand.id+' must retain glass, sign and door geometry');
  assert.ok(draws.some(args=>args.at(-1)===0xbcd3dd),brand.id+' must retain glazing');
+ assert.ok(draws.some(args=>args.at(-1)===0x8c9497),brand.id+' must use the shared gray door/window boundary');
 }
 const fallback={id:'unsupported',names:['unsupported']};
 for(const paint of [paintConvenienceWall,(quad,mesh,a,b,height,color,spans)=>paintFoodWall(quad,mesh,a,b,height,color,[],spans)]){

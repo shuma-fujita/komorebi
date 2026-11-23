@@ -35,6 +35,18 @@ export function conveniencePanelLayout(length,{entrance=false,doorWidth=CONVENIE
  return {segments,entrance:false,door:null};
 }
 
+// Shared entrance sign sizing. Both legacy glyph signs and UV logos use the
+// fixed 4m entrance interval and 91% of the existing fascia height.
+// UV logos use fit=true to preserve their original aspect ratio.
+export function entranceLogoSize(length,bandHeight,aspect=1.24,{fit=false}={}){
+ const layout=conveniencePanelLayout(length,{entrance:true});
+ if(!layout.door||!(bandHeight>0)||!(aspect>0))return {width:0,height:0};
+ const maxWidth=(layout.door.end-layout.door.start)*.9;
+ const maxHeight=bandHeight*.91;
+ const height=fit?Math.min(maxHeight,maxWidth/aspect):maxHeight;
+ return {width:Math.min(maxWidth,height*aspect),height};
+}
+
 // Unified sign strip: the logo is exactly the same fixed-width interval as
 // the opening underneath. Supports arbitrary planar OSM edges and Forest boxes.
 export function paintConvenienceSign(rect,quad,point,sign,{length,bottom,top,entrance=false}){
@@ -66,7 +78,7 @@ export function paintConvenienceSign(rect,quad,point,sign,{length,bottom,top,ent
   rect(start,end,bottom,bottom+bandHeight*.11,sign.lower,.018);
  }
  if(sign.logo){
-  const logoH=bandHeight*.91,logoW=Math.min((end-start)*.9,logoH*(sign.logo.aspect??1.24));
+  const {width:logoW,height:logoH}=entranceLogoSize(length,bandHeight,sign.logo.aspect??1.24);
   const lx=length/2-logoW/2,ly=bottom+(bandHeight-logoH)/2;
   for(const [a,b,c,d,tint,offset=.033] of sign.logo.quads)
    quad(point(lx+a[0]*logoW,ly+a[1]*logoH,offset),
@@ -148,6 +160,11 @@ export function paintConvenienceGlazing(rect,{length,bottom=0,top,side='front',b
   rect(start,start+frame,glassBottom,top,frameColor,.018);
   rect(end-frame,end,glassBottom,top,frameColor,.018);
   rect(length/2-frame/2,length/2+frame/2,glassBottom,top,frameColor,.019);
+  // Same visible gray seam between automatic doors and adjacent windows
+  // for legacy convenience signs and image-logo storefronts.
+  const seamColor=0x8c9497,seamWidth=.065;
+  for(const x of [start,end])
+   rect(x-seamWidth/2,x+seamWidth/2,glassBottom,top,seamColor,.03);
   const handleY=bottom+(top-bottom)*.46,handleH=Math.min(.32,(top-bottom)*.16);
   rect(length/2-.12,length/2-.095,handleY,handleY+handleH,0x304957,.025);
   rect(length/2+.095,length/2+.12,handleY,handleY+handleH,0x304957,.025);
