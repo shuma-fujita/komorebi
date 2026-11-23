@@ -15,6 +15,28 @@ function logos(face){
  }
  return centers;
 }
+// Geometry contract for all image-logo brands: the logo and its colored
+// background occupy one flush UV plane, including ground-floor entrance signs.
+function checkFlushUV(face,expectedOffset){
+ const logoTriangles=[];
+ for(let i=0;i<face.uvs.length;i+=12)
+  if(fullLogo.has(face.uvs.slice(i,i+12).join(',')))
+   logoTriangles.push(i/12);
+ assert.ok(logoTriangles.length,'Image facade must contain at least one full-image logo');
+ for(const index of logoTriangles){
+  const vertices=face.positions.slice(index*18,index*18+18);
+  const xs=[vertices[0],vertices[3],vertices[6],vertices[9],vertices[12],vertices[15]];
+  const zs=[vertices[2],vertices[5],vertices[8],vertices[11],vertices[14],vertices[17]];
+  const onWall=xs.every(x=>Math.abs(x-xs[0])<1e-6)
+   ?Math.abs(xs[0])<.02||Math.abs(xs[0]-24)<.02
+   :zs.every(z=>Math.abs(z-zs[0])<1e-6)
+    &&(Math.abs(zs[0])<.02||Math.abs(zs[0]-20)<.02);
+  assert.ok(onWall,'Logo must follow the wall, not form an offset sign board');
+  const distance=Math.min(...xs.map(x=>Math.abs(x)),...xs.map(x=>Math.abs(x-24)),
+   ...zs.map(z=>Math.abs(z)),...zs.map(z=>Math.abs(z-20)));
+  assert.ok(distance<=expectedOffset+1e-6,'Logo must use flush-mounted depth bias');
+ }
+}
 const draw=(painter,opts)=>{
  const quads=[],faces=[];
  assert.equal(painter((mesh,a,b,c,d,color)=>quads.push({a,b,c,d,color}),{},polygon,
@@ -25,17 +47,20 @@ const draw=(painter,opts)=>{
 const upper=draw(paintIsomaruFacade,{bottom:3,top:12});
 assert.equal(upper.quads.some(q=>q.color===0xbcd3dd),false,'Upper floors must not have glass');
 assert.equal(logos(upper.face).length,4,'Upper-only groups retain four logos');
+checkFlushUV(upper.face,.012);
 for(const painter of [paintIsomaruFacade,paintKaikatsuFacade]){
  const ground=draw(painter,{bottom:0,top:3,groundGlassTop:3});
  assert.equal(logos(ground.face).length,1,'Ground-only facade has one entrance-side logo');
  assert.ok(ground.quads.some(q=>q.color===0xbcd3dd),'Ground must contain existing glass panes');
  assert.ok(ground.quads.some(q=>q.color===0xb7d0db),'Ground must contain existing sliding doors');
+ checkFlushUV(ground.face,.012);
  assert.deepEqual(logos(ground.face),[2.7],
   'One-floor logo is centered in the fascia, not on a glass pane');
  assert.ok(ground.quads.filter(q=>q.color===0xbcd3dd).every(q=>q.c[1]<=2.4+1e-8),
   'Glass ends at 80% of ground floor height');
  const multi=draw(painter,{bottom:0,top:12,groundGlassTop:3});
  assert.deepEqual(logos(multi.face),[7.2],'Four-floor group centers its logo on fascia + upper walls');
+ checkFlushUV(multi.face,.012);
  assert.ok(multi.quads.some(q=>q.color===0xbcd3dd));
  assert.ok(multi.quads.every(q=>q.color!==0xbcd3dd||q.c[1]<=2.4+1e-8),
   'Glazing stops below fascia and never reaches upper floors');

@@ -2,6 +2,10 @@
 // geometry is generated here; the fixed Komorebi Engine is left untouched.
 // Texture selection is handled by app-owned Renderer A/B facade layers.
 import {paintConvenienceGlazing} from './convenience/common.js?v=no-legacy-stripes-20261123';
+// Shared flush-mount facade: tiny depth bias avoids z-fighting with the original
+// building wall. UV background and logo always occupy the same image plane.
+const WALL_COLOR_OFFSET_M=.01;
+const WALL_IMAGE_OFFSET_M=.012;
 
 function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
  for(const [p,uv] of [[a,ua],[b,ub],[c,uc],[a,ua],[c,uc],[d,ud]]){
@@ -47,10 +51,10 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   return [a[0]+dx*u/length+outward*dz/length*offset,
    y,a[1]+dz*u/length-outward*dx/length*offset];
  };
- function face(w,u0,u1,y0,y1,uv0=backgroundUV,uv1=backgroundUV,uv2=backgroundUV,uv3=backgroundUV,offset=.075){
+ function face(w,u0,u1,y0,y1,uv0=backgroundUV,uv1=backgroundUV,uv2=backgroundUV,uv3=backgroundUV){
   if(u1<=u0||y1<=y0)return;
-  const a=place(w,u0,y0,offset),b=place(w,u1,y0,offset);
-  const c=place(w,u1,y1,offset),d=place(w,u0,y1,offset);
+  const a=place(w,u0,y0,WALL_IMAGE_OFFSET_M),b=place(w,u1,y0,WALL_IMAGE_OFFSET_M);
+  const c=place(w,u1,y1,WALL_IMAGE_OFFSET_M),d=place(w,u0,y1,WALL_IMAGE_OFFSET_M);
   texturedQuad(surface,a,b,c,d,uv0,uv1,uv2,uv3);
  }
  for(const wall of walls){
@@ -58,10 +62,10 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   // in the building's original wall material. Upper-storey branding remains.
   if(withGroundGlass&&blockedWalls?.has(wall.i)){
    if(top>groundGlassTop+1e-8){
-    quad(mesh,place(wall,0,groundGlassTop,.07),
-     place(wall,wall.length,groundGlassTop,.07),
-     place(wall,wall.length,top,.07),
-     place(wall,0,top,.07),backgroundColor);
+    quad(mesh,place(wall,0,groundGlassTop,WALL_COLOR_OFFSET_M),
+     place(wall,wall.length,groundGlassTop,WALL_COLOR_OFFSET_M),
+     place(wall,wall.length,top,WALL_COLOR_OFFSET_M),
+     place(wall,0,top,WALL_COLOR_OFFSET_M),backgroundColor);
     if(useTexture)face(wall,0,wall.length,groundGlassTop,top);
    }
    continue;
@@ -69,8 +73,8 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   // This base-colored quad is also the safe fallback while the PNG loads.
   const wallBottom=logoAreaBottom;
   if(top>wallBottom+1e-8)
-   quad(mesh,place(wall,0,wallBottom,.07),place(wall,wall.length,wallBottom,.07),
-    place(wall,wall.length,top,.07),place(wall,0,top,.07),backgroundColor);
+   quad(mesh,place(wall,0,wallBottom,WALL_COLOR_OFFSET_M),place(wall,wall.length,wallBottom,WALL_COLOR_OFFSET_M),
+    place(wall,wall.length,top,WALL_COLOR_OFFSET_M),place(wall,0,top,WALL_COLOR_OFFSET_M),backgroundColor);
   if(withGroundGlass&&!blockedWalls?.has(wall.i)){
    // Existing convenience glass panels, with exactly one entrance edge.
    const rect=(u0,u1,y0,y1,tint,offset=0)=>{
@@ -112,13 +116,13 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
 const uv=outward>0
  ? [[1,0],[0,0],[0,1],[1,1]]
  : [[0,0],[1,0],[1,1],[0,1]];
-face(wall,left,right,logoBottom,logoTop,...uv,withGroundGlass?.14:.075);
+face(wall,left,right,logoBottom,logoTop,...uv);
   }else{
    // Editor preview / PNG-load fallback. McDonald's supplies its classic
    // arch painter; DAISO keeps the solid pink facade if PNG is unavailable.
    if(typeof drawFallbackLogo==='function'){
     const imagePoint=(x,y)=>place(wall,wall.length/2+x*imageWidth/2.25,
-     (logoAreaBottom+top)/2+y*imageHeight/3.1,.12);
+     (logoAreaBottom+top)/2+y*imageHeight/3.1,WALL_IMAGE_OFFSET_M);
     const logoQuad=(p0,p1,p2,p3,color)=>quad(mesh,
      imagePoint(p0[0],p0[1]),imagePoint(p1[0],p1[1]),
      imagePoint(p2[0],p2[1]),imagePoint(p3[0],p3[1]),color);
