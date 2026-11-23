@@ -50,8 +50,8 @@ assert.equal(baseline.length,1);
 const baseHeight=logoCenters(baseline[0]).heights[0];
 for(const [name,level,low,high,center] of [
  ['磯丸水産','2;3;4',6,15,10.5], // Three floors -> middle floor
- ['磯丸水産','0;1;2',0,9,4.5],  // Ground joins the upper levels
- ['磯丸水産','0;1;2;3',0,12,6], // Four floors -> boundary of middle floors
+ ['磯丸水産','0;1;2',0,9,5.7],  // Ground joins the upper levels
+ ['磯丸水産','0;1;2;3',0,12,7.2], // Four floors -> boundary of middle floors
  ['快活CLUB','1;2;3;4',3,15,9]
 ]){
  const faces=build(poi(880002,name,{amenity:'pub'},level)).texturedFaces;
@@ -66,7 +66,7 @@ for(const [name,level,low,high,center] of [
 }
 const split=build(poi(880002,'磯丸水産',{amenity:'pub'},'0;1;3;4')).texturedFaces;
 assert.equal(split.length,2,'Non-contiguous groups keep separate centered logos');
-assert.deepEqual(split.map(f=>logoCenters(f).centers[0]),[3,12]);
+assert.deepEqual(split.map(f=>logoCenters(f).centers[0]),[4.2,12]);
 assert.deepEqual(contiguousLogoGroups([
  {bottom:9,top:12},{bottom:0,top:3},{bottom:3,top:6}
 ]).map(g=>[g.bottom,g.top]),[[0,6],[9,12]]);

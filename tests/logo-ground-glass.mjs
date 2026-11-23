@@ -30,10 +30,17 @@ for(const painter of [paintIsomaruFacade,paintKaikatsuFacade]){
  assert.equal(logos(ground.face).length,1,'Ground-only facade has one entrance-side logo');
  assert.ok(ground.quads.some(q=>q.color===0xbcd3dd),'Ground must contain existing glass panes');
  assert.ok(ground.quads.some(q=>q.color===0xb7d0db),'Ground must contain existing sliding doors');
+ assert.deepEqual(logos(ground.face),[2.7],
+  'One-floor logo is centered in the fascia, not on a glass pane');
+ assert.ok(ground.quads.filter(q=>q.color===0xbcd3dd).every(q=>q.c[1]<=2.4+1e-8),
+  'Glass ends at 80% of ground floor height');
  const multi=draw(painter,{bottom:0,top:12,groundGlassTop:3});
- assert.deepEqual(logos(multi.face),[6],'Four-floor group gets one logo at global midpoint');
+ assert.deepEqual(logos(multi.face),[7.2],'Four-floor group centers its logo on fascia + upper walls');
  assert.ok(multi.quads.some(q=>q.color===0xbcd3dd));
- assert.ok(multi.quads.every(q=>q.color!==0xbcd3dd||q.a[1]<3.01),'No upper floor windows');
+ assert.ok(multi.quads.every(q=>q.color!==0xbcd3dd||q.c[1]<=2.4+1e-8),
+  'Glazing stops below fascia and never reaches upper floors');
+ assert.ok(multi.face.positions.every((value,i)=>i%3!==1||value>=2.4-1e-8),
+  'Image texture never paints over glazing');
  assert.ok(multi.face.positions.every((n,i)=>i%3!==1||n>=0&&n<=12));
 }
 // Entry adapter chooses the same per-floor shared renderer and keeps unknown brands untouched.
@@ -42,7 +49,7 @@ const rendered=[],quads=[];
 assert.equal(paintLogoBuilding((mesh,a,b,c,d,color)=>quads.push(color),{},polygon,stores,
  {'building:levels':'4'},12,null,rendered,'way/test',[],0),1);
 assert.equal(rendered[0].texture,'isomaru');
-assert.deepEqual(logos(rendered[0]),[6]);
+assert.deepEqual(logos(rendered[0]),[7.2]);
 assert.ok(quads.includes(0xbcd3dd));
 const noGround=[],quadsUpper=[];
 assert.equal(paintLogoBuilding((mesh,a,b,c,d,color)=>quadsUpper.push(color),{},polygon,

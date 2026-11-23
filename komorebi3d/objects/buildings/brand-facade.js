@@ -33,6 +33,10 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  if(logoWalls.length!==4)return false;
  const useTexture=Array.isArray(texturedFaces);
  const withGroundGlass=Number.isFinite(groundGlassTop)&&groundGlassTop>bottom+1e-8&&groundGlassTop<=top+1e-8;
+ // A branded ground floor reserves its upper 20% as the fascia.
+ // The glazing ends below it; logos occupy only fascia + contiguous upper walls.
+ const glassTop=withGroundGlass?bottom+(groundGlassTop-bottom)*.8:bottom;
+ const logoAreaBottom=withGroundGlass?glassTop:bottom;
  const facadeLogoWalls=withGroundGlass&&Number.isInteger(entranceEdgeIndex)
   ?walls.filter(w=>w.i===entranceEdgeIndex):logoWalls;
  const surface={texture,ownerKey,positions:[],uvs:[]};
@@ -50,7 +54,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  }
  for(const wall of walls){
   // This base-colored quad is also the safe fallback while the PNG loads.
-  const wallBottom=withGroundGlass?groundGlassTop:bottom;
+  const wallBottom=logoAreaBottom;
   if(top>wallBottom+1e-8)
    quad(mesh,place(wall,0,wallBottom,.07),place(wall,wall.length,wallBottom,.07),
     place(wall,wall.length,top,.07),place(wall,0,top,.07),backgroundColor);
@@ -61,7 +65,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
     quad(mesh,place(wall,u0,y0,.09+offset),place(wall,u1,y0,.09+offset),
      place(wall,u1,y1,.09+offset),place(wall,u0,y1,.09+offset),tint);
    };
-   paintConvenienceGlazing(rect,{length:wall.length,bottom,top:groundGlassTop,
+   paintConvenienceGlazing(rect,{length:wall.length,bottom,top:glassTop,
     side:wall.i===entranceEdgeIndex?'front':'side'});
   }
   const isLogoWall=facadeLogoWalls.includes(wall);
@@ -70,10 +74,11 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
    continue;
   }
   // Preserve original image aspect ratio; square brands retain exact dimensions.
-  const imageHeight=Math.min(2.65,top-bottom-.28,(wall.length-.35)/logoAspectRatio);
+  const imageHeight=Math.min(2.65,top-logoAreaBottom-.28,(wall.length-.35)/logoAspectRatio);
   const imageWidth=imageHeight*logoAspectRatio;
   const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;
-  const logoBottom=(bottom+top)/2-imageHeight/2,logoTop=(bottom+top)/2+imageHeight/2;
+  const logoBottom=(logoAreaBottom+top)/2-imageHeight/2;
+  const logoTop=(logoAreaBottom+top)/2+imageHeight/2;
   if(useTexture){
    // One continuous UV-mapped wall surface: background bands plus a square
    // logo, preserving image aspect ratio and each facade's center.
@@ -94,7 +99,7 @@ face(wall,left,right,logoBottom,logoTop,...uv,withGroundGlass?.14:.075);
    // arch painter; DAISO keeps the solid pink facade if PNG is unavailable.
    if(typeof drawFallbackLogo==='function'){
     const imagePoint=(x,y)=>place(wall,wall.length/2+x*imageWidth/2.25,
-     (bottom+top)/2+y*imageHeight/3.1,.12);
+     (logoAreaBottom+top)/2+y*imageHeight/3.1,.12);
     const logoQuad=(p0,p1,p2,p3,color)=>quad(mesh,
      imagePoint(p0[0],p0[1]),imagePoint(p1[0],p1[1]),
      imagePoint(p2[0],p2[1]),imagePoint(p3[0],p3[1]),color);

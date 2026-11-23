@@ -24,10 +24,10 @@ function logoCenters(face){
  return centers;
 }
 for(const [name,level,center,num] of [
- ['ローソン 松戸駅前店','0',1.5,1],
- ['LAWSON Station','0;1;2;3',6,1],
+ ['ローソン 松戸駅前店','0',2.7,1],
+ ['LAWSON Station','0;1;2;3',7.2,1],
  ['ローソン','1;2;3',7.5,4],
- ['LAWSON','0',1.5,1]
+ ['LAWSON','0',2.7,1]
 ]){
  const node=poi(name,level);
  assert.equal(identifyLogoBrand(node.tags)?.id,'lawson',name);
