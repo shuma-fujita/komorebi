@@ -10,7 +10,7 @@ import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
 import {paintParkingArea} from '../objects/parking/common.js?v=parking-orange-u-inward-v3-20261122';
 import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=store-floor-zones-v1-20261123';
-import {matchFloorTenants,floorDistricts,paintFloorDistricts} from '../objects/buildings/store-floor-zones.js?v=store-floor-zones-v1-20261123';
+import {matchFloorTenants,floorDistricts,paintFloorDistricts} from '../objects/buildings/store-floor-zones.js?v=upper-vector-logo-only-v1-20261123';
 // Step 4-B: keep the Step 3 initial ordering, then reprioritize only unfinished
 // features when the helicopter moves >= 50m. Sorting yields every 512 operations
 // so the browser can enforce the existing per-frame time budget.
@@ -274,7 +274,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const hasSharedFloor=floors.some(f=>f.stores.length>1);
    // A shared floor must not create extra logos above/below the shared floor.
    const zoned=floors.filter(f=>hasSharedFloor||
-    f.bottom<1e-7&&f.stores.some(s=>!s.brand.texture));
+    f.stores.some(s=>!s.brand.texture));
    const floorKey=(bottom)=>bottom.toFixed(7);
    const zonedKeys=new Set(zoned.map(f=>floorKey(f.bottom)));
    const filterStores=stores=>(stores||[]).map(store=>{

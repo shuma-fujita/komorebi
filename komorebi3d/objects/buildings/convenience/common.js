@@ -37,9 +37,9 @@ export function conveniencePanelLayout(length,{entrance=false,doorWidth=CONVENIE
 
 // Unified sign strip: the logo is exactly the same fixed-width interval as
 // the opening underneath. Supports arbitrary planar OSM edges and Forest boxes.
-export function paintConvenienceSign(rect,quad,point,sign,{length,bottom,top,entrance=false}){
+export function paintConvenienceSign(rect,quad,point,sign,{length,bottom,top,entrance=false,doorWidth=CONVENIENCE_DOOR_WIDTH_M}){
  if(!sign||!(length>0&&top>bottom))return false;
- const layout=conveniencePanelLayout(length,{entrance});
+ const layout=conveniencePanelLayout(length,{entrance,doorWidth});
  const bandHeight=top-bottom;
  const frame=.065;
  // One regular sign directly above each window.

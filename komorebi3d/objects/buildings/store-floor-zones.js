@@ -3,7 +3,7 @@
 import {matchStoreBuildings} from './store-matching.js?v=store-poi-brand-v1-20261122';
 import {resolveConveniencePaint} from './convenience/osm-adapter.js?v=store-floor-zones-v1-20261123';
 import {identifyLogoBrand} from './logos/osm-adapter.js?v=ground-glass-centered-upper-v1-20261123';
-import {paintConvenienceGlazing,paintConvenienceSign} from './convenience/common.js?v=lawson-storefront-20261119';
+import {paintConvenienceGlazing,paintConvenienceSign} from './convenience/common.js?v=upper-vector-logo-only-v1-20261123';
 
 const specs={
  mcdonalds:{color:0xdb0007},daiso:{color:0xf5008c},kaikatsu:{color:0xec661b},
@@ -144,7 +144,7 @@ function drawPart(quad,mesh,p,span,store,entrance,centerY,texturedFaces,ownerKey
    const localRect=(a,b,c,d,color,off=0)=>rect(start+a,start+b,c,d,color,.025+off);
    paintConvenienceSign(localRect,(a,b,c,d,t)=>quad(mesh,a,b,c,d,t),
     (u,y,off=0)=>point(start+u,y,.095+off),store.brand.sign,
-    {length:w,bottom:fasciaBottom,top:fasciaTop,entrance:true});
+    {length:w,bottom:fasciaBottom,top:fasciaTop,entrance:true,doorWidth:w});
   }
  }
 }

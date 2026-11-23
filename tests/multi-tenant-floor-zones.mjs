@@ -59,6 +59,15 @@ assert.ok(gustoUV.length>0,'Gusto keeps a centered mark with its middle floor sh
 assert.ok(gustoUV.every(points=>points.every((value,i)=>i%3!==1||value>=6-1e-8&&value<=9+1e-8)),
  'No duplicate Gusto logo on the first or last upper floor');
 
+const upperLawson=render(map(poi(91,0,0,'ローソン',{shop:'convenience',level:'1;2'})));
+assert.equal(upperLawson.texturedFaces.length,0,'Existing vector-sign brand uses app facade geometry');
+const upperColors=upperLawson.meshes.flatMap(m=>m.colors);
+const containsRgb=hex=>{const rgb=[(hex>>16&255)/255,(hex>>8&255)/255,(hex&255)/255];
+ for(let i=0;i<upperColors.length;i+=3)
+  if(rgb.every((v,j)=>Math.abs(upperColors[i+j]-v)<1e-8))return true;
+ return false;};
+assert.equal(containsRgb(0xbcd3dd),false,'Upper Lawson floors must not contain storefront glass');
+assert.equal(containsRgb(0xffffff),true,'Upper Lawson must render its white logo artwork');
 const missing=map(poi(90,0,0,'星乃珈琲店',{level:''}));
 assert.equal(render(missing).texturedFaces.length,0);
 console.log('Multi-tenant floor districts PASS: 1/2/3/4 shops, separate glass, logos, upper, missing level');
