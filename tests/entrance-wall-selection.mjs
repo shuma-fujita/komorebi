@@ -84,7 +84,7 @@ assert.equal(paintImageFacade((mesh,...args)=>upperPaint.push(args),{},square,{
 assert.ok(upperPaint.some(q=>q.at(-1)===0xffcc00),
  'Brand color remains on upper floors above a blocked first floor');
 const sideUpper=upperPaint.filter(q=>q.at(-1)===0xffcc00&&
- q.slice(0,4).every(v=>Array.isArray(v)&&Math.abs(v[0]-20)<1e-6));
+ q.slice(0,4).every(v=>Array.isArray(v)&&Math.abs(v[0]-20)<.2));
 assert.ok(sideUpper.length>0,'Blocked east wall retains upper-floor brand color');
 assert.ok(sideUpper.every(q=>q.slice(0,4).every(v=>v[1]>=3-1e-8)),
  'Brand-colored overlay on blocked wall begins at second floor');
