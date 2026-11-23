@@ -47,6 +47,17 @@ export function entranceLogoSize(length,bandHeight,aspect=1.24,{fit=false}={}){
  return {width:Math.min(maxWidth,height*aspect),height};
 }
 
+// Shared fascia separators. Legacy signs and UV-branded shops use exactly
+// the same panel boundaries, 6.5cm width, and gray color above the glass.
+// The entrance is centered in the fixed-width central panel.
+export function paintConvenienceFasciaDividers(rect,{length,bottom,top,entrance=false}){
+ if(!(length>0&&top>bottom))return false;
+ const layout=conveniencePanelLayout(length,{entrance});
+ const frame=.065;
+ paintConvenienceFasciaDividers(rect,{length,bottom,top,entrance});
+ return true;
+}
+
 // Unified sign strip: the logo is exactly the same fixed-width interval as
 // the opening underneath. Supports arbitrary planar OSM edges and Forest boxes.
 export function paintConvenienceSign(rect,quad,point,sign,{length,bottom,top,entrance=false}){

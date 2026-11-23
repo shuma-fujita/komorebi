@@ -1,7 +1,7 @@
 // Shared PNG UV facade geometry for any named store. Only data-level
 // geometry is generated here; the fixed Komorebi Engine is left untouched.
 // Texture selection is handled by app-owned Renderer A/B facade layers.
-import {paintConvenienceGlazing,entranceLogoSize} from './convenience/common.js?v=shared-entrance-fascia-v1-20261123';
+import {paintConvenienceGlazing,entranceLogoSize,paintConvenienceFasciaDividers} from './convenience/common.js?v=fascia-seams-v1-20261123';
 // Shared flush-mount facade: tiny depth bias avoids z-fighting with the original
 // building wall. UV background and logo always occupy the same image plane.
 const WALL_COLOR_OFFSET_M=.01;
@@ -84,6 +84,20 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
    };
    paintConvenienceGlazing(rect,{length:wall.length,bottom,top:glassTop,
     side:wall.i===entranceEdgeIndex?'front':'side'});
+   if(wall.i===entranceEdgeIndex){
+    // The glass-frame seam must continue through the fascia above the
+    // automatic doors, just as it does on Seven-Eleven / FamilyMart.
+    // Keep separators slightly ahead of the shared flush UV image layer.
+    const fasciaRect=(u0,u1,y0,y1,tint,offset=0)=>{
+     if(u1<=u0||y1<=y0)return;
+     const depth=WALL_IMAGE_OFFSET_M+.002+offset;
+     quad(mesh,place(wall,u0,y0,depth),place(wall,u1,y0,depth),
+      place(wall,u1,y1,depth),place(wall,u0,y1,depth),tint);
+    };
+    paintConvenienceFasciaDividers(fasciaRect,{
+     length:wall.length,bottom:glassTop,top:groundGlassTop,entrance:true
+    });
+   }
   }
   const isLogoWall=facadeLogoWalls.includes(wall);
   if(!isLogoWall){

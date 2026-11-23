@@ -1,7 +1,7 @@
 import {BUILDING_POI_OUTSIDE_TOLERANCE_METRES} from '../../../maps/building-poi-match-const.js?v=shared-outside-1m-20261119';
 // OSM adapter: brand matching, OSM floor metadata and legacy storefront walls.
 import {CONVENIENCE_DOOR_WIDTH_M} from './const.js?v=convenience-one-sign-v3-20261112';
-import {convenienceRoofColor,paintConvenienceGlazing,paintConvenienceSign} from './common.js?v=shared-entrance-fascia-v1-20261123';
+import {convenienceRoofColor,paintConvenienceGlazing,paintConvenienceSign} from './common.js?v=fascia-seams-v1-20261123';
 import {sevenEleven} from './seven-eleven.js?v=seven-sign-green-bands-v2-20261112';
 import {familymart} from './familymart.js?v=convenience-sign-v1-20261112';
 import {lawsonStore100} from './lawson-store100.js?v=lawson-storefront-20261119';

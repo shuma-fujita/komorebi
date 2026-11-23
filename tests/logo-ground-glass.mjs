@@ -2,8 +2,10 @@
 import assert from 'node:assert/strict';
 import {paintIsomaruFacade} from '../komorebi3d/objects/buildings/food/isomaru-sign.js';
 import {paintKaikatsuFacade} from '../komorebi3d/objects/buildings/leisure/kaikatsu-sign.js';
+import {paintHidakayaFacade} from '../komorebi3d/objects/buildings/food/hidakaya-sign.js';
+import {paintYoshinoyaFacade} from '../komorebi3d/objects/buildings/food/yoshinoya-sign.js';
 import {paintLogoBuilding} from '../komorebi3d/objects/buildings/logos/osm-adapter.js';
-import {entranceLogoSize} from '../komorebi3d/objects/buildings/convenience/common.js';
+import {entranceLogoSize,conveniencePanelLayout,paintConvenienceFasciaDividers} from '../komorebi3d/objects/buildings/convenience/common.js';
 
 const polygon=[[0,0],[24,0],[24,20],[0,20]];
 const shared=entranceLogoSize(24,.6,1.5,{fit:true});
@@ -78,6 +80,40 @@ for(const painter of [paintIsomaruFacade,paintKaikatsuFacade]){
   'Image texture never paints over glazing');
  assert.ok(multi.face.positions.every((n,i)=>i%3!==1||n>=0&&n<=12));
 }
+// The shared gray sign-band separators must be present on actual image-logo
+// storefronts, not just the glazing. These continue the door/window uprights.
+const door=conveniencePanelLayout(24,{entrance:true}).door;
+const legacyDividers=[];
+paintConvenienceFasciaDividers((u0,u1,y0,y1,color)=>legacyDividers.push({u0,u1,y0,y1,color}),{
+ length:24,bottom:2.4,top:3,entrance:true
+});
+const sharedDoorBorders=[door.start,door.end];
+for(const x of sharedDoorBorders)
+ assert.ok(legacyDividers.some(q=>Math.abs((q.u0+q.u1)/2-x)<1e-8),
+  'Common fascia divider aligns with one edge of the automatic door');
+for(const painter of [paintHidakayaFacade,paintYoshinoyaFacade]){
+ const ground=draw(painter,{bottom:0,top:3,groundGlassTop:3});
+ const facadeSeams=ground.quads.filter(q=>q.color===0xc3c9cb&&
+  q.a[1]>=2.4-1e-8&&q.c[1]<=3+1e-8);
+ const glassSeams=ground.quads.filter(q=>q.color===0x8c9497&&
+  q.a[1]<2.4&&q.c[1]<=2.4+1e-8);
+ for(const x of sharedDoorBorders){
+  const onDoorEdge=q=>Math.abs((q.a[0]+q.b[0])/2-x)<1e-6;
+  assert.ok(facadeSeams.some(onDoorEdge),
+   'Hidakaya/Yoshinoya fascia must show gray seam above each door-window joint');
+  assert.ok(glassSeams.some(onDoorEdge),
+   'Door/window gray frame must continue below each fascia separator');
+ }
+ assert.ok(facadeSeams.every(q=>q.a[2]<-.012),
+  'Gray fascia separators sit in front of the flush-mounted UV image');
+ const obstructed=draw(painter,{bottom:0,top:3,groundGlassTop:3,blockedWalls:new Set([0])});
+ assert.equal(obstructed.quads.filter(q=>q.color===0xc3c9cb).length,0,
+  'Neighbor-blocked entrance facade must not gain gray separators');
+}
+const upstairsNoSeams=draw(paintHidakayaFacade,{bottom:3,top:6});
+assert.equal(upstairsNoSeams.quads.filter(q=>q.color===0xc3c9cb).length,0,
+ 'Upper-floor-only logos must not gain storefront separators');
+
 // Entry adapter chooses the same per-floor shared renderer and keeps unknown brands untouched.
 const stores=[{brand:{id:'isomaru'},level:'0;1;2;3'}];
 const rendered=[],quads=[];
