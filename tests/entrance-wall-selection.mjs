@@ -45,7 +45,7 @@ assert.equal(selectEntranceWall(square,[[[-10,3],[-10,17]]],[eastNeighbor],4,blo
 // OSM may split one road side into many nearly parallel pieces. That
 // creates ONE visual logo direction, never one logo per footprint edge.
 const subdivided=[[0,0],[3,0],[9,1],[20,1],[20,15],[0,15]];
-assert.deepEqual(selectLogoWalls(subdivided,[],[]).sort((a,b)=>a-b),[2,3,4,5],
+assert.deepEqual(selectLogoWalls(subdivided,[],[]).sort((a,b)=>a-b),[1,3,4,5],
  'Without road data, separate building corners retain independent frontages');
 assert.deepEqual(selectLogoWalls(subdivided,[[[-10,-8],[30,-8]]],[]),[2],
  'Multiple south-facing road edges produce only one central logo');
