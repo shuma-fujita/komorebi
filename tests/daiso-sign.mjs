@@ -108,8 +108,10 @@ assert.equal(cwUV[0].uvs.filter((_,i)=>i%12===0&&
  'Negative-winding facades sample PNG left-to-right along the edge');
 const withoutDaiso=render({shop:'books',name:'架空書店',level:'1'});
 const verts=r=>r.meshes.reduce((sum,m)=>sum+m.positions.length,0);
-assert.equal(verts(full)-verts(withoutDaiso),4*18,
- 'Only four fallback wall panels are added to the Engine');
+assert.equal(verts(full),verts(withoutDaiso),
+ 'Both branded and unbranded upper-floor tenants use one wall panel per face');
+assert.equal(withoutDaiso.texturedFaces.length,0,
+ 'An unknown tenant must not fabricate a DAISO texture');
 const otherTenant={type:'node',id:333222444,version:1,...coord(2,0),
  tags:{shop:'convenience',name:'ファミリーマート 松戸',level:'1'}};
 assert.ok(render(node.tags,[otherTenant]).texturedFaces.length>0&&
