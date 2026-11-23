@@ -17,9 +17,9 @@
   "counts": {
     "node": 1342,
     "way": 6348,
-    "relations_not_locatable": 5903,
+    "relations_not_locatable": 5904,
     "relation": 1
   },
   "json_bytes": 2796371,
-  "elapsed_seconds": 1682.96
+  "elapsed_seconds": 921.85
 }
