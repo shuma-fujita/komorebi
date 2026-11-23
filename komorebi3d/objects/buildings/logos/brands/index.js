@@ -12,6 +12,7 @@ import {lawson} from './lawson.js?v=lawson-image-v1-20261123';
 import {rakutenMobile} from './rakuten-mobile.js?v=rakuten-mobile-v1-20261123';
 import {yoshinoya} from '../../food/yoshinoya.js?v=food-image-logo-v1-20261123';
 import {hidakaya} from '../../food/hidakaya.js?v=food-image-logo-v1-20261123';
+import {tonkatsuTonichi} from './tonkatsu-tonichi.js?v=tonkatsu-tonichi-v1-20261123';
 import {paintMcDonaldsFacade} from '../../food/mcdonalds-sign.js?v=ground-fascia-logo-v1-20261123';
 import {paintDaisoFacade} from '../../variety/daiso-sign.js?v=ground-fascia-logo-v1-20261123';
 import {paintKaikatsuFacade} from '../../leisure/kaikatsu-sign.js?v=ground-fascia-logo-v1-20261123';
@@ -24,6 +25,7 @@ import {paintLawsonFacade} from './lawson-sign.js?v=ground-fascia-logo-v1-202611
 import {paintRakutenMobileFacade} from './rakuten-mobile-sign.js?v=rakuten-mobile-v1-20261123';
 import {paintYoshinoyaFacade} from '../../food/yoshinoya-sign.js?v=food-image-logo-v1-20261123';
 import {paintHidakayaFacade} from '../../food/hidakaya-sign.js?v=food-image-logo-v1-20261123';
+import {paintTonkatsuTonichiFacade} from './tonkatsu-tonichi-sign.js?v=tonkatsu-tonichi-v1-20261123';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},
@@ -36,5 +38,6 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:lawson,paint:paintLawsonFacade},
  {brand:rakutenMobile,paint:paintRakutenMobileFacade},
  {brand:yoshinoya,paint:paintYoshinoyaFacade},
- {brand:hidakaya,paint:paintHidakayaFacade}
+ {brand:hidakaya,paint:paintHidakayaFacade},
+ {brand:tonkatsuTonichi,paint:paintTonkatsuTonichiFacade}
 ]);

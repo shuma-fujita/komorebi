@@ -22,7 +22,9 @@ const cases=[
  ['鳥貴族 松戸店',{shop:'yes'},'torikizoku'],
  ['磯丸水産 松戸駅前店',{},'isomaru'],
  ['吉野家 松戸駅前店',{amenity:'fast_food'},'yoshinoya'],
- ['熱烈中華食堂日高屋 松戸店',{amenity:'restaurant'},'hidakaya']
+ ['熱烈中華食堂日高屋 松戸店',{amenity:'restaurant'},'hidakaya'],
+ ['とんかつとん一',{amenity:'restaurant'},'tonkatsuTonichi'],
+ ['とんかつとん一 松戸店',{shop:'yes'},'tonkatsuTonichi']
 ];
 for(const [name,category,texture] of cases){
  const tenant=poi(880002,name,category);
@@ -35,6 +37,10 @@ for(const [name,category,texture] of cases){
  assert.equal(faces[0].ownerKey,'way/'+building.id);
  assert.ok(faces[0].positions.every((n,i)=>i%3!==1||(n>=6-1e-8&&n<=9+1e-8)));
 }
+// A similarly named unrelated restaurant must never claim the Tonichi branding.
+assert.notEqual(identifyLogoBrand({name:'とんかつ松乃家'})?.id,'tonkatsuTonichi');
+assert.equal(build(poi(880002,'とんかつとん一',{amenity:'restaurant'},'')).texturedFaces.length,0);
+assert.equal(build(poi(880002,'とんかつとん一',{amenity:'restaurant'},'6')).texturedFaces.length,0);
 // One fixed-size logo centered across each contiguous group, including level=0.
 const fullLogoUV=new Set(['1,0,0,0,0,1,1,0,0,1,1,1','0,0,1,0,1,1,0,0,1,1,0,1']);
 function logoCenters(face){
