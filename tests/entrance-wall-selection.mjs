@@ -42,6 +42,29 @@ assert.equal(selectEntranceWall(square,westRoad,[eastNeighbor],4,blocked),3,
 assert.equal(selectEntranceWall(square,[[[-10,3],[-10,17]]],[eastNeighbor],4,blocked),3,
  'Road with opposite direction still selects the same door face');
 
+// OSM may split one road side into many nearly parallel pieces. That
+// creates ONE visual logo direction, never one logo per footprint edge.
+const subdivided=[[0,0],[3,0],[9,1],[20,1],[20,15],[0,15]];
+assert.deepEqual(selectLogoWalls(subdivided,[],[]).sort((a,b)=>a-b),[2,3,4,5],
+ 'Nearly parallel south-side edges share the one longest representative');
+assert.deepEqual(selectLogoWalls(subdivided,[[[-10,-8],[30,-8]]],[]),[2],
+ 'Multiple south-facing road edges produce only one logo');
+const sameSide=eligibleFacadeWalls(subdivided,[],[],1.2).filter(x=>[0,1,2].includes(x.i));
+assert.ok(sameSide.length===3&&
+ sameSide.every(e=>e.normal[0]*sameSide[0].normal[0]+
+  e.normal[1]*sameSide[0].normal[1]>.9),
+ 'Split OSM walls share a similar outward direction');
+// Distinct facades are not limited to four: a genuinely hexagonal building
+// can retain six independent street directions without a magic count cap.
+const hexagon=Array.from({length:6},(_,i)=>{
+ const angle=2*Math.PI*i/6;
+ return [20*Math.cos(angle),20*Math.sin(angle)];
+});
+assert.equal(selectLogoWalls(hexagon,[],[]).length,6,
+ 'No artificial maximum count: six genuinely distinct directions remain');
+assert.deepEqual(selectLogoWalls(hexagon,[],[],new Set([0,2,4])).sort((a,b)=>a-b),[1,3,5],
+ 'Blocked building faces never produce a logo, even with many directions');
+
 const boxed=[
  [[.2,-2],[20,-2],[20,-.2],[.2,-.2]],
  [[20.2,0],[23,0],[23,20],[20.2,20]],
@@ -127,4 +150,12 @@ assert.ok(Math.abs(logos[0].x)<.02,'Logo is on the previously unused west road f
 assert.equal(roadQuads.filter(q=>q.at(-1)===0xffcc00).length,4,
  'Branded wall color remains on every facade, including the blocked side');
 
+const multiFaces=[];
+assert.equal(paintImageFacade(()=>{}, {},hexagon,{
+ bottom:3,top:6,texture:'test',backgroundColor:0xffcc00,texturedFaces:multiFaces
+}),true);
+const logoCount=multiFaces[0].uvs.filter((v,i)=>
+ i%12===0&&v===1).length;
+assert.equal(logoCount,6,
+ 'The renderer itself keeps all six distinct directions, not only the selector');
 console.log('Shared neighbor-occlusion: ground glass + fascia blocked; upper branding remains PASS');

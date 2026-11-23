@@ -110,12 +110,23 @@ export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=
  return middleEntranceEdge(roadCandidates.length?roadCandidates:candidates,polygon?.length||0);
 }
 
-// Upper-only logos prefer every visible road face (up to maxLogos).
-// When road data is absent, the longest accessible facades are the fallback.
-export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null,maxLogos=4){
+// One logo for each distinct outward-facing direction, regardless of how many
+// tiny OSM edges make up the facade. A 45-degree sector keeps curved corners
+// from creating clusters of repeated logos while preserving perpendicular
+// street faces. Match every wall to a chosen representative, not transitively
+// to its neighbors (which could accidentally merge opposite street fronts).
+const LOGO_SAME_DIRECTION_COS=Math.cos(Math.PI/4);
+export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null){
  const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,1.2,blockedWalls);
  const roadCandidates=candidates.filter(edge=>edge.roadEligible);
- return (roadCandidates.length?roadCandidates:candidates)
-  .sort((a,b)=>b.len-a.len||a.i-b.i)
-  .slice(0,maxLogos).map(edge=>edge.i);
+ const sorted=(roadCandidates.length?roadCandidates:candidates)
+  .sort((a,b)=>b.len-a.len||a.i-b.i);
+ const selected=[];
+ for(const edge of sorted){
+  if(selected.some(other=>
+   edge.normal[0]*other.normal[0]+edge.normal[1]*other.normal[1]
+    >=LOGO_SAME_DIRECTION_COS-1e-9))continue;
+  selected.push(edge);
+ }
+ return selected.map(edge=>edge.i);
 }
