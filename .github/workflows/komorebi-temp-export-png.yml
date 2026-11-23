@@ -32,8 +32,24 @@ jobs:
                        pixel(im.width//2,im.height//2),pixel(im.width-1,im.height-1)]
               print('PNG_METADATA:'+name+':'+str(im.size)+':'+repr(samples),flush=True)
               if name=='rakuten-mobile':
-                  common=collections.Counter(im.getdata()).most_common(12)
-                  print('PNG_COLORS:'+name+':'+repr(common),flush=True)
+                  # The old WebP has variable pink tones plus a thin outline.
+                  # Flatten the backing to the exact wall color, preserving
+                  # white brand lettering and its antialiased edge.
+                  bg=(228,0,127)
+                  for y in range(im.height):
+                      for x in range(im.width):
+                          r,g,b,a=im.getpixel((x,y))
+                          if not (.065*im.width < x < .935*im.width and
+                                  .14*im.height < y < .86*im.height):
+                              white=0.
+                          else:
+                              light=max(0.,min(1.,(g-110)/115))
+                              neutral=max(0.,min(1.,(105-(r-g))/60))
+                              white=light*neutral
+                              if white<.22:white=0.
+                          im.putpixel((x,y),tuple(round(c*(1-white)+255*white)
+                                                  for c in bg)+(255,))
+                  print('PNG_RAKUTEN_FIXED:uniform-pink-background-white-lettering',flush=True)
               out=io.BytesIO()
               im.save(out,format='PNG',optimize=True)
               print('PNG_EXPORT:'+name+':'+base64.b64encode(out.getvalue()).decode('ascii'),flush=True)
