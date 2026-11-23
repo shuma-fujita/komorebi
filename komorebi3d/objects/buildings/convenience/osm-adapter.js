@@ -194,20 +194,6 @@ export function resolveOsmConvenienceRoofColor(spans,tags,height,baseColor){
  return convenienceRoofColor({hasStore:true,singleStorey,baseColor});
 }
 
-// Preserve each brand's stripe proportions, with a repeating 1m physical cycle.
-function paintBrandStripe(quad,mesh,a,b,bottom,top,brand){
- const cycleHeight=1;
- for(let start=bottom;start<top-1e-8;start+=cycleHeight){
-  let y=start;
-  for(const stripe of brand.stripes){
-   const next=Math.min(top,y+stripe.height*cycleHeight);
-   if(next>y+1e-8)
-    quad(mesh,[a[0],y,a[1]],[b[0],y,b[1]],[b[0],next,b[1]],[a[0],next,a[1]],stripe.color);
-   y=next;
-   if(y>=top-1e-8)break;
-  }
- }
-}
 export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facadeSide='side',outward=1){
  const wall=(bottom,top,color)=>{
   if(top>bottom+1e-8)
@@ -216,8 +202,9 @@ export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facade
  let cursor=0;
  for(const span of spans||[]){
   if(span.bottom>cursor)wall(cursor,span.bottom,baseColor);
+  // Missing or unrenderable signs must not resurrect retired wall stripes.
   if(!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand))
-   paintBrandStripe(quad,mesh,a,b,span.bottom,span.top,span.brand);
+   wall(span.bottom,span.top,baseColor);
   cursor=Math.max(cursor,span.top);
  }
  if(cursor<height)wall(cursor,height,baseColor);

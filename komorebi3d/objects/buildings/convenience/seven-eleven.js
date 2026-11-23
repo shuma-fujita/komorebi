@@ -29,11 +29,5 @@ export const sevenEleven={
    {from:.09,to:.21,color:red}
   ],
   textColor:green,label:'ELEVEN',glyphs,logo:{quads:logoQuads}
- },
- stripes:[
-  {height:0.36,color:0xffffff},
-  {height:0.22,color:0x008f45},
-  {height:0.19,color:0xe63b35},
-  {height:0.23,color:0xf58220}
- ]
+ }
 };

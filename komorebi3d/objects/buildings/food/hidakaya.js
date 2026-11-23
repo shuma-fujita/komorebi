@@ -9,6 +9,5 @@ export const hidakaya={
  id:'hidakaya',
  names:['日高屋','hidakaya','熱烈中華食堂日高屋'],
  sign:{background:white,upper:red,lower:yellow,bands:[{from:.13,to:.90,color:red},{from:.04,to:.13,color:yellow}],
-  textColor:white,label:'HIDAKAYA',glyphs},
- stripes:[{height:.78,color:red},{height:.10,color:yellow},{height:.12,color:white}]
+  textColor:white,label:'HIDAKAYA',glyphs}
 };

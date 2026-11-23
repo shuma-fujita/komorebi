@@ -29,9 +29,5 @@ export const lawson={
   ],
   textColor:white,label:'LAWSON',glyphs,
   logo:{background:deepBlue,aspect:1.30,wordmark:true,quads:logoQuads}
- },
- stripes:[
-  {height:0.60,color:blue},
-  {height:0.40,color:white}
- ]
+ }
 };

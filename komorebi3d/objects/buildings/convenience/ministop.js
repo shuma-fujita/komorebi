@@ -50,10 +50,5 @@ export const ministop={
   ],
   label:'MINISTOP',glyphs,textColor:blue,
   logo:{background:yellow,aspect:3.2,wordmark:true,quads:logoQuads}
- },
- stripes:[
-  {height:0.65,color:0xf5cc22},
-  {height:0.225,color:0x1769b3},
-  {height:0.125,color:0xffffff}
- ]
+ }
 };

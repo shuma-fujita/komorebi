@@ -32,9 +32,5 @@ export const lawsonStore100={
   ],
   textColor:white,label:'STORE100',glyphs,
   logo:{background:darkGreen,aspect:1.5,wordmark:true,quads:logoQuads}
- },
- stripes:[
-  {height:0.60,color:green},
-  {height:0.40,color:white}
- ]
+ }
 };
