@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import {middleEntranceEdge,selectEntranceWall,blockedBuildingWalls} from '../komorebi3d/maps/entrance-wall-selection.js';
+import {middleEntranceEdge,selectEntranceWall,blockedBuildingWalls,eligibleFacadeWalls,selectLogoWalls} from '../komorebi3d/maps/entrance-wall-selection.js';
 const e=(i,len)=>({i,len});
 assert.equal(middleEntranceEdge([e(0,8),e(1,7),e(2,9)],4),1,'Three continuous edges: middle');
 assert.equal(middleEntranceEdge([e(0,8),e(1,7),e(2,9),e(3,6)],4),2,
@@ -26,6 +26,22 @@ const blocked=blockedBuildingWalls(square,[eastNeighbor]);
 assert.deepEqual([...blocked],[1],'East wall is shared physical obstruction for door and windows');
 assert.equal(selectEntranceWall(square,[],[eastNeighbor],4,blocked),3,
  'Reusing blocked walls preserves entrance selection');
+// Reuse the exact same candidate assessment for doors and logos.
+// The east wall is blocked; north/south/west are accessible.
+const westRoad=[[[-10,3],[-10,17]]];
+const candidates=eligibleFacadeWalls(square,westRoad,[eastNeighbor],1.2,blocked);
+assert.deepEqual(candidates.map(w=>w.i),[0,2,3],'No obstructed wall may be a candidate');
+assert.deepEqual(candidates.filter(w=>w.roadEligible).map(w=>w.i),[3],
+ 'West-facing road remains eligible even when east face is longer');
+assert.deepEqual(selectLogoWalls(square,westRoad,[eastNeighbor],blocked),[3],
+ 'Upper-only logos prefer unblocked road-facing facade');
+assert.deepEqual(selectLogoWalls(square,[],[eastNeighbor],blocked),[0,2,3],
+ 'Missing road information falls back to accessible facade walls');
+assert.equal(selectEntranceWall(square,westRoad,[eastNeighbor],4,blocked),3,
+ 'The unchanged door chooser uses the same road/obstruction candidates');
+assert.equal(selectEntranceWall(square,[[[-10,3],[-10,17]]],[eastNeighbor],4,blocked),3,
+ 'Road with opposite direction still selects the same door face');
+
 const boxed=[
  [[.2,-2],[20,-2],[20,-.2],[.2,-.2]],
  [[20.2,0],[23,0],[23,20],[20.2,20]],
@@ -93,6 +109,22 @@ const upstairs=[],upstairsFaces=[];
 assert.equal(paintImageFacade((mesh,...args)=>upstairs.push(args),{},square,{bottom:3,top:6,
  texture:'test',backgroundColor:0xffcc00,texturedFaces:upstairsFaces,blockedWalls:blocked}),true);
 assert.equal(upstairs.length,4,'Second floor brand color wraps all four walls');
-assert.equal(upstairsFaces[0].uvs.filter((v,i)=>v===1&&i%12===0).length,4,
- 'Second floor keeps all four image logos even beside a building');
+assert.equal(upstairsFaces[0].uvs.filter((v,i)=>v===1&&i%12===0).length,3,
+ 'Second floor excludes neighboring building side from its logo faces');
+const roadQuads=[],roadFaces=[];
+paintImageFacade((mesh,...args)=>roadQuads.push(args),{},square,{bottom:3,top:6,
+ texture:'test',backgroundColor:0xffcc00,texturedFaces:roadFaces,
+ blockedWalls:blocked,logoWallIndices:selectLogoWalls(square,westRoad,[eastNeighbor],blocked)});
+const fullUV=new Set(['1,0,0,0,0,1,1,0,0,1,1,1','0,0,1,0,1,1,0,0,1,1,0,1']);
+const logos=[];
+for(let i=0;i<roadFaces[0].uvs.length;i+=12){
+ if(!fullUV.has(roadFaces[0].uvs.slice(i,i+12).join(',')))continue;
+ const p=roadFaces[0].positions.slice(i/12*18,i/12*18+18);
+ logos.push({x:p[0],z:p[2]});
+}
+assert.equal(logos.length,1,'Only visible road-facing facade receives a logo');
+assert.ok(Math.abs(logos[0].x)<.02,'Logo is on the previously unused west road face');
+assert.equal(roadQuads.filter(q=>q.at(-1)===0xffcc00).length,4,
+ 'Branded wall color remains on every facade, including the blocked side');
+
 console.log('Shared neighbor-occlusion: ground glass + fascia blocked; upper branding remains PASS');

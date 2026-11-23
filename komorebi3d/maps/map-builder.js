@@ -3,9 +3,9 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {selectEntranceWall,blockedBuildingWalls} from './entrance-wall-selection.js?v=wall-occlusion-v1-20261123';
+import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls} from './entrance-wall-selection.js?v=shared-facade-candidates-v1-20261123';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-image-logo-v1-20261123';
-import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=occupancy-facade-modes-v1-20261123';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=shared-facade-candidates-v1-20261123';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=occupancy-facade-modes-v1-20261123';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
@@ -287,6 +287,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const nearbyBuildings=[...nearby.values()];
    const blockedWalls=blockedBuildingWalls(p,nearbyBuildings);
    const frontEdge=selectEntranceWall(p,roadSegments,nearbyBuildings,CONVENIENCE_DOOR_WIDTH_M,blockedWalls);
+   const logoWallIndices=selectLogoWalls(p,roadSegments,nearbyBuildings,blockedWalls);
    building(buildingMesh,p,height,tint,convenienceSpans,frontEdge,tags,pinkSpans,foodSpans,blockedWalls);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
@@ -308,7 +309,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // Industry-independent logo pass; legacy window/glazing paints stay intact.
    // Only explicitly occupied floors block a logo; no fabricated full-tower owners.
    paintLogoBuilding(quad,buildingMesh,p,logoBuildings.get(e.id),tags,height,
-    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls);
+    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls,logoWallIndices);
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.

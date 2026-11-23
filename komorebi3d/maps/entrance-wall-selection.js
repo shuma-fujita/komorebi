@@ -83,30 +83,39 @@ export function blockedBuildingWalls(polygon,otherBuildings=[]){
  });
  return blocked;
 }
-export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=4,blockedWalls=null){
- if(!Array.isArray(polygon)||polygon.length<3)return -1;
+// Shared facade-side candidate assessment for doors and upper-floor logos.
+// The width threshold is a consumer choice: 4m for doors, 1.2m for logos.
+// Road visibility and physical neighbor obstruction are evaluated once here.
+export function eligibleFacadeWalls(polygon,roads=[],otherBuildings=[],minWidth=0,blockedWalls=null){
+ if(!Array.isArray(polygon)||polygon.length<3)return [];
  const area=polygon.reduce((sum,a,i)=>{const b=polygon[(i+1)%polygon.length];return sum+a[0]*b[1]-b[0]*a[1];},0);
  const outward=area>=0?1:-1;
- const edges=polygon.map((a,i)=>{
-  const b=polygon[(i+1)%polygon.length],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);
-  return {i,len,mid:[(a[0]+b[0])/2,(a[1]+b[1])/2],
-   normal:len?[outward*dz/len,-outward*dx/len]:[0,0]};
- });
  const occluded=blockedWalls instanceof Set?blockedWalls:blockedBuildingWalls(polygon,otherBuildings);
- const wide=edges.filter(edge=>edge.len>=doorWidth-1e-7);
- if(!wide.length)return -1;
- const candidates=wide.map(edge=>{
-  const blocked=occluded.has(edge.i);
-  const road=roadFacing(edge,roads);
-  const roadBlocked=road&&crossesFootprint(edge.mid,road.point,otherBuildings);
-  return {...edge,blocked,road,roadBlocked};
- });
- // Exclusion order: adjacent building, door width (already filtered),
- // road not in front, building between entrance and road, road too distant.
- // When no road survives, relax road tests without reinstating blocked faces;
- // all-blocked buildings use remaining wide walls rather than no door.
- let remaining=candidates.filter(e=>!e.blocked&&e.road&&!e.roadBlocked);
- if(!remaining.length)remaining=candidates.filter(e=>!e.blocked);
- // Never reinstate a face that is physically blocked by another building.
- return middleEntranceEdge(remaining,edges.length);
+ return polygon.map((a,i)=>{
+  const b=polygon[(i+1)%polygon.length],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);
+  const edge={i,len,mid:[(a[0]+b[0])/2,(a[1]+b[1])/2],
+   normal:len?[outward*dz/len,-outward*dx/len]:[0,0]};
+  const blocked=occluded.has(i);
+  const road=len>0?roadFacing(edge,roads):null;
+  const roadBlocked=!!road&&crossesFootprint(edge.mid,road.point,otherBuildings);
+  return {...edge,blocked,road,roadBlocked,roadEligible:!!road&&!roadBlocked&&!blocked};
+ }).filter(edge=>edge.len>=minWidth-1e-7&&!edge.blocked);
+}
+
+// Door-specific final selection preserves the existing longest contiguous run.
+// If no road faces are available, non-obstructed wide walls remain eligible.
+export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=4,blockedWalls=null){
+ const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,doorWidth,blockedWalls);
+ const roadCandidates=candidates.filter(edge=>edge.roadEligible);
+ return middleEntranceEdge(roadCandidates.length?roadCandidates:candidates,polygon?.length||0);
+}
+
+// Upper-only logos prefer every visible road face (up to maxLogos).
+// When road data is absent, the longest accessible facades are the fallback.
+export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null,maxLogos=4){
+ const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,1.2,blockedWalls);
+ const roadCandidates=candidates.filter(edge=>edge.roadEligible);
+ return (roadCandidates.length?roadCandidates:candidates)
+  .sort((a,b)=>b.len-a.len||a.i-b.i)
+  .slice(0,maxLogos).map(edge=>edge.i);
 }

@@ -21,7 +21,7 @@ export function imageFacadeMode({bottom,top,groundGlassTop}={}){
  return top>groundGlassTop+1e-8?'ground-and-upper':'ground-only';
 }
 
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -40,9 +40,11 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  }).filter(w=>w.length>.1);
  // If OSM adds setback edges, keep the wall colored all around but place
  // exactly four centered logos on the four longest usable facades.
- const logoWalls=[...walls].filter(w=>w.length>=1.2)
-  .sort((a,b)=>b.length-a.length||a.i-b.i).slice(0,4);
- if(logoWalls.length!==4)return false;
+ const logoCandidates=[...walls].filter(w=>w.length>=1.2&&!blockedWalls?.has(w.i))
+  .sort((a,b)=>b.length-a.length||a.i-b.i);
+ const allowedLogos=Array.isArray(logoWallIndices)?new Set(logoWallIndices):null;
+ const logoWalls=(allowedLogos?logoCandidates.filter(w=>allowedLogos.has(w.i)):logoCandidates).slice(0,4);
+ if(!walls.length)return false;
  const useTexture=Array.isArray(texturedFaces);
  const facadeMode=imageFacadeMode({bottom,top,groundGlassTop});
  const withGroundGlass=facadeMode!=='upper-only';
