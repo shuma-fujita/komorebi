@@ -202,9 +202,14 @@ export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facade
  let cursor=0;
  for(const span of spans||[]){
   if(span.bottom>cursor)wall(cursor,span.bottom,baseColor);
-  // Missing or unrenderable signs must not resurrect retired wall stripes.
-  if(!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand,{blocked,baseColor}))
+  // The first-floor fascia is the same blocked surface as its glass.
+  // Higher-floor signs are unaffected by neighboring buildings.
+  if(blocked&&span.bottom<1e-8){
    wall(span.bottom,span.top,baseColor);
+  }else if(!span.brand.sign||!convenienceStoreFacade(quad,mesh,a,b,span.bottom,span.top,facadeSide,outward,span.brand)){
+   wall(span.bottom,span.top,baseColor);
+  }
+
   cursor=Math.max(cursor,span.top);
  }
  if(cursor<height)wall(cursor,height,baseColor);

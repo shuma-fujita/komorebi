@@ -57,22 +57,41 @@ const wall=(out,obstructed)=>paintConvenienceWall((mesh,...args)=>out.push(args)
  'side',1,obstructed);
 wall(blank,false);wall(blockedPaint,true);
 assert.ok(blank.length>1,'Accessible walls still draw storefront glass and signage');
-assert.ok(blockedPaint.length>1,'Blocked side retains upper storefront sign');
-assert.ok(blockedPaint.some(q=>q.at(-1)===0x8899aa),'Blocked glass zone uses building color');
-assert.ok(!blockedPaint.some(q=>q.at(-1)===0xbcd3dd),'Blocked side has no glazing');
+assert.equal(blockedPaint.length,1,'Blocked first-floor glass and fascia become one plain wall');
+assert.equal(blockedPaint[0].at(-1),0x8899aa,'Blocked storefront uses the building wall color');
+const upstairsStore=[];
+paintConvenienceWall((mesh,...args)=>upstairsStore.push(args),{},
+ square[1],square[2],6,0x8899aa,
+ [{bottom:0,top:3,brand:fakeBrand},{bottom:3,top:6,brand:fakeBrand}],
+ 'side',1,true);
+assert.ok(upstairsStore.length>1,'Second-floor conventional sign remains on blocked side');
+assert.ok(upstairsStore.some(q=>q.at(-1)===0x123456),'Upper brand color remains');
+assert.ok(!upstairsStore.some(q=>q.at(-1)===0xbcd3dd),'No blocked first-floor glass');
 const full=[],occluded=[],all=[];
 const paint=(out,mask)=>paintImageFacade((mesh,...args)=>out.push(args),{},
  square,{bottom:0,top:3,texture:'test',backgroundColor:0xffcc00,
  texturedFaces:[],groundGlassTop:3,entranceEdgeIndex:3,blockedWalls:mask});
 assert.equal(paint(full,new Set()),true);
 assert.equal(paint(occluded,blocked),true);
-assert.ok(full.length>occluded.length,'Occluded image facades omit only glass');
-assert.equal(paint(all,new Set([0,1,2,3])),true,'Upper facade stays colored even if all glass is occluded');
-assert.ok(all.length>=4,'Every upper fascia keeps its brand color');
+assert.ok(full.length>occluded.length,'Occluded image facades omit glass and ground fascia');
+assert.equal(paint(all,new Set([0,1,2,3])),true,'Fully occluded ground-floor facade is still a valid store');
+assert.equal(all.length,0,'All blocked ground-floor walls stay the original building color');
+const upperPaint=[],upperFaces=[];
+assert.equal(paintImageFacade((mesh,...args)=>upperPaint.push(args),{},square,{
+ bottom:0,top:6,texture:'test',backgroundColor:0xffcc00,
+ texturedFaces:upperFaces,groundGlassTop:3,entranceEdgeIndex:3,blockedWalls:blocked}),true);
+assert.ok(upperPaint.some(q=>q.at(-1)===0xffcc00),
+ 'Brand color remains on upper floors above a blocked first floor');
+const sideUpper=upperPaint.filter(q=>q.at(-1)===0xffcc00&&
+ q.slice(0,4).every(v=>Array.isArray(v)&&Math.abs(v[0]-20)<1e-6));
+assert.ok(sideUpper.length>0,'Blocked east wall retains upper-floor brand color');
+assert.ok(sideUpper.every(q=>q.slice(0,4).every(v=>v[1]>=3-1e-8)),
+ 'Brand-colored overlay on blocked wall begins at second floor');
+assert.ok(upperFaces[0].positions.length>0,'Upper image UV surfaces remain generated');
 const upstairs=[],upstairsFaces=[];
 assert.equal(paintImageFacade((mesh,...args)=>upstairs.push(args),{},square,{bottom:3,top:6,
  texture:'test',backgroundColor:0xffcc00,texturedFaces:upstairsFaces,blockedWalls:blocked}),true);
 assert.equal(upstairs.length,4,'Second floor brand color wraps all four walls');
 assert.equal(upstairsFaces[0].uvs.filter((v,i)=>v===1&&i%12===0).length,4,
  'Second floor keeps all four image logos even beside a building');
-console.log('Shared neighbor-occlusion: only lower glazing blocked; upper signs and brand wraps remain PASS');
+console.log('Shared neighbor-occlusion: ground glass + fascia blocked; upper branding remains PASS');

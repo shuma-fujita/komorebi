@@ -54,7 +54,18 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   texturedQuad(surface,a,b,c,d,uv0,uv1,uv2,uv3);
  }
  for(const wall of walls){
-  // Obstruction affects only the glazed lower zone, not the upper fascia/logo.
+  // For an obstructed ground-floor face, leave both glazing and the fascia
+  // in the building's original wall material. Upper-storey branding remains.
+  if(withGroundGlass&&blockedWalls?.has(wall.i)){
+   if(top>groundGlassTop+1e-8){
+    quad(mesh,place(wall,0,groundGlassTop,.07),
+     place(wall,wall.length,groundGlassTop,.07),
+     place(wall,wall.length,top,.07),
+     place(wall,0,top,.07),backgroundColor);
+    if(useTexture)face(wall,0,wall.length,groundGlassTop,top);
+   }
+   continue;
+  }
   // This base-colored quad is also the safe fallback while the PNG loads.
   const wallBottom=logoAreaBottom;
   if(top>wallBottom+1e-8)
