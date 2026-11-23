@@ -125,8 +125,15 @@ paintImageFacade(()=>{}, {},irregular,{
  texturedFaces:irregularFaces,blockedWalls:irregularBlocked,
  logoWallIndices:irregularLogos
 });
-assert.equal(irregularFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,1,
- 'Real irregular footprint emits one logo UV surface');
+// Either OSM winding produces one complete UV logo; the first U differs.
+const logoUVPatterns=new Set(['1,0,0,0,0,1,1,0,0,1,1,1',
+ '0,0,1,0,1,1,0,0,1,1,0,1']);
+let irregularLogoCount=0;
+for(let i=0;i<irregularFaces[0].uvs.length;i+=12)
+ if(logoUVPatterns.has(irregularFaces[0].uvs.slice(i,i+12).join(',')))
+  irregularLogoCount++;
+assert.equal(irregularLogoCount,1,
+ 'Real irregular footprint emits one logo UV surface regardless of winding');
 
 // A tiny 45-degree chamfer at a TRUE right-angle corner is not a bridge.
 const chamfer=[[0,0],[19.5,0],[20,.5],[20,20],[0,20]];
