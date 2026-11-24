@@ -194,10 +194,23 @@ export function resolveOsmConvenienceRoofColor(spans,tags,height,baseColor){
  return convenienceRoofColor({hasStore:true,singleStorey,baseColor});
 }
 
-export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facadeSide='side',outward=1,blocked=false){
- const wall=(bottom,top,color)=>{
+export function paintConvenienceWall(quad,mesh,a,b,height,baseColor,spans,facadeSide='side',outward=1,blocked=false,plainWallExclusions=[]){
+ const emitWall=(bottom,top,color)=>{
   if(top>bottom+1e-8)
    quad(mesh,[a[0],bottom,a[1]],[b[0],bottom,b[1]],[b[0],top,b[1]],[a[0],top,a[1]],color);
+ };
+ const wall=(bottom,top,color)=>{
+  // Exclude only the original opaque building wall, not legacy storefront
+  // geometry. Intervals are sorted by height and cover actual image facades.
+  let cursor=bottom;
+  for(const span of plainWallExclusions){
+   if(span.top<=cursor+1e-8)continue;
+   if(span.bottom>=top-1e-8)break;
+   emitWall(cursor,Math.min(top,span.bottom),color);
+   cursor=Math.max(cursor,span.top);
+   if(cursor>=top-1e-8)return;
+  }
+  emitWall(cursor,top,color);
  };
  let cursor=0;
  for(const span of spans||[]){

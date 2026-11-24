@@ -2,7 +2,7 @@
 // facade glass, signage and automatic doors reuse the convenience geometry.
 // A building with a convenience store on the same floor keeps that existing
 // storefront rather than painting two incompatible facades over each other.
-import {paintConvenienceWall} from '../convenience/osm-adapter.js?v=occupancy-facade-modes-v1-20261123';
+import {paintConvenienceWall} from '../convenience/osm-adapter.js?v=wall-dedup-step1-v1-20261124';
 export function composeFoodStorefrontSpans(convenienceSpans=[],foodSpans=[]){
  const spans=[...(convenienceSpans||[])];
  for(const food of foodSpans||[]){
@@ -11,7 +11,7 @@ export function composeFoodStorefrontSpans(convenienceSpans=[],foodSpans=[]){
  }
  return spans.sort((a,b)=>a.bottom-b.bottom||a.top-b.top);
 }
-export function paintFoodWall(quad,mesh,a,b,height,baseColor,convenienceSpans,foodSpans,side='side',outward=1,blocked=false){
+export function paintFoodWall(quad,mesh,a,b,height,baseColor,convenienceSpans,foodSpans,side='side',outward=1,blocked=false,plainWallExclusions=[]){
  return paintConvenienceWall(quad,mesh,a,b,height,baseColor,
-  composeFoodStorefrontSpans(convenienceSpans,foodSpans),side,outward,blocked);
+  composeFoodStorefrontSpans(convenienceSpans,foodSpans),side,outward,blocked,plainWallExclusions);
 }

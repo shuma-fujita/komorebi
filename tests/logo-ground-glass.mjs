@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import {buildMap} from '../komorebi3d/maps/map-builder.js';
 import {paintIsomaruFacade} from '../komorebi3d/objects/buildings/food/isomaru-sign.js';
 import {paintKaikatsuFacade} from '../komorebi3d/objects/buildings/leisure/kaikatsu-sign.js';
 import {paintHidakayaFacade} from '../komorebi3d/objects/buildings/food/hidakaya-sign.js';
@@ -159,4 +160,66 @@ assert.equal(paintLogoBuilding((mesh,a,b,c,d,color)=>quadsUpper.push(color),{},p
  [{brand:{id:'isomaru'},level:'1;2;3'}],{'building:levels':'4'},12,null,noGround,'way/test',[],0),1);
 assert.equal(logos(noGround[0]).length,4);
 assert.equal(quadsUpper.includes(0xbcd3dd),false);
-console.log('Ground glass / entrance and centered logo regression PASS');
+// Step 1: verify actual map meshes, not just painter metadata. At every
+// tested height, the original footprint plane is either retained or removed
+// exactly where an accepted opaque brand background replaces it.
+const lat=35.78444,lon=139.90061,sx=111320*Math.cos(lat*Math.PI/180);
+const coord=(x,z)=>({lat:lat-z/111320,lon:lon+x/sx});
+const way=(id,points)=>({type:'way',id,tags:{building:'yes','building:levels':'4'},
+ geometry:[...points,points[0]].map(([x,z])=>coord(x,z))});
+const main=way(90101,polygon);
+const tenant=(id,name,level)=>({type:'node',id,...coord(12,10),
+ tags:{name,...(level===undefined?{}:{level})}});
+function scene(stores=[],extras=[],building=main){
+ return buildMap({elements:[building,...stores,...extras]},{latitude:lat,longitude:lon,halfSize:200});
+}
+function originalIntervals(result,building,axis,plane){
+ const rows=[];
+ for(const batch of result.displayBatches){
+  const slice=batch.buildingSlices?.find(s=>s.osmKey==='way/'+building.id);
+  if(!slice)continue;
+  const pos=batch.meshes[slice.meshIndex].positions;
+  for(let i=slice.start;i<slice.end;i+=9){
+   if(![0,3,6].every(j=>Math.abs(pos[i+j+axis]-plane)<1e-5))continue;
+   const ys=[pos[i+1],pos[i+4],pos[i+7]];
+   const lo=Math.min(...ys),hi=Math.max(...ys);
+   if(hi-lo<1e-7)continue;
+   // Discard perpendicular wall triangles whose horizontal projection is a
+   // single point (including degenerate short edges at corners).
+   const other=axis===0?2:0;
+   const hs=[pos[i+other],pos[i+3+other],pos[i+6+other]];
+   if(Math.max(...hs)-Math.min(...hs)<1e-7)continue;
+   rows.push([Number(lo.toFixed(6)),Number(hi.toFixed(6))]);
+  }
+ }
+ return [...new Map(rows.map(pair=>[pair.join(','),pair])).values()].sort((a,b)=>a[0]-b[0]);
+}
+const south=result=>originalIntervals(result,main,2,0);
+assert.deepEqual(south(scene()),[[0,12]],'Unbranded original wall remains intact');
+assert.deepEqual(south(scene([tenant(90102,'DAISO','1')])),[[0,3],[6,12]],
+ 'Upper-floor PNG background replaces the corresponding original wall');
+assert.deepEqual(south(scene([tenant(90102,'DAISO','1'),tenant(90103,'ガスト','2')])),[[0,3],[9,12]],
+ 'Adjacent independently branded floors do not leave a duplicate base strip');
+assert.deepEqual(south(scene([tenant(90102,'DAISO','1;3')])),[[0,3],[6,9]],
+ 'Disjoint branded floors preserve the normal floor in between');
+assert.deepEqual(south(scene([tenant(90102,'LAWSON','0')])),[[0,2.4],[3,12]],
+ 'Ground fascia replaces original wall, but glazing backing remains for Step 3');
+assert.deepEqual(south(scene([tenant(90102,'LAWSON','0;1')])),[[0,2.4],[6,12]],
+ 'Ground-plus-upper opaque facade replaces only its covered band');
+const neighbor=way(90104,[[0,-2],[24,-2],[24,-.3],[0,-.3]]);
+assert.deepEqual(south(scene([tenant(90102,'LAWSON','0')],[neighbor])),[[0,12]],
+ 'Blocked ground facade retains its entire original wall');
+assert.deepEqual(south(scene([tenant(90102,'LAWSON','0;1')],[neighbor])),[[0,3],[6,12]],
+ 'Blocked ground wall is retained while the painted upper wall is replaced');
+assert.deepEqual(south(scene([tenant(90102,'DAISO',undefined)])),[[0,12]],
+ 'Missing level cannot cut a hole in the building');
+assert.deepEqual(south(scene([tenant(90102,'DAISO','9')])),[[0,12]],
+ 'Out-of-range level cannot cut a hole in the building');
+assert.deepEqual(south(scene([tenant(90102,'DAISO','1'),tenant(90103,'ガスト','1')])),[[0,3],[6,12]],
+ 'Conflicting image tenants only claim the successfully rendered floor');
+const triangle=way(90105,[[0,0],[24,0],[12,20]]);
+assert.equal(scene([tenant(90102,'DAISO','1')],[],triangle).texturedFaces.length,0,
+ 'Unsupported triangular image painter does not report a rendered band');
+assert.deepEqual(originalIntervals(scene([tenant(90102,'DAISO','1')],[],triangle),triangle,2,0),[[0,12]],
+ 'Failed painter preserves original wall');
+console.log('Ground glass / entrance, centered logo and Step 1 wall replacement regression PASS');

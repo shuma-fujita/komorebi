@@ -32,7 +32,7 @@ export function contiguousLogoGroups(spans){
  }
  return groups;
 }
-export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[],entranceEdgeIndex=null,blockedWalls=null,logoWallIndices=null){
+export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[],entranceEdgeIndex=null,blockedWalls=null,logoWallIndices=null,paintedGroups=null){
  let count=0;
  for(const {brand,paint} of LOGO_BRANDS){
   // Preserve per-brand OSM validation and existing occupied-floor protection.
@@ -44,6 +44,9 @@ export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredL
    if(paint(quad,mesh,polygon,{bottom:group.bottom,top:group.top,texturedFaces,ownerKey,
     groundGlassTop,entranceEdgeIndex,blockedWalls,logoWallIndices})){
     occupied.push(group);count++;
+    // Report only successfully generated image facades, never speculative
+    // occupancy or groups rejected by the painter / floor conflict check.
+    paintedGroups?.push({bottom:group.bottom,top:group.top,groundGlassTop});
    }
   }
  }

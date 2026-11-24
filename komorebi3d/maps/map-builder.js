@@ -5,12 +5,12 @@ import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls} from './entrance-wall-selection.js?v=vehicle-door-priority-restored-v2-20261124';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-image-logo-v1-20261123';
-import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=frontage-nearby-v1-20261123';
-import {paintFoodWall} from '../objects/buildings/food/common.js?v=occupancy-facade-modes-v1-20261123';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=wall-dedup-step1-v1-20261124';
+import {paintFoodWall} from '../objects/buildings/food/common.js?v=wall-dedup-step1-v1-20261124';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
 import {paintParkingArea} from '../objects/parking/common.js?v=parking-orange-u-inward-v3-20261122';
-import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=occupancy-facade-modes-v1-20261123';
+import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=wall-dedup-step1-v1-20261124';
 // Step 4-B: keep the Step 3 initial ordering, then reprioritize only unfinished
 // features when the helicopter moves >= 50m. Sorting yields every 512 operations
 // so the browser can enforce the existing per-frame time budget.
@@ -116,7 +116,18 @@ function top(m,p,h,t){
  }
  if(idx.length===3){const a=p[idx[0]],b=p[idx[1]],c=p[idx[2]];if(ccw)tri(m,[a[0],h,a[1]],[c[0],h,c[1]],[b[0],h,b[1]],t);else tri(m,[a[0],h,a[1]],[b[0],h,b[1]],[c[0],h,c[1]],t);}
 }
-function building(m,p,h,t,spans,front,tags,pinkSpans=[],foodSpans=[],blockedWalls=new Set()){
+// Step 1: remove the original opaque wall only where the accepted image
+// facade generates its own solid background. The shared image painter skips
+// edges <= 0.1m, leaves blocked ground floors unpainted, and reserves the
+// bottom 80% for glazing. Keep the backing behind glazing until Step 3.
+function imageWallExclusions(groups,length,blocked){
+ if(length<=.1||!groups.length)return [];
+ return groups.map(({bottom,top,groundGlassTop})=>{
+  const ground=Number.isFinite(groundGlassTop)&&groundGlassTop>bottom+1e-8&&groundGlassTop<=top+1e-8;
+  return {bottom:ground?(blocked?groundGlassTop:bottom+(groundGlassTop-bottom)*.8):bottom,top};
+ }).filter(span=>span.top>span.bottom+1e-8).sort((a,b)=>a.bottom-b.bottom);
+}
+function building(m,p,h,t,spans,front,tags,pinkSpans=[],foodSpans=[],blockedWalls=new Set(),paintedGroups=[]){
  const n=p.length,area=signedArea(p),outward=area>0?1:-1;
  const edges=p.map((a,i)=>{
   const b=p[(i+1)%n],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz)||1;
@@ -129,7 +140,9 @@ function building(m,p,h,t,spans,front,tags,pinkSpans=[],foodSpans=[],blockedWall
  }
  for(let i=0;i<n;i++){
   const e=edges[i],side=i===front?'front':i===back?'back':'side';
-  paintFoodWall(quad,m,e.a,e.b,h,t,spans,foodSpans,side,outward,blockedWalls.has(i));
+  const blocked=blockedWalls.has(i);
+  paintFoodWall(quad,m,e.a,e.b,h,t,spans,foodSpans,side,outward,blocked,
+   imageWallExclusions(paintedGroups,e.len,blocked));
   paintLoveHotelWall(quad,m,e.a,e.b,pinkSpans,LOVE_HOTEL_COLOR,outward);
  }
  top(m,p,h,resolveOsmConvenienceRoofColor(spans,tags,h,t));
@@ -294,7 +307,6 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const blockedWalls=blockedBuildingWalls(p,nearbyBuildings);
    const frontEdge=selectEntranceWall(p,roadSegments,nearbyBuildings,CONVENIENCE_DOOR_WIDTH_M,blockedWalls);
    const logoWallIndices=selectLogoWalls(p,roadSegments,nearbyBuildings,blockedWalls);
-   building(buildingMesh,p,height,tint,convenienceSpans,frontEdge,tags,pinkSpans,foodSpans,blockedWalls);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
    // Only explicit tenant levels can reserve a floor against a PNG logo.
@@ -312,10 +324,13 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
     }
    const available=span=>!otherStoreSpans.some(other=>
     span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8);
-   // Industry-independent logo pass; legacy window/glazing paints stay intact.
-   // Only explicitly occupied floors block a logo; no fabricated full-tower owners.
+   // First generate actual branded surfaces, then fill only the remaining
+   // original wall intervals. The fallback solid color is still present even
+   // while PNGs are loading or unavailable in the isolated editor preview.
+   const paintedGroups=[];
    paintLogoBuilding(quad,buildingMesh,p,logoBuildings.get(e.id),tags,height,
-    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls,logoWallIndices);
+    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls,logoWallIndices,paintedGroups);
+   building(buildingMesh,p,height,tint,convenienceSpans,frontEdge,tags,pinkSpans,foodSpans,blockedWalls,paintedGroups);
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
     // Keep a non-enumerable source for an isolated editor preview; no change to feature JSON/logging.

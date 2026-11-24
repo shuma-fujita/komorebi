@@ -102,7 +102,7 @@ assert.equal(matchFoodBuildings([building,nodal],project,1000).get(building.id)[
 const noBrand=build({source:'OpenStreetMap contributors',tile,elements:[building]});
 assert.equal(noBrand.texturedFaces.length,0);
 const verts=data=>data.meshes.reduce((sum,m)=>sum+m.positions.length,0);
-assert.equal(verts(result)-verts(noBrand),2*4*18,'Only two four-face wall color strips added');
+assert.equal(verts(result)-verts(noBrand),3*4*18,'Two adjacent branded bands plus ordinary walls above/below replace each original wall');
 
 // Validate supplied PNG files are indexed, square, and their actual corner
 // palette colors match the intended complete-wall background colors.

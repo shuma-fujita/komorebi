@@ -98,8 +98,13 @@ const vertexCount=result=>result.meshes.reduce((n,m)=>n+m.positions.length,0);
 const redQuads=rendered.meshes.flatMap(mesh=>mesh.colors).length-
  noPoi.meshes.flatMap(mesh=>mesh.colors).length;
 const walls=way.geometry.slice(0,-1).length;
-assert.equal(redQuads,walls*18,'Only red fallback perimeter adds fixed Engine triangles');
-assert.equal(vertexCount(rendered)-vertexCount(noPoi),walls*18);
+// The original middle-floor wall is removed; splitting the remaining
+// ordinary wall above/below it adds one segment per covered edge.
+const coveredWalls=way.geometry.slice(0,-1).filter((p,i)=>{
+ const a=xy(p),b=xy(way.geometry[i+1]);return Math.hypot(b[0]-a[0],b[1]-a[1])>.1;
+}).length;
+assert.equal(redQuads,coveredWalls*2*18,'One fallback band and two remaining ordinary wall intervals replace each original wall');
+assert.equal(vertexCount(rendered)-vertexCount(noPoi),coveredWalls*2*18);
 const notched=[[0,0],[18,0],[18,12],[0,12]],quads=[],uv=[];
 assert.equal(paintMcDonaldsFacade((mesh,a,b,c,d,color)=>quads.push({a,b,c,d,color}),{},notched,
  {bottom:6,top:9,texturedFaces:uv}),true);
