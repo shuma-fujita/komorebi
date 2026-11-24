@@ -52,7 +52,9 @@ for(const [fn,texture,color] of [
  const poly=[[0,0],[18,0],[18,12],[0,12]];
  assert.equal(fn((m,a,b,c,d,shade)=>walls.push(shade),{},poly,
   {bottom:3,top:6,texturedFaces:faces}),true);
- assert.deepEqual(walls,[color,color,color,color]);
+ assert.deepEqual(walls,[]);
+ assert.equal(faces[0].backgroundColor,color);
+ assert.equal(faces[0].backgroundPositions.length,16*18);
  assert.equal(faces[0].texture,texture);
  assert.equal(fn(()=>{},{},[...poly].reverse(),{bottom:3,top:6,texturedFaces:reversed}),true);
  assert.equal(reversed[0].uvs.filter((_,i)=>i%12===0&&

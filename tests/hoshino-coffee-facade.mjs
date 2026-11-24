@@ -34,7 +34,9 @@ assert.equal(render({...tags,name:'別のカフェ'}).texturedFaces.length,0);
 const quads=[],faces=[],poly=[[0,0],[20,0],[20,15],[0,15]];
 assert.equal(paintHoshinoFacade((mesh,a,b,c,d,color)=>quads.push(color),{},poly,
  {bottom:3,top:6,texturedFaces:faces}),true);
-assert.deepEqual(quads,[HOSHINO_BG,HOSHINO_BG,HOSHINO_BG,HOSHINO_BG]);
+assert.deepEqual(quads,[]);
+assert.equal(faces[0].backgroundColor,HOSHINO_BG);
+assert.equal(faces[0].backgroundPositions.length,16*18);
 const face=faces[0];assert.equal(face.texture,'hoshino');
 assert.equal(face.uvs.length,face.positions.length/3*2);
 const uvA=['1,0,0,0,0,1,1,0,0,1,1,1','0,0,1,0,1,1,0,0,1,1,0,1'];
@@ -46,7 +48,7 @@ for(let i=0;i<face.uvs.length;i+=12){
   const p=face.positions.slice(i/12*18,i/12*18+18);
   const width=Math.hypot(p[3]-p[0],p[5]-p[2]),height=p[7]-p[1];
   assert.ok(Math.abs(width/height-HOSHINO_ASPECT)<1e-6,'Keep lettering unstretched');
- }else assert.ok(uv.every(n=>n===.04),'Brown wall uses uniform image corner');
+ }else assert.fail('Brown wall must be solid color, not UV geometry');
 }
 assert.equal(logos,4);
 const reversed=[];paintHoshinoFacade(()=>{},{},[...poly].reverse(),{bottom:3,top:6,texturedFaces:reversed});

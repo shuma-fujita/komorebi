@@ -256,18 +256,21 @@ const upperPaint=[],upperFaces=[];
 assert.equal(paintImageFacade((mesh,...args)=>upperPaint.push(args),{},square,{
  bottom:0,top:6,texture:'test',backgroundColor:0xffcc00,
  texturedFaces:upperFaces,groundGlassTop:3,entranceEdgeIndex:3,blockedWalls:blocked}),true);
-assert.ok(upperPaint.some(q=>q.at(-1)===0xffcc00),
- 'Brand color remains on upper floors above a blocked first floor');
-const sideUpper=upperPaint.filter(q=>q.at(-1)===0xffcc00&&
- q.slice(0,4).every(v=>Array.isArray(v)&&Math.abs(v[0]-20)<.2));
+assert.equal(upperFaces[0].backgroundColor,0xffcc00);
+const sideUpper=[];
+for(let i=0;i<upperFaces[0].backgroundPositions.length;i+=18){
+ const p=upperFaces[0].backgroundPositions.slice(i,i+18);
+ if(p.every((v,j)=>j%3!==0||Math.abs(v-20)<.2))sideUpper.push(p);
+}
 assert.ok(sideUpper.length>0,'Blocked east wall retains upper-floor brand color');
-assert.ok(sideUpper.every(q=>q.slice(0,4).every(v=>v[1]>=3-1e-8)),
- 'Brand-colored overlay on blocked wall begins at second floor');
+assert.ok(sideUpper.every(p=>p.every((v,i)=>i%3!==1||v>=3-1e-8)),
+ 'Brand-colored wall on blocked wall begins at second floor');
 assert.ok(upperFaces[0].positions.length>0,'Upper image UV surfaces remain generated');
 const upstairs=[],upstairsFaces=[];
 assert.equal(paintImageFacade((mesh,...args)=>upstairs.push(args),{},square,{bottom:3,top:6,
  texture:'test',backgroundColor:0xffcc00,texturedFaces:upstairsFaces,blockedWalls:blocked}),true);
-assert.equal(upstairs.length,4,'Second floor brand color wraps all four walls');
+assert.equal(upstairs.length,0,'No overlapping Engine background wall');
+assert.equal(upstairsFaces[0].backgroundPositions.length,13*18,'Three inlaid walls and one solid wall');
 assert.equal(upstairsFaces[0].uvs.filter((v,i)=>v===1&&i%12===0).length,3,
  'Second floor excludes neighboring building side from its logo faces');
 const roadQuads=[],roadFaces=[];
@@ -283,8 +286,9 @@ for(let i=0;i<roadFaces[0].uvs.length;i+=12){
 }
 assert.equal(logos.length,1,'Only visible road-facing facade receives a logo');
 assert.ok(Math.abs(logos[0].x)<.02,'Logo is on the previously unused west road face');
-assert.equal(roadQuads.filter(q=>q.at(-1)===0xffcc00).length,4,
- 'Branded wall color remains on every facade, including the blocked side');
+assert.equal(roadQuads.filter(q=>q.at(-1)===0xffcc00).length,0);
+assert.equal(roadFaces[0].backgroundPositions.length,7*18,
+ 'Branded solid wall remains on every facade, including the blocked side');
 
 const multiFaces=[];
 assert.equal(paintImageFacade(()=>{}, {},hexagon,{

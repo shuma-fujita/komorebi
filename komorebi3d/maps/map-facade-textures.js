@@ -1,6 +1,6 @@
 // Application-owned UV facade renderer for the pinned Komorebi Engine.
-// Main city mesh snapshots remain unchanged; these are zero-thickness UV
-// surfaces on the building wall, not free-standing sign boards.
+// Opaque solid wall bands and PNG logo inlays share one facade plane.
+// Keep the fixed Engine mesh contract unchanged.
 const TEXTURE_URLS=Object.freeze({
  lawson:new URL('../assets/textures/brands/lawson.png?v=brand-png-20261123',import.meta.url).href,
  rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=rakuten-crop-png-v1-20261123',import.meta.url).href,
@@ -62,10 +62,14 @@ function programFor(gl){
  varying vec2 vUV;
  varying float vFogDepth;
  uniform sampler2D uImage;
+ uniform vec3 uSolidColor;
+ uniform bool uUseImage;
  uniform float uFogStart;
  uniform float uFogEnd;
  void main(){
-  vec4 pixel=texture2D(uImage,vUV);
+  vec4 pixel=uUseImage?texture2D(uImage,vUV):vec4(uSolidColor,1.0);
+  // An alpha pixel is still an opaque wall, not a hole into the city.
+  pixel=vec4(mix(uSolidColor,pixel.rgb,pixel.a),1.0);
   float fog=clamp((vFogDepth-uFogStart)/max(0.001,uFogEnd-uFogStart),0.0,1.0);
   gl_FragColor=vec4(mix(pixel.rgb,vec3(0.75294,0.83922,0.77255),fog),pixel.a);
  }`;
@@ -83,15 +87,40 @@ function programFor(gl){
   viewProjection:gl.getUniformLocation(program,'uViewProjection'),
   view:gl.getUniformLocation(program,'uView'),
   image:gl.getUniformLocation(program,'uImage'),
+  solidColor:gl.getUniformLocation(program,'uSolidColor'),
+  useImage:gl.getUniformLocation(program,'uUseImage'),
   fogStart:gl.getUniformLocation(program,'uFogStart'),
   fogEnd:gl.getUniformLocation(program,'uFogEnd')};
 }
 function isFace(face){
  return Object.hasOwn(TEXTURE_URLS,face?.texture)&&Array.isArray(face.positions)&&
-  Array.isArray(face.uvs)&&face.positions.length>=18&&
-  face.positions.length%9===0&&face.uvs.length===face.positions.length/3*2;
+  Array.isArray(face.uvs)&&face.positions.length%18===0&&
+  face.uvs.length===face.positions.length/3*2&&
+  Array.isArray(face.backgroundPositions)&&face.backgroundPositions.length%18===0&&
+  face.positions.length+face.backgroundPositions.length>0&&
+  Number.isInteger(face.backgroundColor)&&face.backgroundColor>=0&&face.backgroundColor<=0xffffff;
 }
-
+// Match the actual uniform area of each brand image, rather than its old
+// approximate fallback color. A solid RGB material is used in either case.
+function sampledColor(face,resource){
+ if(!resource.ready)return face.backgroundColor;
+ const [u,v]=face.backgroundUV||[.04,.04],key=u+','+v;
+ if(resource.colors.has(key))return resource.colors.get(key)??face.backgroundColor;
+ let color=null;
+ try{
+  const image=resource.image,w=image.naturalWidth||image.width,h=image.naturalHeight||image.height;
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=1;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  if(ctx&&w>0&&h>0){
+   ctx.drawImage(image,Math.min(w-1,Math.max(0,Math.floor(u*w))),
+    Math.min(h-1,Math.max(0,Math.floor((1-v)*h))),1,1,0,0,1,1);
+   const p=ctx.getImageData(0,0,1,1).data;
+   if(p[3]===255)color=(p[0]<<16)|(p[1]<<8)|p[2];
+  }
+ }catch{/* Keep the configured solid fallback when pixel access fails. */}
+ resource.colors.set(key,color);
+ return color??face.backgroundColor;
+}
 // One layer per canvas / active Engine renderer; no modifications to pinned Engine.
 export function createMapFacadeTextureLayer(renderer){
  const isThree=Boolean(renderer?.THREE);
@@ -99,7 +128,7 @@ export function createMapFacadeTextureLayer(renderer){
  const gl=renderer?.gl;
  if(!isThree&&!gl)throw new Error('Map facade needs a ready A or B renderer');
  let disposed=false;
- const cache=new Map(),resources=new Map();
+ const cache=new Map(),resources=new Map(),solidMaterials=new Map();
  let scene=null,shader=null;
  if(isThree){
   scene=new THREE.Scene();
@@ -108,7 +137,7 @@ export function createMapFacadeTextureLayer(renderer){
  // Every brand owns its texture; all geometry and camera operations remain
  // identical across the fixed WebGL1/Three.js rendering backends.
  for(const [name,url] of Object.entries(TEXTURE_URLS)){
-  const resource={name,url,ready:false,failed:false,image:new Image(),texture:null,material:null};
+  const resource={name,url,ready:false,failed:false,image:new Image(),texture:null,material:null,colors:new Map()};
   if(isThree){
    const texture=new THREE.Texture();
    texture.colorSpace=THREE.SRGBColorSpace;
@@ -118,9 +147,21 @@ export function createMapFacadeTextureLayer(renderer){
    resource.texture=texture;
    resource.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,
     transparent:false,depthTest:true,depthWrite:true,toneMapped:false});
+   resource.inlayBackground=new THREE.Color(0xffffff);
+   resource.material.onBeforeCompile=shader=>{
+    shader.uniforms.uInlayBackground={value:resource.inlayBackground};
+    shader.fragmentShader='uniform vec3 uInlayBackground;\n'+shader.fragmentShader.replace(
+     '#include <map_fragment>',
+     '#include <map_fragment>\n diffuseColor.rgb=mix(uInlayBackground,diffuseColor.rgb,diffuseColor.a);\n diffuseColor.a=1.0;');
+   };
   }else{
    resource.texture=gl.createTexture();
    if(!resource.texture)throw new Error('UV facade texture allocation failed: '+name);
+   // Complete texture even before the image arrives (WebGL1 sampler validation).
+   gl.bindTexture(gl.TEXTURE_2D,resource.texture);
+   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   }
   const image=resource.image;
   image.decoding='async';
@@ -152,32 +193,43 @@ export function createMapFacadeTextureLayer(renderer){
   resources.set(name,resource);
   image.src=url;
  }
+ function solidMaterial(color){
+  if(!solidMaterials.has(color))solidMaterials.set(color,new THREE.MeshBasicMaterial({
+   color,side:THREE.DoubleSide,transparent:false,depthTest:true,depthWrite:true,toneMapped:false}));
+  return solidMaterials.get(color);
+ }
+ function geometryPart(positions,uvs,material){
+  if(!positions.length)return null;
+  if(isThree){
+   const geometry=new THREE.BufferGeometry();
+   geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+   if(uvs)geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+   const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;scene.add(mesh);
+   return {mesh,geometry};
+  }
+  const position=gl.createBuffer(),uv=uvs?gl.createBuffer():null;
+  if(!position||(uvs&&!uv))throw new Error('UV facade buffer allocation failed');
+  gl.bindBuffer(gl.ARRAY_BUFFER,position);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(positions),gl.STATIC_DRAW);
+  if(uv){
+   gl.bindBuffer(gl.ARRAY_BUFFER,uv);
+   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(uvs),gl.STATIC_DRAW);
+  }
+  return {position,uv,count:positions.length/3};
+ }
  function geometryFor(face){
   if(cache.has(face))return cache.get(face);
-  if(!isFace(face))return null;
-  let entry;
-  if(isThree){
-   const geo=new THREE.BufferGeometry();
-   geo.setAttribute('position',new THREE.Float32BufferAttribute(face.positions,3));
-   geo.setAttribute('uv',new THREE.Float32BufferAttribute(face.uvs,2));
-   const mesh=new THREE.Mesh(geo,resources.get(face.texture).material);
-   mesh.frustumCulled=false;scene.add(mesh);
-   entry={mesh,geometry:geo};
-  }else{
-   const position=gl.createBuffer(),uv=gl.createBuffer();
-   if(!position||!uv)throw new Error('UV facade buffer allocation failed');
-   gl.bindBuffer(gl.ARRAY_BUFFER,position);
-   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(face.positions),gl.STATIC_DRAW);
-   gl.bindBuffer(gl.ARRAY_BUFFER,uv);
-   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(face.uvs),gl.STATIC_DRAW);
-   entry={position,uv,count:face.positions.length/3};
-  }
-  cache.set(face,entry);
-  return entry;
+  const fallback=isThree?solidMaterial(face.backgroundColor):null;
+  const entry={wall:geometryPart(face.backgroundPositions,null,fallback),
+   logo:geometryPart(face.positions,face.uvs,fallback)};
+  cache.set(face,entry);return entry;
  }
  function forget(face,entry){
-  if(isThree){scene.remove(entry.mesh);entry.geometry.dispose();}
-  else{gl.deleteBuffer(entry.position);gl.deleteBuffer(entry.uv);}
+  for(const part of [entry.wall,entry.logo]){
+   if(!part)continue;
+   if(isThree){scene.remove(part.mesh);part.geometry.dispose();}
+   else{gl.deleteBuffer(part.position);if(part.uv)gl.deleteBuffer(part.uv);}
+  }
   cache.delete(face);
  }
  return {
@@ -189,10 +241,17 @@ export function createMapFacadeTextureLayer(renderer){
    const all=Array.isArray(faces)?faces.filter(isFace):[];
    const current=new Set(all);
    for(const [face,entry] of cache)if(!current.has(face))forget(face,entry);
-   const valid=all.filter(face=>resources.get(face.texture)?.ready);
+   const valid=all;
    for(const face of valid)geometryFor(face);
    if(!valid.length)return;
    if(isThree){
+    for(const face of valid){
+     const entry=cache.get(face),resource=resources.get(face.texture);
+     const color=sampledColor(face,resource),solid=solidMaterial(color);
+     resource.inlayBackground.setHex(color);
+     if(entry.wall)entry.wall.mesh.material=solid;
+     if(entry.logo)entry.logo.mesh.material=resource.ready?resource.material:solid;
+    }
     const webgl=renderer.renderer;
     const autoClear=webgl.autoClear;
     webgl.autoClear=false;
@@ -213,15 +272,24 @@ export function createMapFacadeTextureLayer(renderer){
     gl.depthMask(true);
     gl.enable(gl.DEPTH_TEST);
     for(const face of valid){
-     const entry=cache.get(face);
-     gl.bindTexture(gl.TEXTURE_2D,resources.get(face.texture).texture);
-     gl.bindBuffer(gl.ARRAY_BUFFER,entry.position);
-     gl.enableVertexAttribArray(shader.position);
-     gl.vertexAttribPointer(shader.position,3,gl.FLOAT,false,0,0);
-     gl.bindBuffer(gl.ARRAY_BUFFER,entry.uv);
-     gl.enableVertexAttribArray(shader.uv);
-     gl.vertexAttribPointer(shader.uv,2,gl.FLOAT,false,0,0);
-     gl.drawArrays(gl.TRIANGLES,0,entry.count);
+     const entry=cache.get(face),resource=resources.get(face.texture),color=sampledColor(face,resource);
+     gl.uniform3f(shader.solidColor,(color>>16&255)/255,(color>>8&255)/255,(color&255)/255);
+     gl.bindTexture(gl.TEXTURE_2D,resource.texture);
+     for(const [part,image] of [[entry.wall,false],[entry.logo,resource.ready]]){
+      if(!part)continue;
+      gl.uniform1i(shader.useImage,image?1:0);
+      gl.bindBuffer(gl.ARRAY_BUFFER,part.position);
+      gl.enableVertexAttribArray(shader.position);
+      gl.vertexAttribPointer(shader.position,3,gl.FLOAT,false,0,0);
+      if(part.uv){
+       gl.bindBuffer(gl.ARRAY_BUFFER,part.uv);
+       gl.enableVertexAttribArray(shader.uv);
+       gl.vertexAttribPointer(shader.uv,2,gl.FLOAT,false,0,0);
+      }else{
+       gl.disableVertexAttribArray(shader.uv);gl.vertexAttrib2f(shader.uv,0,0);
+      }
+      gl.drawArrays(gl.TRIANGLES,0,part.count);
+     }
     }
    }
   },
@@ -237,6 +305,8 @@ export function createMapFacadeTextureLayer(renderer){
     else gl.deleteTexture(res.texture);
    }
    resources.clear();
+   for(const material of solidMaterials.values())material.dispose();
+   solidMaterials.clear();
    if(!isThree)gl.deleteProgram(shader.program);
   }
  };

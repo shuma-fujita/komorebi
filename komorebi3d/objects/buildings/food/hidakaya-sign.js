@@ -1,5 +1,5 @@
 // Shared image facade; keep all non-logo walls white.
-import {paintImageFacade} from '../brand-facade.js?v=frontage-nearby-v1-20261123';
+import {paintImageFacade} from '../brand-facade.js?v=wall-inlay-step2-v1-20261124';
 export const HIDAKAYA_BG=0xffffff;
 export const HIDAKAYA_ASPECT=588/128;
 export function paintHidakayaFacade(quad,mesh,polygon,options={}){

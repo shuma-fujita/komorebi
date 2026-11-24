@@ -50,7 +50,7 @@ const logos=[];
 for(let i=0;i<face.uvs.length;i+=12){
  const group=face.uvs.slice(i,i+12);
  if(group.join(',')==='1,0,0,0,0,1,1,0,0,1,1,1')logos.push(i/12);
- else assert.ok(group.every(u=>u===.04),'Other walls sample solid pink corner');
+ else assert.fail('Non-logo regions must not sample PNG');
 }
 assert.equal(logos.length,4,'One logo per main facade');
 // Physical exterior view of a footprint edge reverses the path direction.
@@ -90,8 +90,9 @@ assert.ok(third.texturedFaces[0].positions.filter((_,i)=>i%3===1)
 const quads=[],uv=[];
 assert.equal(paintDaisoFacade((mesh,a,b,c,d,color)=>quads.push({a,b,c,d,color}),{},
  [[0,0],[18,0],[18,12],[0,12]],{bottom:3,top:6,texturedFaces:uv}),true);
-assert.equal(quads.length,4);
-assert.ok(quads.every(q=>q.color===DAISO_BG));
+assert.equal(quads.length,0);
+assert.equal(uv[0].backgroundColor,DAISO_BG);
+assert.equal(uv[0].backgroundPositions.length,16*18);
 assert.equal(uv[0].texture,'daiso');
 // Reversed OSM polygon winding reverses the visible wall direction. The
 // generator must adapt U so the letters remain readable from outside.
@@ -108,8 +109,8 @@ assert.equal(cwUV[0].uvs.filter((_,i)=>i%12===0&&
  'Negative-winding facades sample PNG left-to-right along the edge');
 const withoutDaiso=render({shop:'books',name:'架空書店',level:'1'});
 const verts=r=>r.meshes.reduce((sum,m)=>sum+m.positions.length,0);
-assert.equal(verts(full)-verts(withoutDaiso),8*18,
- 'Each original wall is split into two ordinary bands and one fallback band');
+assert.equal(verts(full)-verts(withoutDaiso),4*18,
+ 'Only the two ordinary wall bands remain in the Engine');
 const otherTenant={type:'node',id:333222444,version:1,...coord(2,0),
  tags:{shop:'convenience',name:'ファミリーマート 松戸',level:'1'}};
 assert.equal(render(node.tags,[otherTenant]).texturedFaces.length,0,

@@ -50,8 +50,7 @@ for(const face of result.texturedFaces){
  for(let i=0;i<face.uvs.length;i+=12){
   const group=face.uvs.slice(i,i+12);
   if(expectedUV.includes(group.join(',')))groups.push(i);
-  else assert.ok(group.every(v=>v===.04),
-   'Every remaining wall samples the same solid brand background');
+  else assert.fail('Only logo rectangles may use PNG UVs');
  }
  assert.equal(groups.length,4,'Four centered logos for '+face.texture);
  const lo=face.texture==='gusto'?3:6,hi=lo+3;
@@ -72,8 +71,9 @@ for(const {paint,color,texture} of walls){
  const quads=[],surfaces=[];
  assert.equal(paint((mesh,a,b,c,d,c0)=>quads.push(c0),{},wall,
   {bottom:3,top:6,texturedFaces:surfaces}),true);
- assert.equal(quads.length,4);
- assert.ok(quads.every(c=>c===color));
+ assert.equal(quads.length,0);
+ assert.equal(surfaces[0].backgroundColor,color);
+ assert.equal(surfaces[0].backgroundPositions.length,16*18);
  assert.equal(surfaces[0].texture,texture);
  const reversed=[];
  assert.equal(paint(()=>{},{},[wall[3],wall[2],wall[1],wall[0]],
@@ -102,7 +102,7 @@ assert.equal(matchFoodBuildings([building,nodal],project,1000).get(building.id)[
 const noBrand=build({source:'OpenStreetMap contributors',tile,elements:[building]});
 assert.equal(noBrand.texturedFaces.length,0);
 const verts=data=>data.meshes.reduce((sum,m)=>sum+m.positions.length,0);
-assert.equal(verts(result)-verts(noBrand),3*4*18,'Two adjacent branded bands plus ordinary walls above/below replace each original wall');
+assert.equal(verts(result)-verts(noBrand),4*18,'Only the two ordinary wall bands remain in the Engine');
 
 // Validate supplied PNG files are indexed, square, and their actual corner
 // palette colors match the intended complete-wall background colors.

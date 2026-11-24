@@ -54,7 +54,7 @@ const squares=[];
 for(let i=0;i<surface.uvs.length;i+=12){
  const block=surface.uvs.slice(i,i+12);
  if(block.join(',')==='1,0,0,0,0,1,1,0,0,1,1,1')squares.push(i);
- else assert.ok(block.every(v=>v===.04),'All non-logo walls sample PNG corner red');
+ else assert.fail('Only the logo rectangle may have PNG UVs');
 }
 assert.equal(squares.length,4,'One image on each of four primary walls');
 // McDonald's is visually symmetric, but must use the same exterior-facing
@@ -103,12 +103,14 @@ const walls=way.geometry.slice(0,-1).length;
 const coveredWalls=way.geometry.slice(0,-1).filter((p,i)=>{
  const a=xy(p),b=xy(way.geometry[i+1]);return Math.hypot(b[0]-a[0],b[1]-a[1])>.1;
 }).length;
-assert.equal(redQuads,coveredWalls*2*18,'One fallback band and two remaining ordinary wall intervals replace each original wall');
-assert.equal(vertexCount(rendered)-vertexCount(noPoi),coveredWalls*2*18);
+assert.equal(redQuads,coveredWalls*18,'Only the split ordinary wall intervals remain in the Engine');
+assert.equal(vertexCount(rendered)-vertexCount(noPoi),coveredWalls*18);
 const notched=[[0,0],[18,0],[18,12],[0,12]],quads=[],uv=[];
 assert.equal(paintMcDonaldsFacade((mesh,a,b,c,d,color)=>quads.push({a,b,c,d,color}),{},notched,
  {bottom:6,top:9,texturedFaces:uv}),true);
-assert.equal(quads.filter(q=>q.color===MC_SIGN_BG).length,4);
+assert.equal(quads.filter(q=>q.color===MC_SIGN_BG).length,0);
+assert.equal(uv[0].backgroundColor,MC_SIGN_BG);
+assert.equal(uv[0].backgroundPositions.length,16*18);
 assert.equal(quads.filter(q=>q.color===MC_SIGN_GOLD).length,0);
 assert.equal(uv.length,1);
 const reversed=[];

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import {buildMap} from '../komorebi3d/maps/map-builder.js';
+import {createMapFacadeTextureLayer} from '../komorebi3d/maps/map-facade-textures.js';
 import {paintIsomaruFacade} from '../komorebi3d/objects/buildings/food/isomaru-sign.js';
 import {paintKaikatsuFacade} from '../komorebi3d/objects/buildings/leisure/kaikatsu-sign.js';
 import {paintHidakayaFacade} from '../komorebi3d/objects/buildings/food/hidakaya-sign.js';
@@ -94,21 +95,13 @@ for(const painter of [paintIsomaruFacade,paintKaikatsuFacade]){
 // Regression: Yoshinoya's newer artwork is orange at the upper-left
 // but white at the bottom. Non-logo UV patches must sample the orange area.
 const yoshi=draw(paintYoshinoyaFacade,{bottom:0,top:3,groundGlassTop:3});
-const paintedBackground=[];
-for(let i=0;i<yoshi.face.uvs.length;i+=12){
- const vertices=yoshi.face.uvs.slice(i,i+12);
- if(!fullLogo.has(vertices.join(',')))paintedBackground.push(...vertices);
-}
-assert.ok(paintedBackground.length>0);
-for(let i=0;i<paintedBackground.length;i+=2){
- assert.equal(paintedBackground[i],.04);
- assert.equal(paintedBackground[i+1],.75,
-  'Yoshinoya background must sample orange top, never white bottom stripe');
-}
-// Other brands preserve their independently configured background coordinates.
+assert.equal(yoshi.face.backgroundColor,0xe08831);
+assert.deepEqual(yoshi.face.backgroundUV,[.04,.75],'Solid wall color samples the orange region once');
+assert.ok(yoshi.face.backgroundPositions.length>0);
+assert.equal(yoshi.face.positions.length,18,'Only the entrance logo is textured');
 const hida=draw(paintHidakayaFacade,{bottom:0,top:3,groundGlassTop:3});
-assert.ok(hida.face.uvs.some((v,i)=>i%2===1&&v===.5),
- 'Hidakaya background UV must remain unchanged');
+assert.deepEqual(hida.face.backgroundUV,[.94,.5],'Preserve configured solid-color sample point');
+assert.equal(hida.face.backgroundColor,0xffffff);
 
 // The shared gray sign-band separators must be present on actual image-logo
 // storefronts, not just the glazing. These continue the door/window uprights.
@@ -222,4 +215,91 @@ assert.equal(scene([tenant(90102,'DAISO','1')],[],triangle).texturedFaces.length
  'Unsupported triangular image painter does not report a rendered band');
 assert.deepEqual(originalIntervals(scene([tenant(90102,'DAISO','1')],[],triangle),triangle,2,0),[[0,12]],
  'Failed painter preserves original wall');
-console.log('Ground glass / entrance, centered logo and Step 1 wall replacement regression PASS');
+// Inlay contract: disjoint solid rectangles + exactly one full-image
+// rectangle fill each selected facade, at the same exact depth.
+for(const painter of [paintHidakayaFacade,paintYoshinoyaFacade,paintIsomaruFacade,paintKaikatsuFacade]){
+ const {face,quads}=draw(painter,{bottom:3,top:6});
+ assert.equal(quads.length,0);
+ const rects=[];
+ for(const [kind,data] of [['solid',face.backgroundPositions],['logo',face.positions]])
+  for(let i=0;i<data.length;i+=18){
+   const p=data.slice(i,i+18),xs=p.filter((v,j)=>j%3===0),ys=p.filter((v,j)=>j%3===1),zs=p.filter((v,j)=>j%3===2);
+   const axis=Math.max(...xs)-Math.min(...xs)<1e-7?0:2;
+   const fixed=axis===0?xs:zs,horizontal=axis===0?zs:xs;
+   rects.push({kind,axis,plane:fixed[0],l:Math.min(...horizontal),r:Math.max(...horizontal),b:Math.min(...ys),t:Math.max(...ys)});
+  }
+ assert.ok(rects.filter(r=>r.kind==='logo').length===4);
+ assert.ok(Math.abs(rects.reduce((n,r)=>n+(r.r-r.l)*(r.t-r.b),0)-264)<1e-6,'All four walls covered once');
+ for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){
+  const a=rects[i],b=rects[j];
+  if(a.axis!==b.axis||Math.abs(a.plane-b.plane)>1e-7)continue;
+  assert.ok(Math.min(a.r,b.r)-Math.max(a.l,b.l)<1e-7||Math.min(a.t,b.t)-Math.max(a.b,b.b)<1e-7,'No positive-area overlap');
+ }
+}
+const noLogo=[];
+assert.equal(paintHidakayaFacade(()=>{},{},polygon,{bottom:3,top:6,texturedFaces:noLogo,logoWallIndices:[]}),true);
+assert.equal(noLogo[0].positions.length,0);
+assert.equal(noLogo[0].backgroundPositions.length,4*18,'Logo-free facade remains a solid wall');
+// Backend contract with simulated upload/error events. The same two
+// geometry parts must be drawn in loading, ready and failure states.
+const camera={eye:[20,10,30],target:[12,3,10],fovDegrees:45,near:.1,far:2200};
+const originalImage=globalThis.Image,originalDocument=globalThis.document;
+const images=[];let samples=0;
+globalThis.Image=class {constructor(){images.push(this);this.naturalWidth=16;this.naturalHeight=16;}};
+globalThis.document={createElement:()=>({getContext:()=>({drawImage(){},getImageData(){samples++;return {data:[18,52,86,255]};}})})};
+try{
+ const face=hida.face;
+ const counts=[face.backgroundPositions.length/3,face.positions.length/3];
+ const draws=[];let useImage=0;
+ const gl=new Proxy({drawingBufferWidth:200,drawingBufferHeight:100,
+  getShaderParameter:()=>true,getProgramParameter:()=>true,
+  getUniformLocation:(_,name)=>name,getAttribLocation:(_,name)=>name,
+  uniform1i:(name,value)=>{if(name==='uUseImage')useImage=value;},
+  drawArrays:(_,start,count)=>draws.push([count,useImage])
+ },{get:(target,key)=>key in target?target[key]:
+  typeof key==='string'&&key===key.toUpperCase()?key:
+  typeof key==='string'&&key.startsWith('create')?()=>({}):()=>{}});
+ const layerA=createMapFacadeTextureLayer({gl});
+ const imageA=images.find(i=>i.src.includes('hidakaya.png'));
+ layerA.render([face],camera);
+ assert.deepEqual(draws.splice(0),counts.map(n=>[n,0]),'A: loading fills both disjoint rectangles in solid color');
+ imageA.onload();
+ layerA.render([face],camera);
+ assert.deepEqual(draws.splice(0),[[counts[0],0],[counts[1],1]],'A: ready textures only logo rectangle');
+ layerA.render([face],camera);draws.length=0;
+ assert.equal(samples,1,'Solid RGB sample is cached across frames');
+ layerA.render([],camera);assert.equal(draws.length,0,'A: stale facade removed');
+ layerA.dispose();
+
+ const frames=[];
+ class Material {constructor(options){Object.assign(this,options);}dispose(){}}
+ class Geometry {constructor(){this.attributes={};}setAttribute(k,v){this.attributes[k]=v;}dispose(){}}
+ class Scene {constructor(){this.children=[];}add(m){this.children.push(m);}remove(m){this.children=this.children.filter(x=>x!==m);}}
+ const THREE={Scene,Texture:class {dispose(){}},MeshBasicMaterial:Material,BufferGeometry:Geometry,
+  Float32BufferAttribute:class {constructor(values,size){this.count=values.length/size;}},
+  Mesh:class {constructor(geometry,material){this.geometry=geometry;this.material=material;}},
+  Color:class {constructor(value){this.value=value;}setHex(value){this.value=value;}}};
+ const layerB=createMapFacadeTextureLayer({THREE,scene:{fog:null},camera:{},renderer:{
+  autoClear:true,render(scene){frames.push(scene.children.map(m=>[m.geometry.attributes.position.count,!!m.material.map]));}
+ }});
+ const imageB=images.filter(i=>i.src.includes('hidakaya.png')).at(-1);
+ layerB.render([face],camera);
+ assert.deepEqual(frames.pop(),counts.map(n=>[n,false]),'B: loading fills wall and logo in solid color');
+ imageB.onload();
+ layerB.render([face],camera);
+ assert.deepEqual(frames.pop(),[[counts[0],false],[counts[1],true]],'B: ready textures only logo rectangle');
+ const noLogoFace=noLogo[0];
+ layerB.render([noLogoFace],camera);
+ assert.deepEqual(frames.pop(),[[noLogoFace.backgroundPositions.length/3,false]],'B: no-logo wall is rendered, not hidden');
+ const failedFace={...face,texture:'lawson'};
+ const failedImage=images.filter(i=>i.src.includes('lawson.png')).at(-1);
+ const warn=console.warn;
+ try{console.warn=()=>{};failedImage.onerror();}finally{console.warn=warn;}
+ layerB.render([failedFace],camera);
+ assert.deepEqual(frames.pop(),counts.map(n=>[n,false]),'B: image error leaves both solid wall regions visible');
+ layerB.dispose();
+}finally{
+ if(originalImage===undefined)delete globalThis.Image;else globalThis.Image=originalImage;
+ if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;
+}
+console.log('Ground glass / entrance, centered logo, Step 1 and Step 2 wall inlay regression PASS');
