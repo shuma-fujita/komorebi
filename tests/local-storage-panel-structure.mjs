@@ -112,8 +112,8 @@ assert.ok(mockScript.includes('mountLocalStorageManager(document,{readOnly:true}
 assert.ok(dev.includes('mountLocalStorageManager(document);'),'Game mounts manager');
 assert.ok(dev.includes('storage-name-readonly-v1-20261123'),'Game references current module');
 assert.ok(mockScript.includes('storage-name-readonly-v1-20261123'),'Mock references same module');
-assert.ok(read('komorebi3d/mock.html').includes('mock-storage-key-search-20261122'),'Mock entry references updated script');
-assert.ok(read('komorebi3d/build-ui.mjs').includes('mock-storage-key-search-20261122'),'Mock generator matches script');
+assert.ok(read('komorebi3d/mock.html').includes('level-format-v1-20261124'),'Mock entry references updated script');
+assert.ok(read('komorebi3d/build-ui.mjs').includes('level-format-v1-20261124'),'Mock generator matches script');
 
 assert.ok(manager.includes("remove.addEventListener('click'"));
 assert.ok(manager.includes("if(readOnly){"),'Mock must skip real deletion controls');
