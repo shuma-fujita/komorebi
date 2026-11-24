@@ -49,21 +49,3 @@ import {mountLocalStorageManager} from './local-storage-panel.js?v=storage-name-
 mountLocalStorageManager(document,{readOnly:true});
 mountDefaultPanelLayoutEditor(document);
 mountMockTouchInput(document.querySelector('.landscape-game'));
-
-
-// Mock-only sample for the tag format warning; no OSM access or game engine.
-import {syncLevelFormatWarning} from './maps/osm-level-warning.js?v=level-format-v1-20261124';
-const warningHost=document.querySelector('#test-ops-panel');
-if(warningHost){
- const sample=document.createElement('div');
- sample.style.cssText='margin:12px 0;padding:10px;border:1px solid #6f9085;border-radius:8px;background:#243a35;color:#fff;';
- const heading=document.createElement('strong');heading.textContent='タグ書式警告（UI確認用）';
- const row=document.createElement('div');row.className='komo-tag-row';
- row.style.cssText='display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-top:8px;';
- const key=document.createElement('input'),value=document.createElement('input');
- key.value='level';key.readOnly=true;value.value='1;2;3;';
- key.setAttribute('aria-label','タグ名');value.setAttribute('aria-label','タグの値');
- for(const input of [key,value])input.style.cssText='min-width:0;width:100%;box-sizing:border-box;padding:6px;';
- row.append(key,value);sample.append(heading,row);warningHost.appendChild(sample);
- row.addEventListener('input',()=>syncLevelFormatWarning(row));syncLevelFormatWarning(row);
-}

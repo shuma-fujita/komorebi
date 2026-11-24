@@ -1,3 +1,4 @@
+import {syncLevelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-live-v1-20261124';
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=changeset-source-20261122';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
@@ -326,6 +327,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    // immediately so a single tap opens the iPhone software keyboard.
    if(key&&editable)k.addEventListener('click',()=>v.focus({preventScroll:true}));
    row.append(k,v);rows.appendChild(row);
+   syncLevelTagRowWarning(row);
+   row.addEventListener('input',()=>syncLevelTagRowWarning(row));
   }
   const tagsHeader=document.createElement('p');
   tagsHeader.textContent='タグ';
@@ -785,6 +788,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
        if(shop.outsideFootprint)addWarning('⚠ 建物外（外周1m以内・位置要確認）');
        if(pending)addWarning(PENDING_GEOFABRIK_LABEL);
       }
+      syncLevelFormatWarning(row,shop.tags?.level);
       row.dataset.osmKey=shop.osmType+':'+shop.osmId;
       row._osmItem=shop;pane.appendChild(row);
      }
