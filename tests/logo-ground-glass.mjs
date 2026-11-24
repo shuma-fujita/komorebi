@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import './facade-corner-color.mjs';
 import {buildMap} from '../komorebi3d/maps/map-builder.js';
 import {createMapFacadeTextureLayer} from '../komorebi3d/maps/map-facade-textures.js';
 import {paintIsomaruFacade} from '../komorebi3d/objects/buildings/food/isomaru-sign.js';
@@ -244,9 +245,9 @@ assert.equal(noLogo[0].backgroundPositions.length,4*18,'Logo-free facade remains
 // geometry parts must be drawn in loading, ready and failure states.
 const camera={eye:[20,10,30],target:[12,3,10],fovDegrees:45,near:.1,far:2200};
 const originalImage=globalThis.Image,originalDocument=globalThis.document;
-const images=[];let samples=0;
+const images=[];let samples=0;const sampleCoordinates=[];
 globalThis.Image=class {constructor(){images.push(this);this.naturalWidth=16;this.naturalHeight=16;}};
-globalThis.document={createElement:()=>({getContext:()=>({drawImage(){},getImageData(){samples++;return {data:[18,52,86,255]};}})})};
+globalThis.document={createElement:()=>({getContext:()=>({clearRect(){},drawImage(_image,x,y){sampleCoordinates.push([x,y]);},getImageData(){samples++;return {data:[18,52,86,255]};}})})};
 try{
  const face=hida.face;
  const counts=[face.backgroundPositions.length/3,face.positions.length/3];
@@ -268,6 +269,16 @@ try{
  assert.deepEqual(draws.splice(0),[[counts[0],0],[counts[1],1]],'A: ready textures only logo rectangle');
  layerA.render([face],camera);draws.length=0;
  assert.equal(samples,1,'Solid RGB sample is cached across frames');
+ const cornerFace={...face,texture:'doutor',backgroundUV:[.04,.04],backgroundColor:0};
+ const cornerImage=images.find(i=>i.src.includes('doutor.png'));
+ cornerImage.onload();
+ sampleCoordinates.length=0;
+ layerA.render([cornerFace],camera);
+ assert.deepEqual(sampleCoordinates,[[0,0],[15,0],[0,15],[15,15]],'Default background samples the four outermost corners');
+ assert.equal(samples,5,'Four corner samples are read once');
+ layerA.render([cornerFace],camera);
+ assert.equal(samples,5,'Corner color is cached across frames');
+ draws.length=0;
  layerA.render([],camera);assert.equal(draws.length,0,'A: stale facade removed');
  layerA.dispose();
 
