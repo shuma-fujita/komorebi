@@ -1,8 +1,9 @@
+import {normalizeDrawingLevel} from '../../maps/osm-level-format.js?v=level-format-v1-20261124';
 // Safe floor-span resolver for image-backed stores. Uses existing zero-based
 // OSM 'level' rules and never paints a whole building when level is missing.
-import {resolveConveniencePaint} from './convenience/osm-adapter.js?v=lawson-image-v1-20261123';
+import {resolveConveniencePaint} from './convenience/osm-adapter.js?v=level-format-v1-20261124';
 export function resolveImageBrandPaint(stores,tags,height,inferredLevels=null,brandId){
- const matched=(stores||[]).filter(s=>s.brand?.id===brandId);
+ const matched=(stores||[]).filter(s=>s.brand?.id===brandId).map(s=>({...s,level:normalizeDrawingLevel(s.level)}));
  if(!matched.length||'min_height' in tags||'building:min_level' in tags)return [];
  if(matched.some(s=>{
   const raw=String(s.level??'').trim();

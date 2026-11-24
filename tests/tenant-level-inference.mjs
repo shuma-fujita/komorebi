@@ -20,6 +20,15 @@ assert.equal(inferBuildingLevelsFromTenants(data,project,250).get(wayId),2);
 assert.equal(inferBuildingLevelsFromTenants([building(1),tenant(3,3,'2')],project,250).get(1),3);
 assert.equal(inferBuildingLevelsFromTenants([building(1),tenant(30,30,'3')],project,250).has(1),false);
 assert.equal(inferBuildingLevelsFromTenants([building(1),tenant(3,3,'B1')],project,250).has(1),false);
+for(const value of ['1;2;3;','1;2;3;;','1;2;3; ;']){
+ const data=[building(1),tenant(3,3,'0'),tenant(5,5,value)];
+ assert.equal(inferBuildingLevelsFromTenants(data,project,250).get(1),4);
+ assert.equal(buildMap({elements:data},{latitude:0,longitude:0,halfSize:250}).mapFeatures.find(f=>f.osmId===1).height,16);
+ assert.equal(data[2].tags.level,value);
+}
+for(const value of ['1;;3','1;abc;3','1;;3;',';']){
+ assert.equal(inferBuildingLevelsFromTenants([building(1),tenant(3,3,value)],project,250).has(1),false);
+}
 const nested=inferBuildingLevelsFromTenants([building(1,{},0,0,20),building(2,{},5,5,6),tenant(6,6,'1')],project,250);
 assert.equal(nested.has(1),false);
 assert.equal(nested.get(2),2);
@@ -28,6 +37,7 @@ const family={id:'familymart',sign:null,stripes:[]};
 const paint=(tags,height,inferred)=>resolveConveniencePaint([{brand:family,level:'0'}],tags,height,inferred)
  .map(s=>[s.bottom,s.top]);
 assert.deepEqual(paint({},8,2),[[0,4]]);
+assert.deepEqual(resolveConveniencePaint([{brand:family,level:'1;2;3;'}],{},16,4).map(s=>[s.bottom,s.top]),[[4,8],[8,12],[12,16]]);
 assert.deepEqual(paint({height:'8','building:levels':'2'},8,null),[[0,4]]);
 assert.deepEqual(paint({},4,null),[[0,4]]);
 
@@ -36,4 +46,4 @@ const run=(tags)=>buildMap({elements:[building(wayId,tags),fam,goo]},
 assert.equal(run({}).mapFeatures.find(f=>f.osmId===wayId).height,8);
 assert.equal(run({height:'9'}).mapFeatures.find(f=>f.osmId===wayId).height,9);
 assert.equal(run({'building:levels':'2'}).mapFeatures.find(f=>f.osmId===wayId).height,6);
-console.log('Tenant level inference: 12 tests PASS');
+console.log('Tenant level inference: height inference and trailing separator tests PASS');

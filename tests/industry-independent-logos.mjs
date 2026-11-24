@@ -90,6 +90,8 @@ for(const [name,level,low,high,center] of [
  for(const h of logos.heights)assert.ok(Math.abs(h-baseHeight)<1e-8,
   'Ground+upper groups restore the full-size brand logo; upper-only stays unchanged');
 }
+assert.equal(build(poi(880002,'ウエルシア',{shop:'chemist'},'1;2;3;')).texturedFaces.length,1);
+assert.equal(build(poi(880002,'ウエルシア',{shop:'chemist'},'1;;3')).texturedFaces.length,0);
 const split=build(poi(880002,'磯丸水産',{amenity:'pub'},'0;1;3;4')).texturedFaces;
 assert.equal(split.length,2,'Non-contiguous groups keep separate centered logos');
 assert.deepEqual(split.map(f=>logoCenters(f).centers[0]),[4.2,12]);

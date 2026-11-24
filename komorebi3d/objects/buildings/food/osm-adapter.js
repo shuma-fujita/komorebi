@@ -1,7 +1,7 @@
 // Identify restaurant POIs and map them to real OSM building footprints.
 import {matchStoreBuildings} from '../store-matching.js?v=store-poi-brand-v1-20261122';
-import {resolveImageBrandPaint} from '../store-levels.js?v=store-poi-level-v1-20261122';
-import {resolveConveniencePaint} from '../convenience/osm-adapter.js?v=lawson-image-v1-20261123';
+import {resolveImageBrandPaint} from '../store-levels.js?v=level-format-v1-20261124';
+import {resolveConveniencePaint} from '../convenience/osm-adapter.js?v=level-format-v1-20261124';
 import {mcdonalds} from './mcdonalds.js?v=mcdonalds-poi-level-v2-20261122';
 import {gusto} from './gusto.js?v=food-gusto-v1-20261122';
 import {torikizoku} from './torikizoku.js?v=food-torikizoku-v1-20261122';

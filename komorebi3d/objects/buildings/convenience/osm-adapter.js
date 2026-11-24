@@ -1,3 +1,4 @@
+import {normalizeDrawingLevel} from '../../../maps/osm-level-format.js?v=level-format-v1-20261124';
 import {BUILDING_POI_OUTSIDE_TOLERANCE_METRES} from '../../../maps/building-poi-match-const.js?v=shared-outside-1m-20261119';
 // OSM adapter: brand matching, OSM floor metadata and legacy storefront walls.
 import {CONVENIENCE_DOOR_WIDTH_M} from './const.js?v=convenience-one-sign-v3-20261112';
@@ -109,7 +110,7 @@ export function matchConvenienceBuildings(elements,project,halfSize){
 // Unknown/malformed values deliberately paint the whole building to reveal map issues.
 function parseLevels(raw){
  if(raw===undefined||raw===null||String(raw).trim()==='')return null;
- const parts=String(raw).split(';').map(value=>value.trim());
+ const parts=normalizeDrawingLevel(raw).split(';').map(value=>value.trim());
  if(parts.some(value=>!/^[-+]?\d+$/.test(value)))return 'invalid';
  const values=parts.map(Number);
  if(values.some(value=>!Number.isSafeInteger(value)))return 'invalid';

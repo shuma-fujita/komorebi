@@ -1,3 +1,4 @@
+import {normalizeDrawingLevel} from './osm-level-format.js?v=level-format-v1-20261124';
 // Infer floors from real OSM tenant nodes only when building metadata is missing.
 // One spatial-index pass per map; the progressive renderer only reads this map.
 const TENANT_TAGS=['shop','amenity','tourism','office','leisure','healthcare'];
@@ -15,7 +16,7 @@ function contains(x,z,points){
 }
 function maxTenantLevel(raw){
  if(raw===undefined||raw===null)return null;
- const values=String(raw).split(';').map(s=>s.trim());
+ const values=normalizeDrawingLevel(raw).split(';').map(s=>s.trim());
  if(!values.length||values.some(s=>!/^\d+$/.test(s)))return null;
  const numbers=values.map(Number);
  return numbers.every(n=>Number.isSafeInteger(n)&&n>=0&&n<45)?Math.max(...numbers):null;
