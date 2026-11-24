@@ -38,6 +38,8 @@ import {misterDonut} from './mister-donut.js?v=mister-donut-v1-20261125';
 import {paintMisterDonutFacade} from './mister-donut-sign.js?v=mister-donut-v1-20261125';
 import {au} from './au.js?v=au-v1-20261125';
 import {paintAuFacade} from './au-sign.js?v=au-v1-20261125';
+import {smbc} from './smbc.js?v=smbc-v1-20261125';
+import {paintSmbcFacade} from './smbc-sign.js?v=smbc-v1-20261125';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},
@@ -57,5 +59,6 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:welcia,paint:paintWelciaFacade},
  {brand:mosBurger,paint:paintMosBurgerFacade},
  {brand:misterDonut,paint:paintMisterDonutFacade},
- {brand:au,paint:paintAuFacade}
+ {brand:au,paint:paintAuFacade},
+ {brand:smbc,paint:paintSmbcFacade}
 ]);
