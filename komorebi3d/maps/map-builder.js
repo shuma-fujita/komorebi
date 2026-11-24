@@ -173,21 +173,20 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  // in its own first batch so the helicopter always has visible terrain.
  const displayBatches=[{meshes:[floor],labels:[],mapFeatures:[],texturedFaces:[],start:-1,end:-1}];
  const batchSize=Math.max(1,Math.ceil(featureQueue.total/24));
- let batchStart=0,processed=0,lastLabelIndex=0,lastFeatureIndex=0,lastEarlyPoiIndex=0;
+ let batchStart=0,processed=0,lastLabelIndex=0,lastFeatureIndex=0,lastPoiIndex=0;
  // Track the REAL processed order, not the initially predicted distance rank.
  // This remains identical in Step 4-A and stays valid after reprioritization.
  const processedIndices=[],completedBatchByIndex=new Array(featureQueue.total);
- const earlyPoiDisplay=[];
  function flushBatch(end){
   const meshes=[...buildings,roads,walks,rails,parkings].filter(m=>m.positions.length>0);
-  const batch={meshes,start:batchStart,end,labels:[...labels.slice(lastLabelIndex),...earlyPoiDisplay.slice(lastEarlyPoiIndex)],mapFeatures:mapFeatures.slice(lastFeatureIndex),
+  const batch={meshes,start:batchStart,end,labels:[...labels.slice(lastLabelIndex),...poiLabels.slice(lastPoiIndex)],mapFeatures:mapFeatures.slice(lastFeatureIndex),
    buildingSlices:buildingSlices.map(slice=>({osmKey:slice.osmKey,meshIndex:meshes.indexOf(slice.mesh),start:slice.start,end:slice.end})),
    texturedFaces};
   if(meshes.length||batch.labels.length||batch.mapFeatures.length){
    displayBatches.push(batch);
    for(let i=batchStart;i<=end;i++)completedBatchByIndex[processedIndices[i]]=batch;
   }
-  lastLabelIndex=labels.length;lastFeatureIndex=mapFeatures.length;lastEarlyPoiIndex=earlyPoiDisplay.length;
+  lastLabelIndex=labels.length;lastFeatureIndex=mapFeatures.length;lastPoiIndex=poiLabels.length;
   buildings=palette.map(builder);roads=builder();walks=builder();rails=builder();parkings=builder();
   buildingSlices=[];texturedFaces=[];
   batchStart=end+1;
@@ -224,42 +223,18 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
   const pts=(way.geometry||[]).map(xy),style=roadStyle(way.tags.highway);
   for(let i=1;i<pts.length;i++)roadSegments.push([pts[i-1],pts[i],style]);
  }
- // Name equality and short geographic distance: no per-store mappings.
- const normalized=name=>String(name).normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d\-]/g,'');
- const isNearby=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z)<=15;
- // The old end-of-map POI merge is retained as the authoritative final
- // result. Pre-identify *standalone* named POIs for early display; defer POIs
- // that should merge into a named building, and collapse nearby same-name
- // nodes just as the legacy merger does. This avoids duplicate provisional
- // cards and keeps the cost of matching out of the per-frame 6ms budget.
- const namedAnchors=[];
+ // Preserve distinct OSM identities even when names and positions match.
+ // First valid occurrence in source order wins, independent of flight priority.
+ const poiSourceByKey=new Map(),publishedPoiKeys=new Set();
  for(const e of map.elements){
-  const tags=e.tags||{},name=String(tags['name:ja']||tags.name||'').trim();
-  if(!name||!tags.building||tags.building==='no'||(e.geometry||[]).length<4)continue;
-  const p=e.geometry.map(xy);
-  if(Math.hypot(p[0][0]-p[p.length-1][0],p[0][1]-p[p.length-1][1])>.5)continue;
-  p.pop();if(p.length<3)continue;
-  const area=Math.abs(signedArea(p));if(area<3||area>35000)continue;
-  const xs=p.map(q=>q[0]),zs=p.map(q=>q[1]);
-  const minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
-  if(minX>HALF||maxX< -HALF||minZ>HALF||maxZ< -HALF)continue;
-  namedAnchors.push({name:normalized(name),x:(minX+maxX)/2,z:(minZ+maxZ)/2});
- }
- const poiAnchors=[],earlyPoiElements=new WeakSet();
- for(const e of map.elements){
-  const tags=e.tags||{};
-  if(e.type!=='node'||!facilityKeys.some(key=>tags[key]))continue;
-  const name=String(tags['name:ja']||tags.name||'').trim();
+  if(e.type!=='node'||!facilityKeys.some(key=>e.tags?.[key]))continue;
+  const name=String(e.tags['name:ja']||e.tags.name||'').trim();
   if(!name||!Number.isFinite(e.lat)||!Number.isFinite(e.lon))continue;
   const [x,z]=xy(e);
   if(Math.abs(x)>HALF||Math.abs(z)>HALF)continue;
-  const key=normalized(name),anchor={name:key,x,z};
-  const existing=namedAnchors.find(a=>a.name===key&&isNearby(a,anchor))
-   ||poiAnchors.find(a=>a.name===key&&isNearby(a,anchor));
-  if(existing){existing.x=x;existing.z=z;}
-  else poiAnchors.push({...anchor,first:e});
+  const key=e.type+':'+e.id;
+  if(!poiSourceByKey.has(key))poiSourceByKey.set(key,e);
  }
- for(const anchor of poiAnchors)earlyPoiElements.add(anchor.first);
  rectangle(floor,-HALF,-HALF,HALF,HALF,0x9fce8d);
  let buildingCount=0,roadCount=0,railCount=0;
  // Make terrain visible before entering the CPU-intensive feature loop.
@@ -272,12 +247,13 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
   if(parking)paintParkingArea(parkings,parking.points,top,quad);
   // Point-of-interest nodes have coordinates, not a way geometry.
   // Keep their OSM position as the ground-level anchor.
-  if(e.type==='node'&&facilityKeys.some(key=>tags[key])){
+  if(e.type==='node'&&poiSourceByKey.get(e.type+':'+e.id)===e&&!publishedPoiKeys.has(e.type+':'+e.id)){
+   publishedPoiKeys.add(e.type+':'+e.id);
    const name=String(tags['name:ja']||tags.name||'').trim();
    if(name&&Number.isFinite(e.lat)&&Number.isFinite(e.lon)){
     const [x,z]=xy(e);
     if(Math.abs(x)<=HALF&&Math.abs(z)<=HALF)
-     {const label={kind:'poi',osmType:e.type,osmId:e.id,osmVersion:e.version??null,name,tags:{...tags},x,z,y:.9};poiLabels.push(label);originalOrder.set(label,index);if(earlyPoiElements.has(e))earlyPoiDisplay.push(label);}
+     {const label={kind:'poi',osmType:e.type,osmId:e.id,osmVersion:e.version??null,name,tags:{...tags},x,z,y:.9};poiLabels.push(label);originalOrder.set(label,index);}
    }
   }
   if(p.length<2)return;
@@ -382,29 +358,10 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  poiLabels.sort((a,b)=>originalOrder.get(a)-originalOrder.get(b));
  mapFeatures.sort((a,b)=>originalOrder.get(a)-originalOrder.get(b));
  if(profile){profile.record('final-sort',performance.now()-finalClock);finalClock=performance.now();}
- // Step 5-A: group existing labels by normalized name once. Within each
- // group preserve insertion order, so the first nearby match is EXACTLY the
- // same as the former labels.find() scan. Each newly appended POI is indexed
- // immediately; updating an existing label keeps its normalized name.
- const labelsByName=new Map();
- function indexLabel(label){
-  const name=normalized(label.name),group=labelsByName.get(name);
-  if(group)group.push(label);
-  else labelsByName.set(name,[label]);
- }
- for(const label of labels)indexLabel(label);
- // Deduplicate named facilities automatically against nearby same-name buildings
- // and other nodes. Retain the precise POI anchor and merge tags.
- for(const poi of poiLabels){
-  const name=normalized(poi.name);
-  const existing=(labelsByName.get(name)||[]).find(label=>isNearby(label,poi));
-  // Do not merge separate OSM nodes solely because they have nearby equal names.
-  // Distinct shop/office identities must remain selectable inside a building.
-  if(existing?.kind==='poi'&&existing.osmType===poi.osmType&&existing.osmId===poi.osmId)continue;
-  labels.push(poi);indexLabel(poi);
- }
+ // POIs are already published by identity in their own progressive batch.
+ for(const poi of poiLabels)labels.push(poi);
  if(profile){profile.record('final-poi',performance.now()-finalClock);finalClock=performance.now();}
- // Attach the final, deduplicated labels and minimap features to their
+ // Attach the final, identity-preserved labels and minimap features to their
  // originating feature's priority batch. The complete collections keep
  // their legacy order for comparisons and other callers.
  for(const batch of displayBatches){
