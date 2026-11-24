@@ -2,6 +2,7 @@
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
 const TEXTURE_URLS=Object.freeze({
+ welcia:new URL('../assets/textures/brands/welcia.png?v=welcia-png-v1-20261124',import.meta.url).href,
  lawson:new URL('../assets/textures/brands/lawson.png?v=brand-png-20261123',import.meta.url).href,
  rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=rakuten-crop-png-v1-20261123',import.meta.url).href,
  yoshinoya:new URL('../assets/textures/brands/yoshinoya.png?v=brand-png-20261123',import.meta.url).href,

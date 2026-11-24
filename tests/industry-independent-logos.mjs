@@ -11,6 +11,9 @@ const poi=(id,name,category,level='2')=>({type:'node',id,...coord(0,0),tags:{...
 const map=tenant=>({elements:[building,tenant]});
 const build=tenant=>buildMap(map(tenant),{latitude:lat,longitude:lon,halfSize:1000});
 const cases=[
+ ['ウエルシア 松戸店',{shop:'chemist'},'welcia'],
+ ['ウェルシア 松戸店',{amenity:'pharmacy'},'welcia'],
+ ['Welcia Matsudo',{},'welcia'],
  ['磯丸水産 松戸駅前店',{amenity:'pub'},'isomaru'],
  ['磯丸水産 松戸駅前店',{amenity:'restaurant'},'isomaru'],
  ['磯丸水産 松戸駅前店',{office:'company'},'isomaru'],
@@ -36,6 +39,15 @@ for(const [name,category,texture] of cases){
  assert.equal(faces[0].texture,texture);
  assert.equal(faces[0].ownerKey,'way/'+building.id);
  assert.ok(faces[0].positions.every((n,i)=>i%3!==1||(n>=6-1e-8&&n<=9+1e-8)));
+}
+assert.equal(identifyLogoBrand({brand:'Welcia'})?.id,'welcia');
+assert.equal(build(poi(880002,'ウエルシア',{shop:'chemist'},'')).texturedFaces.length,0);
+assert.equal(build(poi(880002,'ウエルシア',{shop:'chemist'},'6')).texturedFaces.length,0);
+for(const level of ['0','0;1','2']){
+ const faces=build(poi(880002,'ウエルシア',{shop:'chemist'},level)).texturedFaces;
+ assert.equal(faces.length,1);
+ assert.equal(faces[0].texture,'welcia');
+ assert.equal(faces[0].backgroundColor,0x012190);
 }
 // A similarly named unrelated restaurant must never claim the Tonichi branding.
 assert.notEqual(identifyLogoBrand({name:'とんかつ松乃家'})?.id,'tonkatsuTonichi');

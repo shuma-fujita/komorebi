@@ -26,6 +26,8 @@ import {paintRakutenMobileFacade} from './rakuten-mobile-sign.js?v=wall-inlay-st
 import {paintYoshinoyaFacade} from '../../food/yoshinoya-sign.js?v=wall-inlay-step2-v1-20261124';
 import {paintHidakayaFacade} from '../../food/hidakaya-sign.js?v=wall-inlay-step2-v1-20261124';
 import {paintTonkatsuTonichiFacade} from './tonkatsu-tonichi-sign.js?v=wall-inlay-step2-v1-20261124';
+import {welcia} from './welcia.js?v=welcia-png-v1-20261124';
+import {paintWelciaFacade} from './welcia-sign.js?v=welcia-png-v1-20261124';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},
@@ -39,5 +41,6 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:rakutenMobile,paint:paintRakutenMobileFacade},
  {brand:yoshinoya,paint:paintYoshinoyaFacade},
  {brand:hidakaya,paint:paintHidakayaFacade},
- {brand:tonkatsuTonichi,paint:paintTonkatsuTonichiFacade}
+ {brand:tonkatsuTonichi,paint:paintTonkatsuTonichiFacade},
+ {brand:welcia,paint:paintWelciaFacade}
 ]);

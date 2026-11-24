@@ -7,6 +7,7 @@ import {readFileSync} from 'node:fs';
 import {inflateSync} from 'node:zlib';
 
 const assets={
+ welcia:[1448,510],
  lawson:[144,144],
  'rakuten-mobile':[720,253],
  yoshinoya:[256,127],
@@ -21,7 +22,7 @@ function png(path){
  assert.deepEqual(bytes.subarray(0,8),signature,path+' is a PNG');
  const width=bytes.readUInt32BE(16),height=bytes.readUInt32BE(20);
  assert.equal(bytes[24],8,'8-bit RGB channels: '+path);
- assert.ok([3,6].includes(bytes[25]),'Indexed or RGBA PNG: '+path);
+ assert.ok([2,3,6].includes(bytes[25]),'RGB, indexed or RGBA PNG: '+path);
  return {bytes,width,height};
 }
 for(const [brand,dimensions] of Object.entries(assets)){
@@ -79,4 +80,4 @@ for(const brand of Object.keys(assets)){
  assert.ok(moduleSource.includes('brands/'+brand+'.png'),'PNG is loaded for '+brand);
  assert.ok(!moduleSource.includes('brands/'+brand+'.webp'),'Old WebP is not loaded for '+brand);
 }
-console.log('Brand PNG assets PASS: 7 PNG assets; Rakuten cropped PNG retains clear white wordmark');
+console.log('Brand PNG assets PASS: 8 PNG assets; Rakuten cropped PNG retains clear white wordmark');
