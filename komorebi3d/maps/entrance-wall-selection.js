@@ -19,9 +19,29 @@ function crossesFootprint(a,b,footprints){
  }
  return false;
 }
-function roadFacing(edge,roads){
+// Estimate curb contact from the same widths used for rendered road strips.
+const WALL_CONTACT_M=2, WALK_ROAD_CONTACT_M=2;
+// The widest rendered walking strip (pedestrian street) is 6m.
+const MAX_WALK_CHAIN_GAP_M=WALL_CONTACT_M+6+WALK_ROAD_CONTACT_M;
+function vehicleRoadPriority(hits){
+ const walks=hits.filter(hit=>hit.pedestrian&&hit.gap<=WALL_CONTACT_M);
+ let priority=0;
+ for(const road of hits){
+  if(road.pedestrian)continue;
+  // A nearer walking strip must meet the vehicle strip locally. A road
+  // somewhere else in the 35m search radius is not a connection.
+  const viaWalk=walks.some(walk=>walk.forward<road.forward-1e-7&&
+   Math.hypot(walk.point[0]-road.point[0],walk.point[1]-road.point[1])<=
+    walk.halfWidth+road.halfWidth+WALK_ROAD_CONTACT_M);
+  if(road.gap<=WALL_CONTACT_M&&!viaWalk)return 2;
+  if(viaWalk)priority=1;
+ }
+ return priority;
+}
+function roadFacing(edge,roads,priorityFootprints=null){
  let closest=null;
- for(const [a,b] of roads){
+ const hits=[];
+ for(const [a,b,style] of roads){
   const dx=b[0]-a[0],dz=b[1]-a[1];
   const t=Math.max(0,Math.min(1,((edge.mid[0]-a[0])*dx+(edge.mid[1]-a[1])*dz)/(dx*dx+dz*dz||1)));
   const p=[a[0]+dx*t,a[1]+dz*t];
@@ -31,7 +51,17 @@ function roadFacing(edge,roads){
   if(forward<=.01||forward>ROAD_REACH_M||lateral>edge.len/2+3)continue;
   const distance=Math.hypot(vx,vz);
   if(!closest||distance<closest.distance)closest={point:p,distance};
+  // Untyped legacy callers and logo selection retain original behavior.
+  if(priorityFootprints&&style&&Number.isFinite(style.width)&&style.width>0&&
+   typeof style.pedestrian==='boolean'){
+   const halfWidth=style.width/2;
+   const gap=Math.max(0,Math.hypot(forward,Math.max(0,lateral-edge.len/2))-halfWidth);
+   if(gap<=(style.pedestrian?WALL_CONTACT_M:MAX_WALK_CHAIN_GAP_M)&&
+    !crossesFootprint(edge.mid,p,priorityFootprints))
+    hits.push({point:p,forward,halfWidth,gap,pedestrian:style.pedestrian});
+  }
  }
+ if(closest&&priorityFootprints)closest.priority=vehicleRoadPriority(hits);
  return closest;
 }
 // An ordered run is contiguous along the building outline, not spatially
@@ -86,7 +116,7 @@ export function blockedBuildingWalls(polygon,otherBuildings=[]){
 // Shared facade-side candidate assessment for doors and upper-floor logos.
 // The width threshold is a consumer choice: 4m for doors, 1.2m for logos.
 // Road visibility and physical neighbor obstruction are evaluated once here.
-export function eligibleFacadeWalls(polygon,roads=[],otherBuildings=[],minWidth=0,blockedWalls=null){
+export function eligibleFacadeWalls(polygon,roads=[],otherBuildings=[],minWidth=0,blockedWalls=null,preferVehicle=false){
  if(!Array.isArray(polygon)||polygon.length<3)return [];
  const area=polygon.reduce((sum,a,i)=>{const b=polygon[(i+1)%polygon.length];return sum+a[0]*b[1]-b[0]*a[1];},0);
  const outward=area>=0?1:-1;
@@ -96,16 +126,19 @@ export function eligibleFacadeWalls(polygon,roads=[],otherBuildings=[],minWidth=
   const edge={i,len,mid:[(a[0]+b[0])/2,(a[1]+b[1])/2],
    normal:len?[outward*dz/len,-outward*dx/len]:[0,0]};
   const blocked=occluded.has(i);
-  const road=len>0?roadFacing(edge,roads):null;
+  const road=len>0?roadFacing(edge,roads,preferVehicle&&!blocked?otherBuildings:null):null;
   const roadBlocked=!!road&&crossesFootprint(edge.mid,road.point,otherBuildings);
   return {...edge,blocked,road,roadBlocked,roadEligible:!!road&&!roadBlocked&&!blocked};
  }).filter(edge=>edge.len>=minWidth-1e-7&&!edge.blocked);
 }
 
-// Door-specific final selection preserves the existing longest contiguous run.
-// If no road faces are available, non-obstructed wide walls remain eligible.
+// Door-specific ranking: direct vehicle road > connected walking strip >
+// original road-facing candidates > accessible walls. Ties retain the
+// longest contiguous run and middle-edge selection.
 export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=4,blockedWalls=null){
- const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,doorWidth,blockedWalls);
+ const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,doorWidth,blockedWalls,true);
+ const priority=candidates.reduce((best,edge)=>Math.max(best,edge.road?.priority||0),0);
+ if(priority)return middleEntranceEdge(candidates.filter(edge=>edge.road?.priority===priority),polygon?.length||0);
  const roadCandidates=candidates.filter(edge=>edge.roadEligible);
  return middleEntranceEdge(roadCandidates.length?roadCandidates:candidates,polygon?.length||0);
 }

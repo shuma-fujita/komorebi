@@ -3,7 +3,7 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls} from './entrance-wall-selection.js?v=frontage-nearby-v1-20261123';
+import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls} from './entrance-wall-selection.js?v=vehicle-door-priority-v1-20261124';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=food-image-logo-v1-20261123';
 import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=frontage-nearby-v1-20261123';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=occupancy-facade-modes-v1-20261123';
@@ -64,6 +64,12 @@ function createFeatureWorkQueue(elements,xy,priorityX,priorityZ){
    return true;
   }
  };
+}
+// Door selection and road rendering share the same category and width.
+function roadStyle(highway){
+ const pedestrian=['footway','pedestrian','path','steps','cycleway','corridor','living_street'].includes(highway);
+ const width=pedestrian?(highway==='pedestrian'?6:2.2):['primary','secondary','tertiary','trunk'].includes(highway)?10:['service','residential','unclassified'].includes(highway)?5.5:3.2;
+ return {pedestrian,width};
 }
 // Convert verified OSM map data into renderer-independent meshes and roof labels.
 // Defaults preserve the original Matsudo 500m test snapshot.
@@ -201,8 +207,8 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
  const roadSegments=[];
  for(const way of map.elements){
   if(!way.tags?.highway||['construction','proposed'].includes(way.tags.highway))continue;
-  const pts=(way.geometry||[]).map(xy);
-  for(let i=1;i<pts.length;i++)roadSegments.push([pts[i-1],pts[i]]);
+  const pts=(way.geometry||[]).map(xy),style=roadStyle(way.tags.highway);
+  for(let i=1;i<pts.length;i++)roadSegments.push([pts[i-1],pts[i],style]);
  }
  // Name equality and short geographic distance: no per-store mappings.
  const normalized=name=>String(name).normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d\-]/g,'');
@@ -321,8 +327,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    buildingCount++;
   }
   if(tags.highway&&!['construction','proposed'].includes(tags.highway)){
-   const pedestrian=['footway','pedestrian','path','steps','cycleway','corridor','living_street'].includes(tags.highway);
-   const width=pedestrian?(tags.highway==='pedestrian'?6:2.2):['primary','secondary','tertiary','trunk'].includes(tags.highway)?10:['service','residential','unclassified'].includes(tags.highway)?5.5:3.2;
+   const {pedestrian,width}=roadStyle(tags.highway);
    strip(pedestrian?walks:roads,p,width,pedestrian?0xc7c6b4:0x596570,pedestrian?.052:.047);
    {const feature={type:'road',points:p};mapFeatures.push(feature);originalOrder.set(feature,index);}
    roadCount++;

@@ -68,5 +68,28 @@ const edited=buildMap(scene(poi('ローソン 松戸駅前店','0')),
  {latitude:lat,longitude:lon,halfSize:200});
 assert.equal(edited.texturedFaces[0].texture,'lawson',
  'A locally supplied level=0 is handled without any store-specific fallback');
+// End-to-end: OSM highway tags determine the ground-floor entrance wall.
+const road=(id,highway,a,b)=>({type:'way',id,tags:{highway},geometry:[coord(...a),coord(...b)]});
+const southFoot=road(88001,'footway',[-12,-12],[12,-12]);
+const southCar=road(88002,'residential',[-12,-16],[12,-16]);
+const eastCar=road(88003,'service',[15,-10],[15,10]);
+const northFoot=road(88004,'footway',[-12,12],[12,12]);
+function groundLogoVertices(roads){
+ const data=buildMap({elements:[building,poi('LAWSON','0'),...roads]},
+  {latitude:lat,longitude:lon,halfSize:200});
+ const face=data.texturedFaces.find(f=>f.texture==='lawson');
+ const patches=[];
+ for(let i=0;i<face.uvs.length;i+=12)
+  if(fullLogo.has(face.uvs.slice(i,i+12).join(',')))patches.push(face.positions.slice(i/12*18,i/12*18+18));
+ assert.equal(patches.length,1,'Ground-floor facade has exactly one entrance logo');
+ return patches[0];
+}
+assert.ok(groundLogoVertices([southFoot,southCar,eastCar,northFoot])
+ .every((v,i)=>i%3!==0||Math.abs(v-12)<.05),
+ 'Direct gray service road selects the east entrance wall');
+assert.ok(groundLogoVertices([southFoot,southCar,northFoot])
+ .every((v,i)=>i%3!==2||Math.abs(v+10)<.05),
+ 'Connected footway and residential road select the south entrance wall');
+
 assert.ok(readFileSync('komorebi3d/assets/textures/brands/lawson.png').subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')));
 console.log('Lawson image transition PASS: normal logo, glass, floor groups, variants, strict OSM levels');

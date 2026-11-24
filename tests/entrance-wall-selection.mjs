@@ -43,6 +43,36 @@ assert.equal(selectEntranceWall(square,westRoad,[eastNeighbor],4,blocked),3,
 assert.equal(selectEntranceWall(square,[[[-10,3],[-10,17]]],[eastNeighbor],4,blocked),3,
  'Road with opposite direction still selects the same door face');
 
+// Typed road centerlines carry the actual rendered widths.
+const gray=(a,b,width=5.5)=>[a,b,{pedestrian:false,width}];
+const walk=(a,b,width=2.2)=>[a,b,{pedestrian:true,width}];
+const southWalk=walk([0,-2],[20,-2]);
+const southGray=gray([0,-6],[20,-6]);
+const eastGray=gray([23,0],[23,20]);
+const northWalk=walk([0,22],[20,22]);
+assert.equal(selectEntranceWall(square,[southWalk,southGray,eastGray,northWalk]),1,
+ 'Direct vehicle-facing east beats south with a connecting sidewalk and north footway');
+assert.equal(selectEntranceWall(square,[southWalk,southGray,northWalk]),0,
+ 'Connected sidewalk wins over isolated footway even when equally near');
+assert.equal(selectEntranceWall(square,[southWalk,gray([0,-14],[20,-14]),eastGray]),1,
+ 'A gap between sidewalk and distant vehicle road is not a connection');
+assert.equal(selectEntranceWall(square,[southWalk,southGray,walk([-2,0],[-2,20])]),0,
+ 'An isolated path cannot win a contiguous run over the connected face');
+assert.equal(selectEntranceWall(square,[gray([0,-6],[20,-6],10),northWalk]),0,
+ 'Wide vehicle strip is directly adjacent despite the distant centerline');
+assert.equal(selectEntranceWall(square,[southWalk,southGray,eastGray],[eastNeighbor]),0,
+ 'A physically blocked vehicle-facing wall cannot host the door');
+assert.equal(selectEntranceWall(square,[southWalk,southGray,eastGray].map(([a,b,s])=>[b,a,s])),1,
+ 'Road geometry direction does not change priority');
+assert.deepEqual(selectLogoWalls(square,[southWalk,southGray,eastGray,northWalk]),
+ selectLogoWalls(square,[southWalk,southGray,eastGray,northWalk].map(([a,b])=>[a,b])),
+ 'Typed road metadata must not change upper-floor logo selection');
+assert.equal(selectEntranceWall(square,[southWalk]),0,'No gray road: retain existing walk-facing fallback');
+const separatedByBuilding=[[2,-5],[18,-5],[18,-4],[2,-4]];
+assert.equal(selectEntranceWall(square,[southWalk,southGray,northWalk,
+ gray([0,26],[20,26])],[separatedByBuilding]),2,
+ 'A vehicle road behind another building cannot create a high-priority connection');
+
 // OSM may split one road side into many nearly parallel pieces. That
 // creates ONE visual logo direction, never one logo per footprint edge.
 const subdivided=[[0,0],[3,0],[9,1],[20,1],[20,15],[0,15]];
