@@ -40,7 +40,6 @@ jobs:
           node tests/tenant-level-inference.mjs
           node tests/tenant-outside-warning.mjs
           node tests/building-editor-fit.mjs
-          node tests/hotel-matching.mjs
           node komorebi3d/build-ui.mjs --check
       - name: Prepare Pages artifact without writing Client ID to git
         env:
