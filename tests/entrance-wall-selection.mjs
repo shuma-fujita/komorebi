@@ -17,11 +17,6 @@ assert.equal(middleEntranceEdge([e(0,5),e(1,7),e(4,4),e(5,5)],7),1,
 assert.equal(middleEntranceEdge([e(0,5),e(1,7),e(4,8),e(5,5)],7),4,
  'Equal run counts prefer larger sum of wall widths');
 assert.equal(middleEntranceEdge([],5),-1,'No valid edges returns no entrance');
-assert.equal(middleEntranceEdge([e(0,8),e(1,7),e(2,9)],5,3),1,'Three consecutive eligible walls override road type');
-assert.equal(middleEntranceEdge([e(5,8),e(0,7),e(1,9)],6,3),0,'Priority run wraps around polygon index zero');
-assert.equal(middleEntranceEdge([e(0,8),e(2,7),e(3,9)],5,3),-1,'A separated edge plus a pair is not a three-wall run');
-assert.equal(middleEntranceEdge([e(0,8),e(1,7),e(2,9),e(3,8)],5,3),2,'Four-wall run retains longer middle wall rule');
-assert.equal(middleEntranceEdge([e(0,8),e(1,7),e(2,9),e(3,8)],4,3),-1,'Entire closed perimeter has no unique middle frontage');
 const square=[[0,0],[20,0],[20,20],[0,20]];
 assert.equal(selectEntranceWall(square,[],[],4),1,
  'No roads: still choose a single central edge; never old road-distance ranking');
@@ -77,21 +72,6 @@ const separatedByBuilding=[[2,-5],[18,-5],[18,-4],[2,-4]];
 assert.equal(selectEntranceWall(square,[southWalk,southGray,northWalk,
  gray([0,26],[20,26])],[separatedByBuilding]),2,
  'A vehicle road behind another building cannot create a high-priority connection');
-
-// A three-wall storefront must keep its central door even when a flank
-// is directly beside a vehicle road and the middle only faces a footway.
-const threeFront=[[0,0],[12,0],[24,0],[36,0],[36,15],[0,15]];
-const mixedFront=[gray([0,-3],[5,-3]),walk([13,-2],[36,-2])];
-const assessed=eligibleFacadeWalls(threeFront,mixedFront,[],4,null,true);
-assert.deepEqual(assessed.filter(w=>w.roadEligible).map(w=>w.i),[0,1,2]);
-assert.equal(assessed.find(w=>w.i===0).road.priority,2,'Left flank has the higher gray-road priority');
-assert.equal(assessed.find(w=>w.i===1).road.priority,0,'Middle only faces the pedestrian strip');
-assert.equal(selectEntranceWall(threeFront,mixedFront),1,'Three-wall middle wins before vehicle road ranking');
-assert.equal(selectEntranceWall(threeFront,mixedFront,[],4,new Set([1])),0,'Blocked middle breaks the run; direct gray road wins');
-assert.equal(selectEntranceWall(threeFront,[...mixedFront,gray([0,18],[36,18])]),1,
- 'Three-wall frontage wins over a separate direct gray-road candidate');
-const rotatedFront=[...threeFront.slice(1),threeFront[0]];
-assert.equal(selectEntranceWall(rotatedFront,mixedFront),0,'Three-wall priority also works across the outline boundary');
 
 // OSM may split one road side into many nearly parallel pieces. That
 // creates ONE visual logo direction, never one logo per footprint edge.

@@ -1,7 +1,7 @@
 // Isolated OSM-building view for the tenant editor.
 // Reuses the same map geometry builder, without moving the helicopter or changing
 // the original map meshes. No animation dependencies.
-import {buildMap} from './map-builder.js?v=three-wall-door-first-v1-20261124';
+import {buildMap} from './map-builder.js?v=vehicle-door-priority-restored-v2-20261124';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {BUILDING_PREVIEW_RATIO,buildingPreviewCenterY} from './building-editor-layout.js?v=ratio-centered-20261121';
 let previewRevision=0;
