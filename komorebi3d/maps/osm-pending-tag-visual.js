@@ -8,24 +8,27 @@ export function applyPendingTagVisualStyle(form){
  const style=document.createElement('style');
  style.dataset.pendingOsmStyle='true';
  style.textContent=`
- .komo-tags-sheet .komo-tag-row.komo-pending-tag-row,
- .komo-tags-sheet .komo-tag-row.komo-pending-tag-row:nth-child(3n),
- .komo-tags-sheet .komo-tag-row.komo-pending-tag-row:nth-child(3n+2){
+ .komo-tags-sheet .komo-tag-row:is(.komo-pending-tag-row,.komo-level-format-row),
+ .komo-tags-sheet .komo-tag-row:is(.komo-pending-tag-row,.komo-level-format-row):nth-child(3n),
+ .komo-tags-sheet .komo-tag-row:is(.komo-pending-tag-row,.komo-level-format-row):nth-child(3n+2){
   border-color:#ffbd62!important;
   border-left:3px solid #ffbd62!important;
   background:linear-gradient(95deg,rgba(255,176,68,.24),rgba(63,45,27,.8))!important;
   box-shadow:inset 0 0 10px rgba(255,189,98,.1)!important;
  }
- .komo-tags-sheet .komo-tag-row.komo-pending-tag-row input:first-child,
- .komo-tags-sheet .komo-tag-row.komo-pending-tag-row:nth-child(3n) input:first-child,
- .komo-tags-sheet .komo-tag-row.komo-pending-tag-row:nth-child(3n+2) input:first-child{
+ .komo-tags-sheet .komo-tag-row:is(.komo-pending-tag-row,.komo-level-format-row) input:first-child,
+ .komo-tags-sheet .komo-tag-row:is(.komo-pending-tag-row,.komo-level-format-row):nth-child(3n) input:first-child,
+ .komo-tags-sheet .komo-tag-row:is(.komo-pending-tag-row,.komo-level-format-row):nth-child(3n+2) input:first-child{
   color:#ffdf9d!important;
  }
- .komo-tags-sheet .komo-pending-tag-note{
+ .komo-tags-sheet :is(.komo-pending-tag-note,.komo-level-format-warning){
   grid-column:1/-1;display:block;min-width:0;color:#ffd08a;
   font:600 11px/1.5 system-ui,-apple-system,sans-serif;
   padding:1px 2px 0;
   white-space:normal;overflow-wrap:anywhere;word-break:normal;
+ }
+ .komo-tags-sheet .komo-level-format-warning{
+  white-space:pre-line;
  }
  `;
  form.appendChild(style);

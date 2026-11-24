@@ -1,4 +1,4 @@
-import {syncLevelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-live-v1-20261124';
+import {levelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-style-v2-20261124';
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=changeset-source-20261122';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
@@ -10,7 +10,7 @@ import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
 import {getSavedOsmTagChange,getAllSavedOsmTagChanges} from './osm-pending-changes.js?v=storage-manager-v1-20261122';
-import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=unified-osm-storage-v2-20261122';
+import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=level-warning-style-v2-20261124';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
 import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=storage-manager-v1-20261122';
@@ -774,8 +774,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
       const prefix=shop.tags?.level!==undefined?'[level='+shop.tags.level+'] ':'';
       row.textContent=prefix+shop.name;
       const pending=tenantIsPending(shop);
-      if(shop.outsideFootprint||pending){
-       // The existing exterior 1m warning and both pending states can coexist.
+      const formatWarning=levelFormatWarning(shop.tags?.level);
+      if(shop.outsideFootprint||pending||formatWarning){
+       // All warning types share the existing highlighted tenant row.
        row.style.background='rgba(255,176,68,.16)';
        row.style.borderLeft='3px solid #ffbd62';
        row.style.paddingLeft='6px';
@@ -787,8 +788,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
        };
        if(shop.outsideFootprint)addWarning('⚠ 建物外（外周1m以内・位置要確認）');
        if(pending)addWarning(PENDING_GEOFABRIK_LABEL);
+       if(formatWarning)for(const line of formatWarning.split('\n'))addWarning(line);
       }
-      syncLevelFormatWarning(row,shop.tags?.level);
       row.dataset.osmKey=shop.osmType+':'+shop.osmId;
       row._osmItem=shop;pane.appendChild(row);
      }

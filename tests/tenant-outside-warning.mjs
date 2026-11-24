@@ -25,31 +25,38 @@ assert.equal(select([a,b],poi(8,30,5)).length,0,'distant shop rejected');
 console.log('Outside tenant matching: 9 tests PASS');
 
  // Verify the shared warning behavior, including coexistence with other notes.
-import {levelFormatWarning,syncLevelFormatWarning,syncLevelTagRowWarning} from '../komorebi3d/maps/osm-level-warning.js';
+import {levelFormatWarning,syncLevelTagRowWarning} from '../komorebi3d/maps/osm-level-warning.js';
 import {readFileSync} from 'node:fs';
-const message='⚠️ levelの書式が正しくありません。\n末尾のセミコロンは不要です。';
+const message='⚠ levelの書式が正しくありません。\n末尾のセミコロンは不要です。';
 assert.equal(levelFormatWarning('1;2;3;'),message);
 assert.equal(levelFormatWarning('1;2;3;; '),message);
 assert.equal(levelFormatWarning('1;2;3'),null);
 assert.equal(levelFormatWarning(undefined),null);
-const row={children:[{value:'level'},{value:'1;2;3;'}],notes:[],
+const classes=new Set(['komo-pending-tag-row']);
+const row={classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}},children:[{value:'level'},{value:'1;2;3;'}],notes:[],
  querySelector(){return this.notes.find(n=>n.className==='komo-level-format-warning')||null;},
  appendChild(n){this.notes.push(n);n.remove=()=>{this.notes=this.notes.filter(x=>x!==n);};}};
 globalThis.document={createElement:()=>({style:{}})};
 row.notes.push({className:'komo-pending-tag-note'});
 syncLevelTagRowWarning(row);syncLevelTagRowWarning(row);
 assert.equal(row.notes.length,2);
+assert.ok(classes.has('komo-level-format-row'));
+assert.ok(classes.has('komo-pending-tag-row'));
 assert.equal(row.notes[1].textContent,message);
 row.children[1].value='1;2;3';syncLevelTagRowWarning(row);
 assert.equal(row.notes.length,1);
-syncLevelFormatWarning(row,'1;2;3;');
-assert.equal(row.notes[1].textContent,message);
-syncLevelFormatWarning(row,'0');assert.equal(row.notes.length,1);
+assert.ok(!classes.has('komo-level-format-row'));
+assert.ok(classes.has('komo-pending-tag-row'),'correcting syntax preserves pending highlight');
 delete globalThis.document;
 const source=readFileSync(new URL('../komorebi3d/maps/map-labels.js',import.meta.url),'utf8');
 assert.ok(source.includes('syncLevelTagRowWarning(row);'));
 assert.ok(source.includes("row.addEventListener('input',()=>syncLevelTagRowWarning(row))"));
-assert.ok(source.includes('syncLevelFormatWarning(row,shop.tags?.level);'));
+assert.ok(source.includes('const formatWarning=levelFormatWarning(shop.tags?.level);'));
+assert.ok(source.includes('if(shop.outsideFootprint||pending||formatWarning)'));
+assert.ok(source.includes("if(formatWarning)for(const line of formatWarning.split('\\n'))addWarning(line);"));
+const visual=readFileSync(new URL('../komorebi3d/maps/osm-pending-tag-visual.js',import.meta.url),'utf8');
+assert.ok(visual.includes(':is(.komo-pending-tag-row,.komo-level-format-row)'));
+assert.ok(visual.includes(':is(.komo-pending-tag-note,.komo-level-format-warning)'));
 const mockSource=readFileSync(new URL('../komorebi3d/mock-ui.js',import.meta.url),'utf8');
 assert.ok(!mockSource.includes('syncLevelFormatWarning'));
 console.log('Live tag and tenant level warnings: shared text, correction, coexistence and wiring PASS');
