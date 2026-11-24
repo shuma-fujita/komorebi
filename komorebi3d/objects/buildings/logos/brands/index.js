@@ -34,6 +34,8 @@ import {daikokuya} from './daikokuya.js?v=doutor-daikokuya-v1-20261124';
 import {paintDaikokuyaFacade} from './daikokuya-sign.js?v=doutor-daikokuya-v1-20261124';
 import {mosBurger} from './mos-burger.js?v=mos-burger-v1-20261125';
 import {paintMosBurgerFacade} from './mos-burger-sign.js?v=mos-burger-v1-20261125';
+import {misterDonut} from './mister-donut.js?v=mister-donut-v1-20261125';
+import {paintMisterDonutFacade} from './mister-donut-sign.js?v=mister-donut-v1-20261125';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},
@@ -51,5 +53,6 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:doutor,paint:paintDoutorFacade},
  {brand:daikokuya,paint:paintDaikokuyaFacade},
  {brand:welcia,paint:paintWelciaFacade},
- {brand:mosBurger,paint:paintMosBurgerFacade}
+ {brand:mosBurger,paint:paintMosBurgerFacade},
+ {brand:misterDonut,paint:paintMisterDonutFacade}
 ]);

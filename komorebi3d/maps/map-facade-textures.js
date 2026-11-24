@@ -2,6 +2,7 @@
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
 const TEXTURE_URLS=Object.freeze({
+ misterDonut:new URL('../assets/textures/brands/mister-donut.png?v=mister-donut-v1-20261125',import.meta.url).href,
  mosBurger:new URL('../assets/textures/brands/mos-burger-trimmed.png?v=mos-burger-v1-20261125',import.meta.url).href,
  daikokuya:new URL('../assets/textures/brands/daikokuya.png?v=doutor-daikokuya-v1-20261124',import.meta.url).href,
  doutor:new URL('../assets/textures/brands/doutor.png?v=doutor-padding-v2-20261124',import.meta.url).href,
