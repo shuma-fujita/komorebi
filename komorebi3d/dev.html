@@ -705,6 +705,7 @@ import {patchLiveGeofabrikMap} from "./maps/map-live-osm-changes.js?v=wall-inlay
 import {getOsmReviewStorageCheck} from "./maps/osm-review-storage-check.js?v=storage-manager-v1-20261122";
 import {createMapBuildSteps} from "./maps/map-builder.js?v=wall-inlay-step2-v1-20261124";
 import {createMapFacadeTextureLayer} from "./maps/map-facade-textures.js?v=wall-inlay-step2-v1-20261124";
+import {matsudoCameraNear,MATSUDO_FAR_M} from "./maps/matsudo-camera-depth.js?v=adaptive-near-v1-20261124";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
 import {createMapLabels} from "./maps/map-labels.js?v=production-first-test-prefetch-20261122-v2";
 import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=wall-inlay-step2-v1-20261124";
@@ -1816,7 +1817,10 @@ function productRenderSnapshot(screen,frameId){
   if(source==='new')for(const [key,geometry] of world?.liveMeshes||[])
    objs.push({id:'matsudo:live:'+key,geometry,position:[0,0,0],yaw:0,opacity:1,visible:true});
   if(ghostIndex>=0)objs.push({id:'ghost-helicopter',geometry:engineMeshes[ghostIndex],position:[game.x,flightAltitude,game.z],yaw:game.angle,opacity:1,visible:true});
-  return createMeshRenderSnapshot({frameId,camera:{eye:pose.eye,target:pose.target,fovDegrees:45,near:.1,far:2200},objects:objs});
+  // Only the flight view uses the adaptive near plane; both backends and
+  // the facade layer consume this same snapshot projection.
+  return createMeshRenderSnapshot({frameId,camera:{eye:pose.eye,target:pose.target,fovDegrees:45,
+   near:matsudoCameraNear(pose,flightAltitude),far:MATSUDO_FAR_M},objects:objs});
  }
  const objects=renderParts.map((p,i)=>({
    id:p.name+":"+i,geometry:engineMeshes[i],

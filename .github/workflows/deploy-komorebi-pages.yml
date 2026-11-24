@@ -37,6 +37,7 @@ jobs:
           node --check komorebi3d/maps/map-loader.js
           node --check komorebi3d/maps/map-builder.js
           node --check komorebi3d/maps/map-facade-textures.js
+          node --check komorebi3d/maps/matsudo-camera-depth.js
           node --check komorebi3d/maps/map-filename-indicator.js
           node --check komorebi3d/maps/map-labels.js
           node --check komorebi3d/maps/osm-pending-tag-visual.js
@@ -73,6 +74,7 @@ jobs:
           node --check komorebi3d/objects/parking/common.js
           node --check komorebi3d/dev-panel-layout.js
           node tests/map-filename-indicator.mjs
+          node tests/matsudo-camera-depth.mjs
           node tests/parking-areas.mjs
           node tests/mcdonalds-sign.mjs
           node tests/daiso-sign.mjs
