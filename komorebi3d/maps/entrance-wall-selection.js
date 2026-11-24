@@ -66,10 +66,13 @@ function roadFacing(edge,roads,priorityFootprints=null){
 }
 // An ordered run is contiguous along the building outline, not spatially
 // nearest edges. The wrap-around case (last edge followed by first) is valid.
-export function middleEntranceEdge(eligibleEdges,edgeCount){
+export function middleEntranceEdge(eligibleEdges,edgeCount,minRunLength=1){
  if(!Number.isInteger(edgeCount)||edgeCount<=0||!eligibleEdges?.length)return -1;
  const eligible=new Set(eligibleEdges.map(edge=>edge.i));
  if(eligible.size===edgeCount){
+  // A closed ring has no unique frontage midpoint. Keep the existing
+  // deterministic fallback, but do not use it to override road priority.
+  if(minRunLength>1)return -1;
   const ordered=eligibleEdges.slice().sort((a,b)=>a.i-b.i);
   return centralEdge(ordered).i;
  }
@@ -82,6 +85,7 @@ export function middleEntranceEdge(eligibleEdges,edgeCount){
    if(!edge||run.length>=edgeCount)break;
    run.push(edge);
   }
+  if(run.length<minRunLength)continue;
   const width=run.reduce((sum,e)=>sum+e.len,0);
   if(!best||run.length>best.run.length||
    run.length===best.run.length&&width>best.width+1e-8||
@@ -132,15 +136,23 @@ export function eligibleFacadeWalls(polygon,roads=[],otherBuildings=[],minWidth=
  }).filter(edge=>edge.len>=minWidth-1e-7&&!edge.blocked);
 }
 
-// Door-specific ranking: direct vehicle road > connected walking strip >
-// original road-facing candidates > accessible walls. Ties retain the
-// longest contiguous run and middle-edge selection.
+// Door-specific ranking: middle of a contiguous run of >=3 road-facing
+// eligible walls > direct vehicle road > connected walking strip >
+// original road-facing candidates > accessible walls. Keep the original
+// longest-run and middle-edge tie breaking within each tier.
 export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=4,blockedWalls=null){
  const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,doorWidth,blockedWalls,true);
+ const edgeCount=polygon?.length||0;
+ const roadCandidates=candidates.filter(edge=>edge.roadEligible||edge.road?.priority>0);
+ // Assess the continuous frontage BEFORE filtering by vehicle road type.
+ // A sidewalk-facing central edge must not disappear between gray-road
+ // facing neighbors. Obstructed and too-short walls cannot join a run.
+ const middle=middleEntranceEdge(roadCandidates,edgeCount,3);
+ if(middle>=0)return middle;
  const priority=candidates.reduce((best,edge)=>Math.max(best,edge.road?.priority||0),0);
  if(priority)return middleEntranceEdge(candidates.filter(edge=>edge.road?.priority===priority),polygon?.length||0);
- const roadCandidates=candidates.filter(edge=>edge.roadEligible);
- return middleEntranceEdge(roadCandidates.length?roadCandidates:candidates,polygon?.length||0);
+ const fallbackRoadCandidates=candidates.filter(edge=>edge.roadEligible);
+ return middleEntranceEdge(fallbackRoadCandidates.length?fallbackRoadCandidates:candidates,edgeCount);
 }
 
 // A sign belongs to a continuous street-facing frontage, not to each
