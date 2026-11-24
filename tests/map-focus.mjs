@@ -27,7 +27,7 @@ assert.equal(screenTap([nearSide,farCenter],200,0),null,'sky/background tap sele
 assert.equal(screenTap([nearSide,farCenter],-3,200),null,'outside viewport ignored');
 assert.equal(screenTap([nearSide,farCenter],340,200),10,'screen tap is deterministic');
 assert.equal(screenTap([building(20,-4,600)],200,200),20,'tap reaches a building 600m away');
-assert.equal(screenTap([building(21,-4,1005)],200,200),null,'tap rejects a building beyond 1km');
+assert.equal(screenTap([building(21,-4,1005)],200,200),21,'tap reaches a building beyond 1km without a distance limit');
 assert.equal(focus([building(22,-4,600)],[0,5,0],[0,5,700]),null,'camera auto-focus still stops at 200m');
-assert.equal(screenTap([building(23,-4,600),building(24,-4,50)],200,200),24,'nearer building still wins with 1km tap range');
+assert.equal(screenTap([building(23,-4,600),building(24,-4,50)],200,200),24,'nearer building still wins without a tap distance limit');
 console.log('Camera focus geometry: 8 tests PASS; screen tap geometry: 10 tests PASS');
