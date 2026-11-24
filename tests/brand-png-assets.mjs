@@ -7,7 +7,7 @@ import {readFileSync} from 'node:fs';
 import {inflateSync} from 'node:zlib';
 
 const assets={
- doutor:[664,177],
+ doutor:[692,193],
  daikokuya:[775,228],
  welcia:[1448,510],
  lawson:[144,144],

@@ -3,7 +3,7 @@
 // Keep the fixed Engine mesh contract unchanged.
 const TEXTURE_URLS=Object.freeze({
  daikokuya:new URL('../assets/textures/brands/daikokuya.png?v=doutor-daikokuya-v1-20261124',import.meta.url).href,
- doutor:new URL('../assets/textures/brands/doutor.png?v=facade-corners-v1-20261124',import.meta.url).href,
+ doutor:new URL('../assets/textures/brands/doutor.png?v=doutor-padding-v2-20261124',import.meta.url).href,
  welcia:new URL('../assets/textures/brands/welcia.png?v=welcia-png-v1-20261124',import.meta.url).href,
  lawson:new URL('../assets/textures/brands/lawson.png?v=brand-png-20261123',import.meta.url).href,
  rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=rakuten-crop-png-v1-20261123',import.meta.url).href,
