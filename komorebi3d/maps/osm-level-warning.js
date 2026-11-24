@@ -1,6 +1,6 @@
 import {hasTrailingLevelSeparator} from './osm-level-format.js?v=level-format-v1-20261124';
 export function levelFormatWarning(raw){
- return hasTrailingLevelSeparator(raw)?'⚠ levelの書式が正しくありません。\n末尾のセミコロンは不要です。':null;
+ return hasTrailingLevelSeparator(raw)?'⚠ levelの書式が正しくありません。\n末尾の「;」は不要です。':null;
 }
 // The editor uses the existing pending-warning CSS with an independent flag.
 // The directory uses its existing warning-row renderer for all warning types.

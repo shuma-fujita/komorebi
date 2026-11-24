@@ -1,4 +1,4 @@
-import {levelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-style-v2-20261124';
+import {levelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-text-v1-20261125';
 // Project building and ground-level POI labels using shared A/B viewport camera information.
 import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=changeset-source-20261122';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
