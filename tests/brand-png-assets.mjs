@@ -7,6 +7,8 @@ import {readFileSync} from 'node:fs';
 import {inflateSync} from 'node:zlib';
 
 const assets={
+ doutor:[664,177],
+ daikokuya:[775,228],
  welcia:[1448,510],
  lawson:[144,144],
  'rakuten-mobile':[720,253],
@@ -80,4 +82,4 @@ for(const brand of Object.keys(assets)){
  assert.ok(moduleSource.includes('brands/'+brand+'.png'),'PNG is loaded for '+brand);
  assert.ok(!moduleSource.includes('brands/'+brand+'.webp'),'Old WebP is not loaded for '+brand);
 }
-console.log('Brand PNG assets PASS: 8 PNG assets; Rakuten cropped PNG retains clear white wordmark');
+console.log('Brand PNG assets PASS: 10 PNG assets; Rakuten cropped PNG retains clear white wordmark');

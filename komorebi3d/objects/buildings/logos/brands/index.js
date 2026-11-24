@@ -28,6 +28,10 @@ import {paintHidakayaFacade} from '../../food/hidakaya-sign.js?v=wall-inlay-step
 import {paintTonkatsuTonichiFacade} from './tonkatsu-tonichi-sign.js?v=wall-inlay-step2-v1-20261124';
 import {welcia} from './welcia.js?v=welcia-png-v1-20261124';
 import {paintWelciaFacade} from './welcia-sign.js?v=welcia-png-v1-20261124';
+import {doutor} from './doutor.js?v=doutor-daikokuya-v1-20261124';
+import {paintDoutorFacade} from './doutor-sign.js?v=doutor-daikokuya-v1-20261124';
+import {daikokuya} from './daikokuya.js?v=doutor-daikokuya-v1-20261124';
+import {paintDaikokuyaFacade} from './daikokuya-sign.js?v=doutor-daikokuya-v1-20261124';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},
@@ -42,5 +46,7 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:yoshinoya,paint:paintYoshinoyaFacade},
  {brand:hidakaya,paint:paintHidakayaFacade},
  {brand:tonkatsuTonichi,paint:paintTonkatsuTonichiFacade},
+ {brand:doutor,paint:paintDoutorFacade},
+ {brand:daikokuya,paint:paintDaikokuyaFacade},
  {brand:welcia,paint:paintWelciaFacade}
 ]);

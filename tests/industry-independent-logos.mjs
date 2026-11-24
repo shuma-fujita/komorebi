@@ -11,6 +11,10 @@ const poi=(id,name,category,level='2')=>({type:'node',id,...coord(0,0),tags:{...
 const map=tenant=>({elements:[building,tenant]});
 const build=tenant=>buildMap(map(tenant),{latitude:lat,longitude:lon,halfSize:1000});
 const cases=[
+ ['ドトールコーヒーショップ 松戸店',{amenity:'cafe'},'doutor'],
+ ['DOUTOR Matsudo',{},'doutor'],
+ ['大黒屋 松戸店',{shop:'pawnbroker'},'daikokuya'],
+ ['チケット大黒屋 松戸店',{},'daikokuya'],
  ['ウエルシア 松戸店',{shop:'chemist'},'welcia'],
  ['ウェルシア 松戸店',{amenity:'pharmacy'},'welcia'],
  ['Welcia Matsudo',{},'welcia'],
@@ -39,6 +43,15 @@ for(const [name,category,texture] of cases){
  assert.equal(faces[0].texture,texture);
  assert.equal(faces[0].ownerKey,'way/'+building.id);
  assert.ok(faces[0].positions.every((n,i)=>i%3!==1||(n>=6-1e-8&&n<=9+1e-8)));
+}
+for(const [name,id] of [['DOUTOR','doutor'],['大黒屋','daikokuya']]){
+ assert.equal(identifyLogoBrand({brand:name})?.id,id);
+ for(const level of ['0','0;1','2']){
+  const faces=build(poi(880002,name,{},level)).texturedFaces;
+  assert.equal(faces.length,1);
+  assert.equal(faces[0].texture,id);
+ }
+ for(const level of ['','6','1;;2'])assert.equal(build(poi(880002,name,{},level)).texturedFaces.length,0);
 }
 assert.equal(identifyLogoBrand({brand:'Welcia'})?.id,'welcia');
 assert.equal(build(poi(880002,'ウエルシア',{shop:'chemist'},'')).texturedFaces.length,0);
