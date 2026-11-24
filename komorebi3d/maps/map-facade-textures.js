@@ -3,7 +3,7 @@
 // Keep the fixed Engine mesh contract unchanged.
 const TEXTURE_URLS=Object.freeze({
  daikokuya:new URL('../assets/textures/brands/daikokuya.png?v=doutor-daikokuya-v1-20261124',import.meta.url).href,
- doutor:new URL('../assets/textures/brands/doutor.png?v=doutor-daikokuya-v1-20261124',import.meta.url).href,
+ doutor:new URL('../assets/textures/brands/doutor.png?v=facade-corners-v1-20261124',import.meta.url).href,
  welcia:new URL('../assets/textures/brands/welcia.png?v=welcia-png-v1-20261124',import.meta.url).href,
  lawson:new URL('../assets/textures/brands/lawson.png?v=brand-png-20261123',import.meta.url).href,
  rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=rakuten-crop-png-v1-20261123',import.meta.url).href,
@@ -105,9 +105,24 @@ function isFace(face){
 }
 // Match the actual uniform area of each brand image, rather than its old
 // approximate fallback color. A solid RGB material is used in either case.
+// Sample the four outermost corners. Require a majority of matching opaque
+// colors; otherwise retain the configured fallback. Explicit legacy sample
+// positions remain supported.
+export function chooseFacadeCornerColor(pixels,fallback){
+ const counts=new Map();
+ for(const p of pixels){
+  if(p[3]!==255)continue;
+  const color=(p[0]<<16)|(p[1]<<8)|p[2];
+  counts.set(color,(counts.get(color)||0)+1);
+ }
+ for(const [color,count] of counts)if(count>=3)return color;
+ return fallback;
+}
 function sampledColor(face,resource){
  if(!resource.ready)return face.backgroundColor;
- const [u,v]=face.backgroundUV||[.04,.04],key=u+','+v;
+ const [u,v]=face.backgroundUV||[.04,.04];
+ const legacy=u!==.04||v!==.04;
+ const key=legacy?u+','+v:'corners:'+face.backgroundColor;
  if(resource.colors.has(key))return resource.colors.get(key)??face.backgroundColor;
  let color=null;
  try{
@@ -115,10 +130,17 @@ function sampledColor(face,resource){
   const canvas=document.createElement('canvas');canvas.width=canvas.height=1;
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   if(ctx&&w>0&&h>0){
-   ctx.drawImage(image,Math.min(w-1,Math.max(0,Math.floor(u*w))),
-    Math.min(h-1,Math.max(0,Math.floor((1-v)*h))),1,1,0,0,1,1);
-   const p=ctx.getImageData(0,0,1,1).data;
-   if(p[3]===255)color=(p[0]<<16)|(p[1]<<8)|p[2];
+   const read=(x,y)=>{
+    ctx.clearRect(0,0,1,1);
+    ctx.drawImage(image,x,y,1,1,0,0,1,1);
+    return ctx.getImageData(0,0,1,1).data;
+   };
+   if(legacy){
+    const p=read(Math.min(w-1,Math.max(0,Math.floor(u*w))),Math.min(h-1,Math.max(0,Math.floor((1-v)*h))));
+    if(p[3]===255)color=(p[0]<<16)|(p[1]<<8)|p[2];
+   }else{
+    color=chooseFacadeCornerColor([read(0,0),read(w-1,0),read(0,h-1),read(w-1,h-1)],face.backgroundColor);
+   }
   }
  }catch{/* Keep the configured solid fallback when pixel access fails. */}
  resource.colors.set(key,color);
