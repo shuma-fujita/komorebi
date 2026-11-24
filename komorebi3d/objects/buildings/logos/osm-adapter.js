@@ -1,6 +1,6 @@
 // Unified brand-logo pipeline. OSM category is *not* the brand identity.
 // A named POI may be a restaurant, pub, shop, office, leisure facility, etc.
-import {LOGO_BRANDS} from './brands/index.js?v=mister-donut-v1-20261125';
+import {LOGO_BRANDS} from './brands/index.js?v=au-v1-20261125';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=level-format-v1-20261124';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()
@@ -14,7 +14,7 @@ export function identifyLogoBrand(tags={}){
  const otherLawson=names.some(name=>['ローソンストア100','ローソン100','lawsonstore100','lawson100',
   'ナチュラルローソン','naturallawson'].some(prefix=>name.startsWith(normalize(prefix))));
  return LOGO_BRANDS.find(e=>(e.brand.id!=='lawson'||!otherLawson)&&
-  names.some(name=>e.brand.names.some(alias=>name.startsWith(normalize(alias)))))?.brand??null;
+  (e.brand.id==='au' ? nameKeys.some(key=>{const value=String(tags[key]??'').normalize('NFKC').trim().toLowerCase();return /^au(?:$|[\s\-‐‑–—]|ショップ|style(?=$|[\s\-‐‑–—]|[^\x00-\x7f])|[^\x00-\x7f])/.test(value);}) : names.some(name=>e.brand.names.some(alias=>name.startsWith(normalize(alias))))))?.brand??null;
 }
 export function matchLogoBuildings(elements,project,halfSize){
  return matchLogoFootprints(elements,project,halfSize,identifyLogoBrand);
