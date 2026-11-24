@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import './facade-corner-color.mjs';
+import {chooseFacadeCornerColor as choose} from '../komorebi3d/maps/map-facade-textures.js';
 import {buildMap} from '../komorebi3d/maps/map-builder.js';
 import {createMapFacadeTextureLayer} from '../komorebi3d/maps/map-facade-textures.js';
 import {paintIsomaruFacade} from '../komorebi3d/objects/buildings/food/isomaru-sign.js';
@@ -11,6 +11,15 @@ import {paintLogoBuilding} from '../komorebi3d/objects/buildings/logos/osm-adapt
 import {imageFacadeMode} from '../komorebi3d/objects/buildings/brand-facade.js';
 import {entranceLogoSize,conveniencePanelLayout,paintConvenienceFasciaDividers} from '../komorebi3d/objects/buildings/convenience/common.js';
 
+{
+const black=[0,0,0,255],white=[255,255,255,255],orange=[255,109,0,255],clear=[0,0,0,0];
+assert.equal(choose([black,black,black,white],0xffffff),0);
+assert.equal(choose([orange,orange,orange,orange],0),0xff6d00);
+assert.equal(choose([black,black,white,white],0x123456),0x123456);
+assert.equal(choose([clear,clear,clear,white],0x123456),0x123456);
+assert.equal(choose([black,black,black,clear],0xffffff),0);
+console.log('Facade corner color PASS');
+}
 const polygon=[[0,0],[24,0],[24,20],[0,20]];
 assert.equal(imageFacadeMode({bottom:0,top:3,groundGlassTop:3}),'ground-only');
 assert.equal(imageFacadeMode({bottom:0,top:6,groundGlassTop:3}),'ground-and-upper');

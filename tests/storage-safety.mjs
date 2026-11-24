@@ -1,0 +1,36 @@
+// Four visible slots, five selectable panel types, and inline game syntax checks.
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {dirname,join} from 'node:path';
+const root=join(dirname(fileURLToPath(import.meta.url)),'..');
+const read=path=>readFileSync(join(root,path),'utf8');
+const {PANEL_IDS,SLOT_IDS,transitionPanelLayout}=await import('../komorebi3d/dev-panel-layout.js');
+assert.deepEqual(PANEL_IDS,['build','game','test','runtime','storage']);
+assert.deepEqual(SLOT_IDS,['top','left','right','bottom']);
+const initial={top:'build',left:'game',right:'test',bottom:'runtime'};
+const removed=transitionPanelLayout(initial,{type:'remove',from:'bottom'});
+assert.deepEqual(removed,{top:'build',left:'game',right:'test',bottom:null});
+const added=transitionPanelLayout(removed,{type:'add',from:'bottom',panel:'storage'});
+assert.deepEqual(added,{top:'build',left:'game',right:'test',bottom:'storage'});
+assert.throws(()=>transitionPanelLayout(initial,{type:'add',from:'bottom',panel:'storage'}),/cannot be added/i);
+assert.deepEqual(transitionPanelLayout(added,{type:'swap',from:'bottom',to:'top'}),
+ {top:'storage',left:'game',right:'test',bottom:'build'});
+assert.deepEqual(transitionPanelLayout(added,{type:'remove',from:'bottom'}),removed);
+const mockScript=read('komorebi3d/mock-ui.js'),dev=read('komorebi3d/dev.html'),manager=read('komorebi3d/local-storage-panel.js');
+assert.ok(mockScript.includes('mountLocalStorageManager(document,{readOnly:true});'));
+assert.match(manager,/if\(readOnly\)\{\s*entries\.appendChild\(row\);\s*continue;/);
+assert.equal(manager.includes('localStorage.clear('),false);
+const match=dev.match(/<script type="module">([\s\S]*?)<\/script>/);
+assert.ok(match);
+const parsed=spawnSync(process.execPath,['--check','--input-type=module'],{input:match[1],encoding:'utf8'});
+assert.equal(parsed.status,0,parsed.stderr);
+const {storedOsmName}=await import('../komorebi3d/local-storage-panel.js');
+const sampleKey='komorebi3d:osm-tag-changes:v2:node/10294624701';
+assert.equal(storedOsmName(sampleKey,JSON.stringify({tags:{name:'日高屋'},changes:{level:'0'}})),'日高屋');
+assert.equal(storedOsmName(sampleKey,JSON.stringify({changes:{name:'吉野家'}})),'吉野家');
+assert.equal(storedOsmName(sampleKey,JSON.stringify({tags:{'name:ja':'とんかつとん一'}})),'とんかつとん一');
+assert.equal(storedOsmName(sampleKey,JSON.stringify({changes:{level:'0'}})),'');
+assert.equal(storedOsmName('unrelated-key',JSON.stringify({tags:{name:'日高屋'}})),'');
+assert.equal(storedOsmName(sampleKey,'invalid-json'),'');

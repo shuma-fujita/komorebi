@@ -23,79 +23,24 @@ jobs:
       # UI fragments are shared; deploy only checked-in pages, never rebuild game code here.
       - name: Verify mock-first UI sources and both checked-in pages
         run: |
-          node --check komorebi3d/build-ui.mjs
-          node --check komorebi3d/mock-ui.js
-          node --check komorebi3d/maps/editor-keyboard-layout.js
-          node --check komorebi3d/maps/editor-keyboard-diagnostics.js
-          node --check komorebi3d/maps/sheet-motion.js
-          node --check komorebi3d/maps/sheet-scroll-guard.js
-          node --check komorebi3d/maps/osm-element-page-url.js
-          node --check komorebi3d/maps/osm-changeset-tags.js
-          node --check komorebi3d/maps/osm-test-api.js
-          node --check komorebi3d/maps/osm-pending-changes.js
-          node --check komorebi3d/maps/osm-review-storage-check.js
-          node --check komorebi3d/maps/map-loader.js
-          node --check komorebi3d/maps/map-builder.js
-          node --check komorebi3d/maps/map-facade-textures.js
-          node --check komorebi3d/maps/matsudo-camera-depth.js
-          node --check komorebi3d/maps/map-filename-indicator.js
-          node --check komorebi3d/maps/map-labels.js
-          node --check komorebi3d/maps/osm-pending-tag-visual.js
-          node --check komorebi3d/local-storage-panel.js
-          node --check komorebi3d/objects/buildings/store-matching.js
-          node --check komorebi3d/objects/buildings/store-levels.js
-          node --check komorebi3d/objects/buildings/brand-facade.js
-          node --check komorebi3d/objects/buildings/logos/brands/index.js
-          node --check komorebi3d/objects/buildings/logos/matching.js
-          node --check komorebi3d/objects/buildings/logos/levels.js
-          node --check komorebi3d/objects/buildings/logos/facade.js
-          node --check komorebi3d/objects/buildings/logos/osm-adapter.js
-          node --check komorebi3d/objects/buildings/logos/brands/hoshino.js
-          node --check komorebi3d/objects/buildings/logos/brands/hoshino-sign.js
-          node --check komorebi3d/objects/buildings/variety/daiso.js
-          node --check komorebi3d/objects/buildings/variety/osm-adapter.js
-          node --check komorebi3d/objects/buildings/variety/daiso-sign.js
-          node --check komorebi3d/objects/buildings/food/osm-adapter.js
-          node --check komorebi3d/objects/buildings/food/mcdonalds.js
-          node --check komorebi3d/objects/buildings/food/mcdonalds-sign.js
-          node --check komorebi3d/objects/buildings/food/gusto.js
-          node --check komorebi3d/objects/buildings/food/gusto-sign.js
-          node --check komorebi3d/objects/buildings/food/torikizoku.js
-          node --check komorebi3d/objects/buildings/food/torikizoku-sign.js
-          node --check komorebi3d/objects/buildings/food/bamiyan.js
-          node --check komorebi3d/objects/buildings/food/isomaru.js
-          node --check komorebi3d/objects/buildings/food/isomaru-sign.js
-          node --check komorebi3d/objects/buildings/food/bamiyan-sign.js
-          node --check komorebi3d/objects/buildings/leisure/osm-adapter.js
-          node --check komorebi3d/objects/buildings/leisure/kaikatsu.js
-          node --check komorebi3d/objects/buildings/leisure/kaikatsu-sign.js
-          node --check komorebi3d/objects/parking/const.js
-          node --check komorebi3d/objects/parking/osm-adapter.js
-          node --check komorebi3d/objects/parking/common.js
-          node --check komorebi3d/dev-panel-layout.js
-          node tests/map-filename-indicator.mjs
+          find komorebi3d -type f \( -name '*.js' -o -name '*.mjs' \) ! -path '*/tests/*' -print0 | xargs -0 -r -n 1 node --check
           node tests/matsudo-camera-depth.mjs
           node tests/parking-areas.mjs
-          node tests/mcdonalds-sign.mjs
-          node tests/daiso-sign.mjs
-          node tests/restaurant-image-facades.mjs
-          node tests/kaikatsu-bamiyan-facades.mjs
-          node tests/isomaru-wide-facade.mjs
           node tests/brand-png-assets.mjs
-          node tests/logo-ground-glass.mjs
+          node tests/facade-rendering.mjs
           node tests/entrance-wall-selection.mjs
-          node tests/industry-independent-logos.mjs
-          node tests/no-legacy-stripes.mjs
-          node tests/lawson-image-facade.mjs
-          node komorebi3d/tests/lawson-storefront.mjs
-          node tests/hoshino-coffee-facade.mjs
+          node tests/storefronts.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs
           node tests/osm-tag-changes-v2.mjs
-          node tests/local-storage-panel-structure.mjs
-          node tests/editor-keyboard-layout.mjs
-          node tests/sheet-gesture-ownership.mjs
-          node tests/editor-preview-camera-window.mjs
+          node tests/storage-safety.mjs
+          node tests/map-dynamic-priority.mjs
+          node tests/map-focus.mjs
+          node tests/map-occupants.mjs
+          node tests/tenant-level-inference.mjs
+          node tests/tenant-outside-warning.mjs
+          node tests/building-editor-fit.mjs
+          node tests/hotel-matching.mjs
           node komorebi3d/build-ui.mjs --check
       - name: Prepare Pages artifact without writing Client ID to git
         env:

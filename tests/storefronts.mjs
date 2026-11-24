@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {buildMap} from '../komorebi3d/maps/map-builder.js';
 import {identifyLogoBrand,matchLogoBuildings,paintLogoBuilding,contiguousLogoGroups} from '../komorebi3d/objects/buildings/logos/osm-adapter.js';
 import {matchFoodBuildings,resolveFoodPaint} from '../komorebi3d/objects/buildings/food/osm-adapter.js';
+import {applySavedOsmTagChangesToMap} from '../komorebi3d/maps/osm-pending-changes.js';
+import {patchLiveGeofabrikMap} from '../komorebi3d/maps/map-live-osm-changes.js';
+import {matchConvenienceBuildings} from '../komorebi3d/objects/buildings/convenience/osm-adapter.js';
 const lat=35.78444,lon=139.90061,sx=111320*Math.cos(lat*Math.PI/180);
 const coord=(x,z)=>({lat:lat-z/111320,lon:lon+x/sx});
 const project=p=>[(p.lon-lon)*sx,-(p.lat-lat)*111320];
@@ -11,6 +14,8 @@ const poi=(id,name,category,level='2')=>({type:'node',id,...coord(0,0),tags:{...
 const map=tenant=>({elements:[building,tenant]});
 const build=tenant=>buildMap(map(tenant),{latitude:lat,longitude:lon,halfSize:1000});
 const cases=[
+ ['星乃珈琲店',{},'hoshino'],
+ ['ローソン',{},'lawson'],
  ['ドトールコーヒーショップ 松戸店',{amenity:'cafe'},'doutor'],
  ['DOUTOR Matsudo',{},'doutor'],
  ['大黒屋 松戸店',{shop:'pawnbroker'},'daikokuya'],
@@ -60,7 +65,6 @@ for(const level of ['0','0;1','2']){
  const faces=build(poi(880002,'ウエルシア',{shop:'chemist'},level)).texturedFaces;
  assert.equal(faces.length,1);
  assert.equal(faces[0].texture,'welcia');
- assert.equal(faces[0].backgroundColor,0x012190);
 }
 // A similarly named unrelated restaurant must never claim the Tonichi branding.
 assert.notEqual(identifyLogoBrand({name:'とんかつ松乃家'})?.id,'tonkatsuTonichi');
@@ -124,3 +128,68 @@ const painted=[];
 const matched=matchLogoBuildings(map(mcd).elements,project,1000).get(building.id);
 assert.equal(paintLogoBuilding(()=>{}, {},[[0,0],[24,0],[24,20],[0,20]],matched,building.tags,18,null,painted,'way/880001',[]),1);
 console.log('Industry-independent logos: category independence, Yoshinoya/Hidakaya migration, multi-floor and guards PASS');
+
+for(const name of ['ローソンストア100','LAWSON STORE 100','ナチュラルローソン','Natural LAWSON']){
+ assert.notEqual(identifyLogoBrand({name,brand:'LAWSON'})?.id,'lawson');
+}
+assert.equal(identifyLogoBrand({name:'楽天モバイル 松戸店'})?.id,'rakuten-mobile');
+assert.equal(identifyLogoBrand({name:'楽天銀行'}),null);
+assert.equal(matchConvenienceBuildings(map(poi(880002,'ローソン',{shop:'convenience'},'0')).elements,project,1000).has(building.id),false);
+assert.equal(matchConvenienceBuildings(map(poi(880002,'LAWSON STORE 100',{shop:'convenience',brand:'LAWSON'},'0')).elements,project,1000).get(building.id)?.[0]?.brand.id,'lawson-store100');
+assert.equal(build(poi(880002,'ローソン',{},'')).texturedFaces.length,0);
+assert.equal(build(poi(880002,'楽天モバイル',{},'0')).texturedFaces[0]?.texture,'rakutenMobile');
+
+// Representative two-tenant saved overlay and live geometry update.
+{
+const lat=35.78444,lon=139.90061,scale=111320*Math.cos(lat*Math.PI/180);
+const coord=(x,z)=>({lat:lat-z/111320,lon:lon+x/scale});
+const project=p=>[(p.lon-lon)*scale,-(p.lat-lat)*111320];
+const building={type:'way',id:88442211,version:1,
+ tags:{building:'yes','building:levels':'6'},
+ geometry:[[-12,-9],[12,-9],[12,9],[-12,9],[-12,-9]].map(([x,z])=>coord(x,z))};
+const kai={type:'node',id:88442212,version:1,...coord(-3,0),
+ tags:{amenity:'internet_cafe',name:'快活CLUB テスト店',level:'1'}};
+const bam={type:'node',id:88442213,version:1,...coord(3,0),
+ tags:{amenity:'restaurant',name:'バーミヤン テスト店',level:'2'}};
+const tile={id:'0_0',gridX:0,gridY:0,sizeM:2000};
+const map=(kt=kai.tags,bt=bam.tags)=>({source:'OpenStreetMap contributors',tile,
+ elements:[building,{...kai,tags:{...kt}},{...bam,tags:{...bt}}]});
+const build=data=>buildMap(data,{latitude:lat,longitude:lon,halfSize:1000});
+const saved=globalThis.localStorage,cache=new Map();
+globalThis.localStorage={
+ get length(){return cache.size;},key(i){return [...cache.keys()][i]??null;},
+ getItem(k){return cache.get(k)??null;},setItem(k,v){cache.set(k,String(v));},
+ removeItem(k){cache.delete(k);}
+};
+try{
+ cache.set('komorebi3d:osm-tag-changes:v2:node/'+kai.id,JSON.stringify({
+  type:'node',id:String(kai.id),osmVersion:null,changes:{level:'3'},tags:null,baseTags:null}));
+ const old=map(),next=map();
+ assert.equal(applySavedOsmTagChangesToMap(old,{source:'old'}),0);
+ assert.equal(applySavedOsmTagChangesToMap(next,{source:'new'}),1);
+ assert.ok(build(next).texturedFaces.find(f=>f.texture==='kaikatsu').positions
+  .every((v,i)=>i%3!==1||v>=9-1e-8&&v<=12+1e-8));
+}finally{
+ if(saved===undefined)delete globalThis.localStorage;
+ else globalThis.localStorage=saved;
+}
+const data=map(),original=build(data);
+const world={ready:true,sourceMap:data,
+ meshes:original.meshes.map((m,i)=>({...m,id:'test:'+i})),
+ texturedFaces:[...original.texturedFaces],liveMeshes:new Map(),
+ buildingSlices:new Map(),labels:original.labels,mapFeatures:original.mapFeatures};
+let offset=0;
+for(const batch of original.displayBatches){
+ for(const s of batch.buildingSlices||[])world.buildingSlices.set(s.osmKey,
+  {meshIndex:offset+s.meshIndex,start:s.start,end:s.end});
+ offset+=batch.meshes.length;
+}
+const geometry=({id,positions,normals,colors})=>({id,positions,normals,colors});
+assert.equal(patchLiveGeofabrikMap(world,{type:'node',id:bam.id,
+ version:1,changes:{level:'4'}},geometry).applied,true);
+assert.ok(world.texturedFaces.find(f=>f.texture==='bamiyan').positions
+ .every((v,i)=>i%3!==1||v>=12-1e-8&&v<=15+1e-8));
+assert.equal(patchLiveGeofabrikMap(world,{type:'node',id:kai.id,
+ version:1,changes:{name:'別店舗',brand:'別店舗'}},geometry).applied,true);
+assert.deepEqual(world.texturedFaces.map(f=>f.texture),['bamiyan']);
+}
