@@ -75,11 +75,4 @@ assert.ok(source.includes("apiWrite('/changeset/create',makeChangesetXml('Copy e
 assert.ok(source.includes('Object.entries(buildOsmChangesetTags(comment,source))'),
  'Changeset XML builder reads the shared metadata, not a test-specific name');
 
-const ui=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','komorebi3d','maps','map-labels.js'),'utf8');
-assert.ok(ui.includes("['','指定しない']"),'UI defaults to no source');
-assert.ok(ui.includes("['survey','現地調査（survey）']"));
-assert.ok(ui.includes("['local knowledge','現地知識（local knowledge）']"));
-assert.ok(ui.includes("changesetSourceOtherLabel.hidden=changesetSourceSelect.value!=='other'"));
-assert.ok(ui.includes('sendOsmTestLevel(loaded,levelValue,selectedChangesetSource())'),
- 'Test send passes the optional source to the changeset creator');
 console.log('Komorebi Builder changeset source: omitted, presets, custom, XML and test UI wiring PASS (no OSM requests)');

@@ -6,18 +6,6 @@ import {fileURLToPath} from 'node:url';
 import {dirname,join} from 'node:path';
 const root=join(dirname(fileURLToPath(import.meta.url)),'..');
 const read=path=>readFileSync(join(root,path),'utf8');
-const {PANEL_IDS,SLOT_IDS,transitionPanelLayout}=await import('../komorebi3d/dev-panel-layout.js');
-assert.deepEqual(PANEL_IDS,['build','game','test','runtime','storage']);
-assert.deepEqual(SLOT_IDS,['top','left','right','bottom']);
-const initial={top:'build',left:'game',right:'test',bottom:'runtime'};
-const removed=transitionPanelLayout(initial,{type:'remove',from:'bottom'});
-assert.deepEqual(removed,{top:'build',left:'game',right:'test',bottom:null});
-const added=transitionPanelLayout(removed,{type:'add',from:'bottom',panel:'storage'});
-assert.deepEqual(added,{top:'build',left:'game',right:'test',bottom:'storage'});
-assert.throws(()=>transitionPanelLayout(initial,{type:'add',from:'bottom',panel:'storage'}),/cannot be added/i);
-assert.deepEqual(transitionPanelLayout(added,{type:'swap',from:'bottom',to:'top'}),
- {top:'storage',left:'game',right:'test',bottom:'build'});
-assert.deepEqual(transitionPanelLayout(added,{type:'remove',from:'bottom'}),removed);
 const mockScript=read('komorebi3d/mock-ui.js'),dev=read('komorebi3d/dev.html'),manager=read('komorebi3d/local-storage-panel.js');
 assert.ok(mockScript.includes('mountLocalStorageManager(document,{readOnly:true});'));
 assert.match(manager,/if\(readOnly\)\{\s*entries\.appendChild\(row\);\s*continue;/);

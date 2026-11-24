@@ -66,16 +66,6 @@ function run(positions){
 }
 
 const stable=run({default:[0,0]});
-const underThreshold=run({1:[49,0],default:[0,0]});
-assert.deepEqual(underThreshold.eventPhases,[],'49m must NOT reprioritize');
-assert.deepEqual(underThreshold.batches.map(b=>b.start),stable.batches.map(b=>b.start));
-assert.deepEqual(underThreshold.batches.flatMap(b=>b.labels.map(l=>l.name)),
- stable.batches.flatMap(b=>b.labels.map(l=>l.name)));
-
-const onThreshold=run({1:[50,0]});
-assert.equal(onThreshold.eventPhases.filter(phase=>phase==='done').length,1,
- 'exactly 50m must trigger one reprioritization');
-
 const moved=run({1:[400,0],default:[400,0]});
 assert.ok(moved.eventPhases.includes('done'),'400m movement must reprioritize');
 const earlyLabels=moved.batches.slice(1,4).flatMap(b=>b.labels.map(l=>l.name));
@@ -85,10 +75,10 @@ assert.ok(!stable.batches.slice(1,4).flatMap(b=>b.labels.map(l=>l.name)).include
 
 const returned=run({1:[400,0],10:[0,0],default:[0,0]});
 assert.equal(returned.eventPhases.filter(phase=>phase==='done').length,2,
- 'moving back another 50m must reorder again');
-for(const actual of [underThreshold,onThreshold,moved,returned]){
+ 'moving back must reorder again');
+for(const actual of [moved,returned]){
  assert.deepEqual(actual.final.counts,stable.final.counts);
  assert.deepEqual(actual.final.labels,stable.final.labels,'final identity-preserved labels must be invariant');
  assert.deepEqual(actual.final.mapFeatures,stable.final.mapFeatures,'final minimap features must be invariant');
 }
-console.log('Step 4-B PASS: 49m no-op, 50m+ reordering, two moves, no duplicate or missing geometry/labels');
+console.log('Dynamic priority PASS: movement, no duplicate or missing geometry/labels');

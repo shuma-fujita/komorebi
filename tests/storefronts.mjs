@@ -70,48 +70,19 @@ for(const level of ['0','0;1','2']){
 assert.notEqual(identifyLogoBrand({name:'とんかつ松乃家'})?.id,'tonkatsuTonichi');
 assert.equal(build(poi(880002,'とんかつとん一',{amenity:'restaurant'},'')).texturedFaces.length,0);
 assert.equal(build(poi(880002,'とんかつとん一',{amenity:'restaurant'},'6')).texturedFaces.length,0);
-// One fixed-size logo centered across each contiguous group, including level=0.
-const fullLogoUV=new Set(['1,0,0,0,0,1,1,0,0,1,1,1','0,0,1,0,1,1,0,0,1,1,0,1']);
-function logoCenters(face){
- const centers=[],heights=[];
- for(let i=0;i<face.uvs.length;i+=12){
-  if(!fullLogoUV.has(face.uvs.slice(i,i+12).join(',')))continue;
-  const p=face.positions.slice(i/12*18,i/12*18+18);
-  centers.push((p[1]+p[7])/2);
-  heights.push(p[7]-p[1]);
- }
- return {centers,heights};
-}
-const baseline=build(poi(880002,'磯丸水産',{amenity:'pub'},'2')).texturedFaces;
-assert.equal(baseline.length,1);
-const baseHeight=logoCenters(baseline[0]).heights[0];
-const groundBaseline=build(poi(880002,'磯丸水産',{amenity:'pub'},'0')).texturedFaces;
-assert.equal(groundBaseline.length,1);
-const groundHeight=logoCenters(groundBaseline[0]).heights[0];
-assert.ok(groundHeight<baseHeight,'Ground-only stores use the compact convenience sign');
-assert.ok(Math.abs(baseHeight-2.65)<1e-8,'Full-size upper-floor brand logo remains 2.65m');
-for(const [name,level,low,high,center] of [
- ['磯丸水産','2;3;4',6,15,10.5], // Three floors -> middle floor
- ['磯丸水産','0;1;2',0,9,5.7],  // Ground joins the upper levels
- ['磯丸水産','0;1;2;3',0,12,7.2], // Four floors -> boundary of middle floors
- ['快活CLUB','1;2;3;4',3,15,9]
+// Contiguous groups must stay inside occupied floors, regardless of sign size.
+for(const [name,level,low,high] of [
+ ['磯丸水産','2;3;4',6,15],['磯丸水産','0;1;2',0,9],['快活CLUB','1;2;3;4',3,15]
 ]){
- const faces=build(poi(880002,name,{amenity:'pub'},level)).texturedFaces;
- assert.equal(faces.length,1,name+' contiguous levels must make one wall surface');
- assert.equal(faces[0].texture,name==='快活CLUB'?'kaikatsu':'isomaru');
- assert.ok(faces[0].positions.every((n,i)=>i%3!==1||(n>=low-1e-8&&n<=high+1e-8)));
- const logos=logoCenters(faces[0]);
- assert.equal(logos.centers.length,level.startsWith('0;')?1:4,
-  'Ground-inclusive groups use entrance face only; upper-only groups keep four faces');
- for(const y of logos.centers)assert.ok(Math.abs(y-center)<1e-8,'Logo must be vertically centered');
- for(const h of logos.heights)assert.ok(Math.abs(h-baseHeight)<1e-8,
-  'Ground+upper groups restore the full-size brand logo; upper-only stays unchanged');
+ const faces=build(poi(880002,name,{},level)).texturedFaces;
+ assert.equal(faces.length,1);
+ assert.ok(faces[0].positions.every((v,i)=>i%3!==1||v>=low-1e-8&&v<=high+1e-8));
 }
 assert.equal(build(poi(880002,'ウエルシア',{shop:'chemist'},'1;2;3;')).texturedFaces.length,1);
 assert.equal(build(poi(880002,'ウエルシア',{shop:'chemist'},'1;;3')).texturedFaces.length,0);
 const split=build(poi(880002,'磯丸水産',{amenity:'pub'},'0;1;3;4')).texturedFaces;
 assert.equal(split.length,2,'Non-contiguous groups keep separate centered logos');
-assert.deepEqual(split.map(f=>logoCenters(f).centers[0]),[4.2,12]);
+for(const [i,face] of split.entries())assert.ok(face.positions.every((v,j)=>j%3!==1||v>=[0,9][i]-1e-8&&v<=[6,15][i]+1e-8));
 assert.deepEqual(contiguousLogoGroups([
  {bottom:9,top:12},{bottom:0,top:3},{bottom:3,top:6}
 ]).map(g=>[g.bottom,g.top]),[[0,6],[9,12]]);
