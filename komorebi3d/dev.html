@@ -627,64 +627,98 @@ button.panel-add-button{color:var(--g-accent)}
 
 // Live panel help/gestures are initialized after the Game API mounts.
 </script><script>
-// Runs before ES modules. Report module failures without treating unrelated image failures as fatal.
+// Runs before ES modules. Diagnose native module linking/evaluation only if startup stalls.
 (function(){
- const original='診断：JavaScript未実行。iPhoneのファイルプレビューでは動かない場合があります。SafariでHTTPS配信されたページを開いてください。';
  const diagnostic=()=>document.getElementById('launch-diagnostic');
- let lastError='',probeStarted=false;
+ const version='module-import-probe-v2-20261125';
+ let lastError='',probeStarted=false,report='';
  window.__komorebiModuleStarted=false;
- const show=message=>{
+ const describe=error=>String(error?.name||'Error')+': '+String(error?.message||error);
+ const show=(message,copy=false)=>{
   if(window.__komorebiModuleStarted)return;
-  const el=diagnostic();
-  if(el){el.textContent='診断：'+message;el.style.whiteSpace='pre-wrap';el.style.overflowWrap='anywhere';}
+  const el=diagnostic();if(!el)return;
+  report='診断：'+message;
+  el.textContent=report;
+  el.style.whiteSpace='pre-wrap';el.style.overflowWrap='anywhere';
+  if(!copy)return;
+  const button=document.createElement('button');
+  button.type='button';button.textContent='診断結果をコピー';
+  button.style.display='block';button.style.marginTop='8px';
+  button.addEventListener('click',async()=>{
+   const value=report;
+   try{
+    if(!navigator.clipboard?.writeText)throw Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(value);
+    button.textContent='コピーしました';
+   }catch(_){
+    const field=document.createElement('textarea');
+    field.value=value;field.readOnly=true;field.style.width='100%';
+    field.rows=6;el.appendChild(field);field.focus();field.select();
+    field.setSelectionRange(0,value.length);
+    try{if(document.execCommand('copy')){field.remove();button.textContent='コピーしました';return;}}catch(_){}
+    button.textContent='選択された診断結果を手動でコピーしてください';
+   }
+  });
+  el.appendChild(button);
  };
- const check=()=>{
+ const withTimeout=(promise,ms)=>new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>reject(Error('診断タイムアウト（'+ms/1000+'秒）')),ms);
+  Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});
+ });
+ const check=async()=>{
   if(window.__komorebiModuleStarted||probeStarted)return;
   probeStarted=true;
   const source=document.querySelector('script[type="module"]')?.textContent||'';
-  const urls=[];
-  const regex=/\bimport\s+[^;\n]+?\s+from\s+["']([^"']+)["']/g;
+  const entries=[];
+  const regex=/^\s*import\s+\{([^}]+)\}\s+from\s+["']([^"']+)["']/gm;
   let match;
-  while((match=regex.exec(source)))urls.push(new URL(match[1],location.href).href);
-  if(!urls.length){show('ゲームモジュールが開始しませんでした。import一覧を取得できません。'+(lastError?'\n'+lastError:''));return;}
-  show('ゲームモジュール未開始。直接importの取得状況を確認中…'+(lastError?'\n'+lastError:''));
-  Promise.all(urls.map(async url=>{
-   const controller=new AbortController();
-   const timer=setTimeout(()=>controller.abort(),7000);
+  while((match=regex.exec(source))){
+   const names=match[1].split(',').map(name=>name.trim().split(/\s+as\s+/)[0]).filter(Boolean);
+   entries.push({url:new URL(match[2],location.href).href,names});
+  }
+  if(!entries.length){show(version+'\nゲームモジュールのimport一覧を取得できません。'+(lastError?'\n'+lastError:''),true);return;}
+  const results=new Array(entries.length);
+  let done=0;
+  const render=()=>{
+   const failures=results.filter(item=>item&&!item.ok);
+   const successes=results.filter(item=>item&&item.ok);
+   const heading=version+'\nゲームモジュール未開始。個別import '+done+'/'+entries.length+'件完了（成功 '+successes.length+' / 失敗 '+failures.length+'）';
+   const detail=entries.map((entry,index)=>{
+    const item=results[index];
+    return (index+1)+'. '+(item?(item.ok?'OK':'FAIL'):'確認中')+' '+entry.url+(item&&!item.ok?'\n   '+item.error:'');
+   }).join('\n');
+   const summary=done===entries.length&&failures.length===0?'\n全モジュールの個別import・要求exportは成功。メインのインラインモジュールの構文・評価順序・初期化を追加調査してください。':'';
+   show(heading+(lastError?'\nメイン側エラー：'+lastError:'')+summary+'\n'+detail,true);
+  };
+  render();
+  await Promise.all(entries.map(async(entry,index)=>{
    try{
-    const response=await fetch(url,{mode:'cors',cache:'no-store',signal:controller.signal});
-    if(!response.ok)return url+' → HTTP '+response.status;
-    const type=response.headers.get('content-type')||'';
-    if(type&&!/javascript|ecmascript/i.test(type))return url+' → Content-Type: '+type;
-    return null;
-   }catch(error){return url+' → '+String(error?.name==='AbortError'?'タイムアウト':error?.message||error);}
-   finally{clearTimeout(timer);}
-  })).then(results=>{
-   if(window.__komorebiModuleStarted)return;
-   const failures=results.filter(Boolean);
-   if(failures.length)show('ゲームモジュール未開始。読み込みに失敗した直接import（'+failures.length+'件）：\n'+failures.slice(0,4).join('\n'));
-   else show('ゲームモジュール未開始。直接import '+urls.length+'件はHTTP取得OK。依存モジュール・構文エラー・Safari互換性などを追加調査してください。'+(lastError?'\n'+lastError:''));
-  }).catch(e=>show('読み込み診断自体でエラー：'+String(e)));
+    // Same URL as the real game import: do not bypass its cache or change Engine pins.
+    const namespace=await withTimeout(import(entry.url),15000);
+    const missing=entry.names.filter(name=>!Object.prototype.hasOwnProperty.call(namespace,name));
+    if(missing.length)throw Error('要求exportが存在しません: '+missing.join(', '));
+    results[index]={ok:true};
+   }catch(error){results[index]={ok:false,error:describe(error)};}
+   finally{done++;render();}
+  }));
  };
- const update=()=>{
-  const el=diagnostic();
-  if(el&&el.textContent===original)show('JavaScript実行開始。ゲームモジュールを読み込み中…');
- };
+ const startCheck=()=>check().catch(error=>show(version+'\n診断処理エラー：'+describe(error),true));
+ const update=()=>{if(!probeStarted)show('JavaScript実行開始。ゲームモジュールを読み込み中…');};
  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',update,{once:true}):update();
  window.addEventListener('error',event=>{
-  const target=event.target;
-  const tag=target?.tagName?.toLowerCase();
+  if(window.__komorebiModuleStarted)return;
+  const target=event.target,tag=target?.tagName?.toLowerCase();
   if(tag&&tag!=='script'&&tag!=='link')return;
   const path=target?.src||target?.href||event.filename||'';
   lastError=event.message||('読み込み失敗'+(path?'：'+path:'（ファイル名はブラウザから取得できません）'));
-  show('JavaScriptエラー：'+lastError);
-  if(!window.__komorebiModuleStarted)setTimeout(check,0);
+  if(!probeStarted){show('JavaScriptエラー：'+lastError,true);setTimeout(startCheck,0);}
  },true);
  window.addEventListener('unhandledrejection',event=>{
-  lastError=String(event.reason?.stack||event.reason);
-  show('JavaScript Promiseエラー：'+lastError);
+  if(window.__komorebiModuleStarted)return;
+  lastError=describe(event.reason);
+  if(!probeStarted){show('JavaScript Promiseエラー：'+lastError,true);setTimeout(startCheck,0);}
  });
- setTimeout(check,9000);
+ setTimeout(startCheck,9000);
 })();
 </script><script type="module">
 import { InputManager } from "https://cdn.jsdelivr.net/gh/shuma-fujita/komorebi@56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e/engine/input/InputManager.js";
