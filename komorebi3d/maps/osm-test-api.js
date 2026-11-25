@@ -1,16 +1,17 @@
 // Development OSM server ONLY. Never use live OSM endpoints here.
 // OAuth 2.0 Authorization Code + PKCE for a public browser application.
 import {buildOsmChangesetTags} from './osm-changeset-tags.js?v=komorebi-builder-20261122';
-export const OSM_TEST_ORIGIN='https://master.apis.dev.openstreetmap.org';
-const API=OSM_TEST_ORIGIN+'/api/0.6';
-const TOKEN_KEY='komorebi:osm-test:token';
-const AUTH_KEY='komorebi:osm-test:oauth';
-const ERROR_KEY='komorebi:osm-test:error';
+import {OSM_TEST,OSM_PRODUCTION} from './osm-environments.js?v=step1a-20261126';
+export const OSM_TEST_ORIGIN=OSM_TEST.origin;
+const API=OSM_TEST.apiOrigin+'/api/0.6';
+const TOKEN_KEY=OSM_TEST.tokenKey;
+const AUTH_KEY=OSM_TEST.authKey;
+const ERROR_KEY=OSM_TEST.errorKey;
 const types=new Set(['node','way','relation']);
 const facilities=['shop','amenity','office','tourism','healthcare','leisure'];
 // OAuth application callback must be registered once at this exact public URL.
 // Do not derive it from a launch URL, a route, or transient query parameters.
-export const OSM_TEST_REDIRECT_URI='https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html';
+export const OSM_TEST_REDIRECT_URI=OSM_TEST.redirectUri;
 const redirectUri=()=>OSM_TEST_REDIRECT_URI;
 
 function randomUrlSafe(bytes=32){
@@ -173,7 +174,7 @@ export async function sendOsmTestLevel(item,level,source=''){
 
 
 // Read the canonical public OSM element only; never authenticate or write to production.
-const OSM_LIVE_READ_ORIGIN='https://api.openstreetmap.org';
+const OSM_LIVE_READ_ORIGIN=OSM_PRODUCTION.apiOrigin;
 export async function loadOsmCopySource(type,id){
  if(!['node','way'].includes(type)||!/^[1-9]\d*$/.test(String(id)))
   throw Error('コピーできるのは既存のnodeまたはwayだけです。relationには未対応です。');
