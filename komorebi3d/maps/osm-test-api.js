@@ -2,74 +2,27 @@
 // OAuth 2.0 Authorization Code + PKCE for a public browser application.
 import {buildOsmChangesetTags} from './osm-changeset-tags.js?v=komorebi-builder-20261122';
 import {OSM_TEST,OSM_PRODUCTION} from './osm-environments.js?v=step1a-20261126';
+import {createOsmOAuth} from './osm-oauth.js?v=step1b-20261126';
 export const OSM_TEST_ORIGIN=OSM_TEST.origin;
 const API=OSM_TEST.apiOrigin+'/api/0.6';
-const TOKEN_KEY=OSM_TEST.tokenKey;
-const AUTH_KEY=OSM_TEST.authKey;
-const ERROR_KEY=OSM_TEST.errorKey;
 const types=new Set(['node','way','relation']);
 const facilities=['shop','amenity','office','tourism','healthcare','leisure'];
 // OAuth application callback must be registered once at this exact public URL.
 // Do not derive it from a launch URL, a route, or transient query parameters.
 export const OSM_TEST_REDIRECT_URI=OSM_TEST.redirectUri;
-const redirectUri=()=>OSM_TEST_REDIRECT_URI;
 
-function randomUrlSafe(bytes=32){
- const data=new Uint8Array(bytes);
- crypto.getRandomValues(data);
- return btoa(String.fromCharCode(...data)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-function urlSafeBase64(buffer){
- return btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-function scopedStorageGet(key){try{return sessionStorage.getItem(key);}catch(_){return null;}}
-function scopedStorageSet(key,val){sessionStorage.setItem(key,val);}
-function scopedStorageRemove(key){try{sessionStorage.removeItem(key);}catch(_){}}
-export function hasOsmTestToken(){return !!scopedStorageGet(TOKEN_KEY);}
-export function forgetOsmTestToken(){scopedStorageRemove(TOKEN_KEY);}
-export function consumeOsmTestAuthError(){
- const msg=scopedStorageGet(ERROR_KEY)||'';scopedStorageRemove(ERROR_KEY);return msg;
-}
-function readToken(){const token=scopedStorageGet(TOKEN_KEY);if(!token)throw Error('先にテストサーバーでOAuth認証してください。');return token;}
-export async function startOsmTestLogin(){
- // OAuth configuration is deliberately loaded only when login is requested.
- // A missing/stale configuration must never prevent the 3D game from booting.
- let id='';
- try{
-  const config=await import('./osm-test-client-config.js?v=lazy-oauth-config-20261121');
-  id=String(config.OSM_TEST_CLIENT_ID||'').trim();
- }catch(_){throw Error('OAuth設定ファイルを取得できません。公開設定を確認し、ページを再読み込みしてください。');}
- if(!id||id.length>512)throw Error('KomorebiのOAuth設定が未完了です。管理者がGitHub Actions Secret「OSM_TEST_CLIENT_ID」を設定し、Pagesの公開元をGitHub Actionsへ切り替えてください。');
- if(location.origin!==new URL(OSM_TEST_REDIRECT_URI).origin)throw Error('OAuth認証は公開ゲーム画面 '+OSM_TEST_REDIRECT_URI+' から開始してください。別のドメインでは認証情報を引き継げません。');
- if(!crypto?.subtle||!crypto?.getRandomValues)throw Error('このブラウザでは安全なPKCE認証を利用できません。');
- const verifier=randomUrlSafe(32),state=randomUrlSafe(24);
- const challenge=urlSafeBase64(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier)));
- scopedStorageSet(AUTH_KEY,JSON.stringify({verifier,state,clientId:id,redirect:redirectUri()}));
- const url=new URL(OSM_TEST_ORIGIN+'/oauth2/authorize');
- for(const [key,value] of Object.entries({response_type:'code',client_id:id,redirect_uri:redirectUri(),scope:'write_api',state,code_challenge:challenge,code_challenge_method:'S256'}))
-  url.searchParams.set(key,value);
- location.assign(url.href);
-}
-export async function finishOsmTestLogin(){
- const params=new URLSearchParams(location.search);
- if(!params.has('code')&&!params.has('error'))return;
- const raw=scopedStorageGet(AUTH_KEY);
- // Do not interpret unrelated authorization codes.
- if(!raw)return;
- const clean=()=>{const next=new URL(location.href);for(const k of ['code','state','error','error_description'])next.searchParams.delete(k);history.replaceState(null,'',next.pathname+next.search+next.hash);};
- try{
-  const session=JSON.parse(raw);
-  if(params.get('error'))throw Error('OAuth認証が中断されました: '+params.get('error'));
-  if(!session?.state||params.get('state')!==session.state||session.redirect!==redirectUri())throw Error('OAuthのstate/リダイレクト照合に失敗しました。');
-  const body=new URLSearchParams({grant_type:'authorization_code',code:params.get('code')||'',redirect_uri:session.redirect,client_id:session.clientId,code_verifier:session.verifier});
-  const response=await fetch(OSM_TEST_ORIGIN+'/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
-  if(!response.ok)throw Error('トークン取得失敗 HTTP '+response.status+': '+(await response.text()).slice(0,180));
-  const data=await response.json();
-  if(!data.access_token||(data.scope&&!String(data.scope).split(' ').includes('write_api')))throw Error('write_api 権限のトークンが取得できませんでした。');
-  scopedStorageSet(TOKEN_KEY,data.access_token);
- }catch(error){scopedStorageSet(ERROR_KEY,String(error.message||error));}
- finally{scopedStorageRemove(AUTH_KEY);clean();}
-}
+// Keep the public TEST interface and existing session keys unchanged.
+const testOAuth=createOsmOAuth(OSM_TEST,{
+ loadClientId:async()=> (await import('./osm-test-client-config.js?v=lazy-oauth-config-20261121')).OSM_TEST_CLIENT_ID,
+ configError:'KomorebiのOAuth設定が未完了です。管理者がGitHub Actions Secret「OSM_TEST_CLIENT_ID」を設定し、Pagesの公開元をGitHub Actionsへ切り替えてください。',
+ loginRequiredError:'先にテストサーバーでOAuth認証してください。'
+});
+export const hasOsmTestToken=testOAuth.hasToken;
+export const forgetOsmTestToken=testOAuth.forgetToken;
+export const consumeOsmTestAuthError=testOAuth.consumeAuthError;
+export const startOsmTestLogin=testOAuth.startLogin;
+export const finishOsmTestLogin=testOAuth.finishLogin;
+const readToken=testOAuth.readToken;
 function parseOsmElement(xml,type,id){
  const doc=new DOMParser().parseFromString(xml,'application/xml');
  if(doc.querySelector('parsererror'))throw Error('OSMから受信したXMLの解析に失敗しました。');
