@@ -1,12 +1,16 @@
 # 🌳 Komorebi 3D｜現在地・次の開発
 
-> 更新：2026-11-24。次のチャットへの引き継ぎ資料。開発日記ではない。今後の作業、現行仕様、未確認事項、保護対象を記す。過去の実装経緯・廃止仕様はGit履歴を参照。コードの正本はGitHub `main`、恒久ルールは [docs/rules/](rules/README.md)。
+> 更新：2026-11-26。次のチャットへの引き継ぎ資料。開発日記ではない。今後の作業、現行仕様、未確認事項、保護対象を記す。過去の実装経緯・廃止仕様はGit履歴を参照。コードの正本はGitHub `main`、恒久ルールは [docs/rules/](rules/README.md)。
 
 ## 1. 次にやること
 
 - 自動テストは [開発ルール §6](rules/development.md#6-自動テストの追加維持方針) の3条件を優先。変更されやすい外観・仕様値を固定せず、実機で難しい大量検証・安全性を残す。整理後のActions・実機は確認結果を区別する。
 
 ユーザーの最新の希望を優先する。以下は未完了事項の一覧であり、勝手にすべて着手しない。
+
+### OSM本番登録（優先）
+- Step 1-A：TESTの接続先・認証保存キー・固定redirect URIとPROD読み取り先を環境設定に分離。既存TEST処理と本番書き込み禁止は維持。Actions・実機未確認。
+- 次：Step 1-B OAuth／PKCE共通化、1-C API・XML・changeset共通化、1-D TEST回帰確認。その後、汎用タグ登録、PROD認証、本番安全対策、UI・保存連携、実機検証。各工程はユーザーと相談して進める。
 
 ### ① 地図の自動更新・配信確認
 - Geofabrik関東PBF → 松戸2km JSON → コミット・Pages公開（A→B→C）。Aのcron指定は毎日10:17 JST。11/22は16:59 JSTに起動し、取得URLのHTTP 404で失敗。公式URL `https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf` に修正済み。起動遅延の根因は未特定。
