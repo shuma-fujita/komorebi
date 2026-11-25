@@ -10,8 +10,9 @@
 
 ### OSM本番登録（優先）
 - Step 1-A：TESTの接続先・認証保存キー・固定redirect URIとPROD読み取り先を環境設定に分離。既存TEST処理と本番書き込み禁止は維持。ユーザー実機起動PASS（11/26）。Actions・認証回帰は未確認。
-- Step 1-B：OAuth／PKCEをosm-oauth.jsに分離しTESTのみ接続。認証保存キー・固定callback・遅延Client ID取得を維持。Actions・実機未確認。
-- 次：Step 1-C API・XML・changeset共通化、1-D TEST回帰確認。その後、汎用タグ登録、PROD認証、本番安全対策、UI・保存連携、実機検証。各工程はユーザーと相談して進める。
+- Step 1-B：OAuth／PKCEをosm-oauth.jsに分離しTESTのみ接続。認証保存キー・固定callback・遅延Client ID取得を維持。ユーザー実機PASS（ゲーム起動・タグ編集画面・TEST OAuth認証）。Actions未確認。
+- Step 1-C：osm-api.js／osm-xml.jsを共通化し、TEST level登録・コピーに接続。本番は読み取りのみ、書き込みは共通APIで拒否。Actions・実機未確認。
+- 次：Step 1-D TEST回帰確認。その後、汎用タグ登録、PROD認証、本番安全対策、UI・保存連携、実機検証。各工程はユーザーと相談して進める。
 
 ### ① 地図の自動更新・配信確認
 - Geofabrik関東PBF → 松戸2km JSON → コミット・Pages公開（A→B→C）。Aのcron指定は毎日10:17 JST。11/22は16:59 JSTに起動し、取得URLのHTTP 404で失敗。公式URL `https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf` に修正済み。起動遅延の根因は未特定。
