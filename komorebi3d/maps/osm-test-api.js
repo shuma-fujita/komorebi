@@ -1,10 +1,13 @@
 // Development OSM server ONLY. Never use live OSM endpoints here.
 // OAuth 2.0 Authorization Code + PKCE for a public browser application.
-import {buildOsmChangesetTags} from './osm-changeset-tags.js?v=komorebi-builder-20261122';
+import {parseOsmElement,buildOsmChangeComment,makeChangesetXml as sharedChangesetXml,makeElementXmlWithAddedTag} from './osm-xml.js?v=step1c-20261126';
+import {createOsmApi} from './osm-api.js?v=step1c-20261126';
+export {buildOsmChangeComment};
 import {OSM_TEST,OSM_PRODUCTION} from './osm-environments.js?v=step1a-20261126';
 import {createOsmOAuth} from './osm-oauth.js?v=step1b-20261126';
 export const OSM_TEST_ORIGIN=OSM_TEST.origin;
-const API=OSM_TEST.apiOrigin+'/api/0.6';
+const testApi=createOsmApi(OSM_TEST);
+const productionReadApi=createOsmApi(OSM_PRODUCTION);
 const types=new Set(['node','way','relation']);
 const facilities=['shop','amenity','office','tourism','healthcare','leisure'];
 // OAuth application callback must be registered once at this exact public URL.
@@ -23,17 +26,6 @@ export const consumeOsmTestAuthError=testOAuth.consumeAuthError;
 export const startOsmTestLogin=testOAuth.startLogin;
 export const finishOsmTestLogin=testOAuth.finishLogin;
 const readToken=testOAuth.readToken;
-function parseOsmElement(xml,type,id){
- const doc=new DOMParser().parseFromString(xml,'application/xml');
- if(doc.querySelector('parsererror'))throw Error('OSMから受信したXMLの解析に失敗しました。');
- const root=doc.documentElement,element=root?.querySelector(type);
- if(root?.tagName!=='osm'||!element||element.getAttribute('id')!==String(id))throw Error('指定したテスト要素が見つかりません。');
- const version=element.getAttribute('version');
- if(!version)throw Error('テスト要素のversionが取得できません。');
- const tags={};
- for(const tag of element.children)if(tag.tagName==='tag')tags[tag.getAttribute('k')]=tag.getAttribute('v');
- return {type,id:String(id),version,tags,element};
-}
 export function normalizeOsmTestTarget(type,input){
  let kind=String(type||'').trim(),id=String(input||'').trim();
  // Accept numeric IDs, node/123, and test-server element URLs.
@@ -47,60 +39,15 @@ export function normalizeOsmTestTarget(type,input){
 export async function getOsmTestElement(type,id){
  const target=normalizeOsmTestTarget(type,id);
  type=target.type;id=target.id;
- const response=await fetch(API+'/'+type+'/'+id,{headers:{Accept:'application/xml'},cache:'no-store'});
- if(!response.ok)throw Error('テスト要素の取得失敗 HTTP '+response.status+'（本番OSMのIDは使えません）');
- return parseOsmElement(await response.text(),type,id);
+ const xml=await testApi.read('/'+type+'/'+id,status=>'テスト要素の取得失敗 HTTP '+status+'（本番OSMのIDは使えません）');
+ return parseOsmElement(xml,type,id,'テスト');
 }
 export function validateOsmTestLevelTarget(element){
  if(!facilities.some(key=>element.tags[key]))throw Error('テスト対象に店舗・施設のタグがありません。建物そのものには階数を追加しません。');
  if(Object.prototype.hasOwnProperty.call(element.tags,'level'))throw Error('テスト対象には既にlevelタグがあります。未登録の店舗だけ編集できます。');
 }
-async function apiWrite(path,body,token){
- const response=await fetch(API+path,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'text/xml; charset=utf-8'},body});
- const content=await response.text();
- if(!response.ok)throw Error('テストAPI HTTP '+response.status+': '+content.slice(0,250));
- return content.trim();
-}
-// Generate a changeset comment from actual tag differences; no user-facing comment UI.
-export function buildOsmChangeComment(before,after){
- const oldTags=before||{},newTags=after||{};
- const own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key);
- const actions=[];
- for(const key of new Set([...Object.keys(oldTags),...Object.keys(newTags)])){
-  const was=own(oldTags,key),now=own(newTags,key);
-  if(was&&now&&String(oldTags[key])===String(newTags[key]))continue;
-  if(!was&&now)actions.push({verb:'add',detail:key+' : '+String(newTags[key])});
-  else if(was&&!now)actions.push({verb:'delete',detail:key});
-  else if(was&&now)actions.push({verb:'update',detail:key+' : '+String(oldTags[key])+' → '+String(newTags[key])});
- }
- if(!actions.length)throw Error('変更されたOSMタグがありません。');
- const width=actions.length===1?0:Math.max(...actions.map(a=>a.verb.length));
- return actions.map(a=>(width?a.verb.padEnd(width,' '):a.verb)+' - '+a.detail).join('\n');
-}
 export function makeChangesetXml(comment='Add verified shop floor level (development server only)',source=''){
- const doc=document.implementation.createDocument(null,'osm',null);
- doc.documentElement.setAttribute('version','0.6');
- const changeset=doc.createElement('changeset');doc.documentElement.appendChild(changeset);
- for(const [key,value] of Object.entries(buildOsmChangesetTags(comment,source))){
-  const tag=doc.createElement('tag');tag.setAttribute('k',key);tag.setAttribute('v',value);changeset.appendChild(tag);
- }
- return new XMLSerializer().serializeToString(doc);
-}
-function makeElementXml(item,changesetId,level){
- const doc=document.implementation.createDocument(null,'osm',null);doc.documentElement.setAttribute('version','0.6');
- const element=doc.createElement(item.type);
- for(const key of ['id','version','lat','lon','visible']){
-  const value=item.element.getAttribute(key);if(value!=null)element.setAttribute(key,value);
- }
- element.setAttribute('changeset',changesetId);
- for(const child of item.element.children){
-  if(!['tag','nd','member'].includes(child.tagName))continue;
-  const clone=doc.importNode(child,true);
-  element.appendChild(clone);
- }
- const tag=doc.createElement('tag');tag.setAttribute('k','level');tag.setAttribute('v',String(level));element.appendChild(tag);
- doc.documentElement.appendChild(element);
- return new XMLSerializer().serializeToString(doc);
+ return sharedChangesetXml(comment,source);
 }
 // A send uses the exact version loaded for preview. Stale version => API 409.
 export async function sendOsmTestLevel(item,level,source=''){
@@ -108,33 +55,20 @@ export async function sendOsmTestLevel(item,level,source=''){
  if(!Number.isInteger(value)||value<0||value>8)throw Error('1〜9階の階数を指定してください。');
  validateOsmTestLevelTarget(item);
  const token=readToken();
- let changesetId=null,uploaded=false;
- try{
-  const updatedTags={...item.tags,level:String(value)};
-  const comment=buildOsmChangeComment(item.tags,updatedTags);
-  changesetId=await apiWrite('/changeset/create',makeChangesetXml(comment,source),token);
-  if(!/^[1-9]\d*$/.test(changesetId))throw Error('変更セットIDが不正です。');
-  const newVersion=await apiWrite('/'+item.type+'/'+item.id,makeElementXml(item,changesetId,value),token);
-  uploaded=true;
+ const updatedTags={...item.tags,level:String(value)};
+ const comment=buildOsmChangeComment(item.tags,updatedTags);
+ return testApi.withChangeset({comment,source,token,onCloseError:(error,uploaded)=>console.warn(uploaded?'OSM test changeset written but closing failed':'OSM test changeset close failed',error)},async changesetId=>{
+  const newVersion=await testApi.write('/'+item.type+'/'+item.id,makeElementXmlWithAddedTag(item,changesetId,'level',value),token);
   return {changesetId,newVersion,elementUrl:OSM_TEST_ORIGIN+'/'+item.type+'/'+item.id};
- }finally{
-  if(changesetId&&/^[1-9]\d*$/.test(changesetId)){
-   try{await apiWrite('/changeset/'+changesetId+'/close','',token);}
-   catch(error){if(!uploaded)console.warn('OSM test changeset close failed',error);else console.warn('OSM test changeset written but closing failed',error);}
-  }
- }
+ });
 }
 
-
 // Read the canonical public OSM element only; never authenticate or write to production.
-const OSM_LIVE_READ_ORIGIN=OSM_PRODUCTION.apiOrigin;
 export async function loadOsmCopySource(type,id){
  if(!['node','way'].includes(type)||!/^[1-9]\d*$/.test(String(id)))
   throw Error('コピーできるのは既存のnodeまたはwayだけです。relationには未対応です。');
- const url=OSM_LIVE_READ_ORIGIN+'/api/0.6/'+type+'/'+id+(type==='way'?'/full':'');
- const response=await fetch(url,{method:'GET',headers:{Accept:'application/xml'},cache:'no-store'});
- if(!response.ok)throw Error('本番OSMからコピー元を取得できませんでした HTTP '+response.status);
- const documentXml=new DOMParser().parseFromString(await response.text(),'application/xml');
+ const xml=await productionReadApi.read('/'+type+'/'+id+(type==='way'?'/full':''),status=>'本番OSMからコピー元を取得できませんでした HTTP '+status);
+ const documentXml=new DOMParser().parseFromString(xml,'application/xml');
  if(documentXml.querySelector('parsererror')||documentXml.documentElement?.tagName!=='osm')
   throw Error('本番OSMから受け取ったXMLが不正です。');
  const element=Array.from(documentXml.documentElement.children).find(el=>el.tagName===type&&el.getAttribute('id')===String(id));
@@ -195,26 +129,13 @@ export async function createOsmTestCopy(source){
  if(!source||!['node','way'].includes(source.type)||!source.id||!source.tags||!source.points?.length)
   throw Error('有効なコピー元データがありません。');
  const token=readToken();
- let changesetId=null;
- try{
-  changesetId=await apiWrite('/changeset/create',makeChangesetXml('Copy existing OSM feature for testing (development server only)'),token);
-  if(!/^[1-9]\d*$/.test(changesetId))throw Error('変更セットIDが不正です。');
-  const response=await fetch(API+'/changeset/'+changesetId+'/upload',{
-   method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'text/xml; charset=utf-8'},
-   body:buildCopyChangeXml(source,changesetId)
-  });
-  const body=await response.text();
-  if(!response.ok)throw Error('コピー作成に失敗 HTTP '+response.status+': '+body.slice(0,240));
+ return testApi.withChangeset({comment:'Copy existing OSM feature for testing (development server only)',token,onCloseError:error=>console.warn('OSM test copy changeset close failed',error)},async changesetId=>{
+  const body=await testApi.write('/changeset/'+changesetId+'/upload',buildCopyChangeXml(source,changesetId),token,{method:'POST',errorPrefix:'コピー作成に失敗 HTTP '});
   const result=new DOMParser().parseFromString(body,'application/xml');
   if(result.querySelector('parsererror')||result.documentElement?.tagName!=='diffResult')throw Error('テストサーバーのコピー結果が不正です。');
   const nodes=Array.from(result.documentElement.children).filter(el=>el.tagName===source.type);
   const created=nodes[nodes.length-1]?.getAttribute('new_id');
   if(!created||!/^[1-9]\d*$/.test(created))throw Error('テストサーバーから作成IDを取得できませんでした。重複作成しないよう履歴を確認してください。');
   return {type:source.type,id:created,changesetId,url:OSM_TEST_ORIGIN+'/'+source.type+'/'+created};
- }finally{
-  if(changesetId&&/^[1-9]\d*$/.test(changesetId)){
-   try{await apiWrite('/changeset/'+changesetId+'/close','',token);}
-   catch(e){console.warn('OSM test copy changeset close failed',e);}
-  }
- }
+ });
 }
