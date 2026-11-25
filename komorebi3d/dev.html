@@ -627,10 +627,10 @@ button.panel-add-button{color:var(--g-accent)}
 
 // Live panel help/gestures are initialized after the Game API mounts.
 </script><script>
-// Runs before ES modules. Diagnose native module linking/evaluation only if startup stalls.
+// Runs before ES modules. Compare HTTP and safe module imports only if startup stalls.
 (function(){
  const diagnostic=()=>document.getElementById('launch-diagnostic');
- const version='module-import-probe-v2-20261125';
+ const version='module-import-probe-v3-20261125';
  let lastError='',probeStarted=false,report='';
  window.__komorebiModuleStarted=false;
  const describe=error=>String(error?.name||'Error')+': '+String(error?.message||error);
@@ -676,31 +676,72 @@ button.panel-add-button{color:var(--g-accent)}
    const names=match[1].split(',').map(name=>name.trim().split(/\s+as\s+/)[0]).filter(Boolean);
    entries.push({url:new URL(match[2],location.href).href,names});
   }
-  if(!entries.length){show(version+'\nゲームモジュールのimport一覧を取得できません。'+(lastError?'\n'+lastError:''),true);return;}
-  const results=new Array(entries.length);
-  let done=0;
-  const render=()=>{
-   const failures=results.filter(item=>item&&!item.ok);
-   const successes=results.filter(item=>item&&item.ok);
-   const heading=version+'\nゲームモジュール未開始。個別import '+done+'/'+entries.length+'件完了（成功 '+successes.length+' / 失敗 '+failures.length+'）';
-   const detail=entries.map((entry,index)=>{
-    const item=results[index];
-    return (index+1)+'. '+(item?(item.ok?'OK':'FAIL'):'確認中')+' '+entry.url+(item&&!item.ok?'\n   '+item.error:'');
-   }).join('\n');
-   const summary=done===entries.length&&failures.length===0?'\n全モジュールの個別import・要求exportは成功。メインのインラインモジュールの構文・評価順序・初期化を追加調査してください。':'';
-   show(heading+(lastError?'\nメイン側エラー：'+lastError:'')+summary+'\n'+detail,true);
+  const safePaths=['dev-panel-components.js','dev-panel-layout.js','maps/map-filename-indicator.js','maps/matsudo-camera-depth.js'];
+  const safe=entries.filter(entry=>safePaths.some(path=>new URL(entry.url).pathname===new URL(path,location.href).pathname)&&new URL(entry.url).origin===location.origin);
+  const local=entries.filter(entry=>new URL(entry.url).origin===location.origin);
+  const lines=[version,'ゲームモジュール未開始。読み取り専用HTTP・副作用のない4モジュールを診断。','UA: '+navigator.userAgent,'直接import '+entries.length+'件 / 同一オリジン '+local.length+'件 / 安全対象 '+safe.length+'件'];
+  const render=()=>show(lines.join('\n')+(lastError?'\nメイン側エラー：'+lastError:''),true);
+  const log=line=>{lines.push(line);render();};
+  const timing=label=>{
+   const resources=performance.getEntriesByType('resource');
+   const urls=new Set(entries.map(entry=>entry.url));
+   const direct=resources.filter(entry=>urls.has(entry.name));
+   log(label+'：直接importのResource Timing '+direct.length+'件');
+   for(const entry of direct)log('  '+Math.round(entry.duration)+'ms '+entry.name+' transfer='+entry.transferSize+' protocol='+(entry.nextHopProtocol||'-'));
+   const deps=resources.filter(entry=>{try{const url=new URL(entry.name);return /\.m?js$/i.test(url.pathname)&&!urls.has(entry.name);}catch(_){return false;}});
+   log(label+'：その他JS取得記録 '+deps.length+'件（完了記録のみ）');
+   for(const entry of deps.slice(0,100))log('  '+Math.round(entry.duration)+'ms '+entry.name);
+   if(deps.length>100)log('  残り '+(deps.length-100)+'件省略');
   };
+  const elapsed=start=>Math.round(performance.now()-start)+'ms';
   render();
-  await Promise.all(entries.map(async(entry,index)=>{
+  timing('起動時');
+  if(!local.length||safe.length!==4){log('対象一覧が想定と異なるため計測を中止');return;}
+  const http=async(entry)=>{
+   const start=performance.now(),controller=new AbortController();
+   const timer=setTimeout(()=>controller.abort(),10000);
    try{
-    // Same URL as the real game import: do not bypass its cache or change Engine pins.
-    const namespace=await withTimeout(import(entry.url),15000);
+    const response=await fetch(entry.url,{cache:'no-store',credentials:'omit',signal:controller.signal});
+    const headers=elapsed(start),body=await response.arrayBuffer();
+    const type=response.headers.get('content-type')||'';
+    log((response.ok&&/javascript|ecmascript/i.test(type)?'OK':'FAIL')+' HTTP '+elapsed(start)+' headers='+headers+' status='+response.status+' bytes='+body.byteLength+' '+entry.url);
+   }catch(error){log('FAIL HTTP '+elapsed(start)+' '+entry.url+' '+describe(error));}
+   finally{clearTimeout(timer);}
+  };
+  log('--- HTTP 並列 / no-store ---');
+  await Promise.all(local.map(http));
+  if(window.__komorebiModuleStarted)return;
+  const runId=Date.now().toString(36);
+  const moduleProbe=async(entry,mode,index)=>{
+   const start=performance.now();
+   const url=new URL(entry.url);
+   if(mode!=='existing')url.searchParams.set('_komo_probe',runId+'-'+mode+'-'+index);
+   try{
+    const namespace=await withTimeout(import(url.href),10000);
     const missing=entry.names.filter(name=>!Object.prototype.hasOwnProperty.call(namespace,name));
-    if(missing.length)throw Error('要求exportが存在しません: '+missing.join(', '));
-    results[index]={ok:true};
-   }catch(error){results[index]={ok:false,error:describe(error)};}
-   finally{done++;render();}
-  }));
+    if(missing.length)throw Error('要求exportなし：'+missing.join(', '));
+    log('OK '+mode+' '+elapsed(start)+' '+url.href);
+   }catch(error){log('FAIL '+mode+' '+elapsed(start)+' '+url.href+' '+describe(error));}
+  };
+  log('--- import 既存URL / 並列 ---');
+  await Promise.all(safe.map((entry,index)=>moduleProbe(entry,'existing',index)));
+  if(window.__komorebiModuleStarted)return;
+  log('--- import 新規URL / 並列 ---');
+  await Promise.all(safe.map((entry,index)=>moduleProbe(entry,'fresh-par',index)));
+  if(window.__komorebiModuleStarted)return;
+  log('--- import 新規URL / 直列 ---');
+  for(let index=0;index<safe.length;index++){
+   if(window.__komorebiModuleStarted)return;
+   await moduleProbe(safe[index],'fresh-seq',index);
+  }
+  if(window.__komorebiModuleStarted)return;
+  log('--- 最小ES module / ネットワークなし ---');
+  const start=performance.now();
+  try{
+   const namespace=await withTimeout(import('data:text/javascript,export%20const%20probe%3D1'),10000);
+   log((namespace.probe===1?'OK':'FAIL')+' data module '+elapsed(start));
+  }catch(error){log('FAIL data module '+elapsed(start)+' '+describe(error)+'（CSP等の制約もあり得る）');}
+  log('完了。importタイムアウトは計測側の制限で、処理自体は中止できません。');
  };
  const startCheck=()=>check().catch(error=>show(version+'\n診断処理エラー：'+describe(error),true));
  const update=()=>{if(!probeStarted)show('JavaScript実行開始。ゲームモジュールを読み込み中…');};
