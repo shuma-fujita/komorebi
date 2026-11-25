@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "KFCのファサード背景色をPNGの赤に調整（実機未確認）",
-  "common": "自動テストを大量検証・不変条件・データ保護中心に再整理（Actions未確認）"
+  "common": "OSM TEST／PROD接続設定・OAuth・API通信を共通化（本番送信無効／実機未確認）"
 }

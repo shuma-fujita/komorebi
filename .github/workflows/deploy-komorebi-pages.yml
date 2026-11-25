@@ -30,6 +30,7 @@ jobs:
           node tests/facade-rendering.mjs
           node tests/entrance-wall-selection.mjs
           node tests/storefronts.mjs
+          node tests/osm-environment-isolation.mjs
           node tests/osm-element-page-url.mjs
           node tests/osm-changeset-tags.mjs
           node tests/osm-tag-changes-v2.mjs
