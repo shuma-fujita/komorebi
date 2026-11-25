@@ -40,8 +40,8 @@ import {au} from './au.js?v=au-v1-20261125';
 import {paintAuFacade} from './au-sign.js?v=au-v1-20261125';
 import {smbc} from './smbc.js?v=smbc-v1-20261125';
 import {paintSmbcFacade} from './smbc-sign.js?v=smbc-v1-20261125';
-import {kfc} from './kfc.js?v=kfc-v1-20261125';
-import {paintKfcFacade} from './kfc-sign.js?v=kfc-v1-20261125';
+import {kfc} from './kfc.js?v=kfc-color-v2-20261125';
+import {paintKfcFacade} from './kfc-sign.js?v=kfc-color-v2-20261125';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},
