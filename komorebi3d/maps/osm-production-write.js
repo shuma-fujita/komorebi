@@ -3,9 +3,9 @@ import {OSM_PRODUCTION} from './osm-environments.js?v=step3-20261126';
 import {createOsmApi} from './osm-api.js?v=step4-20261126';
 import {readOsmProductionToken,forgetOsmProductionToken} from './osm-production-auth.js?v=step4-20261126';
 import {parseOsmElement} from './osm-xml.js?v=server-conflict-20261126';
-import {prepareOsmTagWrite,writeReviewedOsmTags} from './osm-tag-writer.js?v=server-conflict-20261126';
+import {prepareOsmTagWrite,writeReviewedOsmTags} from './osm-tag-writer.js?v=server-result-20261126';
 const api=createOsmApi(OSM_PRODUCTION,{enableProductionWrites:true});
-const active=new Set(),uncertain=new Map();
+const uncertain=new Map();
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 const same=(a,b)=>Object.keys(a).length===Object.keys(b).length&&Object.keys(a).every(k=>own(b,k)&&a[k]===b[k]);
 function failure(code,message,details={}){
@@ -25,7 +25,6 @@ export async function sendOsmProductionTags(review,source=''){
  const osm={type:review?.osm?.type,id:String(review?.osm?.id??''),version:String(review?.osm?.version??'')};
  if(!['node','way','relation'].includes(osm.type)||!/^[1-9]\d*$/.test(osm.id)||!/^[1-9]\d*$/.test(osm.version))throw failure('review_required','本番OSMの対象・versionを確認し直してください。');
  const key=osm.type+'/'+osm.id;
- if(active.has(key))throw failure('busy','同じOSM要素を送信中です。');
  if(uncertain.has(key))throw failure('uncertain','前回の送信結果が未確認です。OSMの編集履歴を確認してください。',uncertain.get(key));
  const originalTags=copyTags(review.originalTags),tags=copyTags(review.tags);
  if(same(originalTags,tags))throw failure('no_changes','変更されたOSMタグがありません。');
@@ -37,7 +36,6 @@ export async function sendOsmProductionTags(review,source=''){
  if(!review.changes||!same(changes,review.changes))throw failure('review_required','確認済みの差分とタグ一覧が一致しません。');
  let token;
  try{token=readOsmProductionToken();}catch(_){throw failure('auth_required','本番OSMでOAuth認証してください。');}
- active.add(key);
  let updateChangeset=null,closeWarning=null;
  try{
   const xml=await api.read('/'+key,status=>'本番OSMの取得失敗 HTTP '+status);
@@ -46,7 +44,7 @@ export async function sendOsmProductionTags(review,source=''){
   // remain those of the reviewed draft; OSM alone decides version conflicts.
   const item={...current,version:osm.version,tags:originalTags};
   const prepared=prepareOsmTagWrite(item,{osm,tags});
-  const result=await writeReviewedOsmTags({api,origin:OSM_PRODUCTION.origin,item,prepared,source,token,validateVersion:true,
+  const result=await writeReviewedOsmTags({api,origin:OSM_PRODUCTION.origin,item,prepared,source,token,
    onUpdateStart:id=>{updateChangeset=id;},
    onCloseError:error=>{closeWarning=String(error.message||error);}
   });
@@ -61,5 +59,5 @@ export async function sendOsmProductionTags(review,source=''){
    throw failure('uncertain','送信結果が不明です。再送信せずOSMの編集履歴を確認してください。',details);
   }
   throw error;
- }finally{active.delete(key);}
+ }
 }

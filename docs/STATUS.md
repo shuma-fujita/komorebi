@@ -15,7 +15,7 @@
 - Step 1-E：TESTのタグ種類・値・件数・施設限定を撤廃。任意タグ追加・変更、対象IDとversionの照合を実装。ユーザー指示によりタグ削除ボタンは撤去済み。TEST API・共通変更確認の内部処理は削除対応（null差分）、編集画面は追加・変更のみ。削除UIは操作方法と安全対策の明示合意まで実装しない。本番読み取り専用を維持。[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45746050417)・ユーザー実機PASS（11/26）。
 - Step 2：既存の模擬HTTP試験にway輪郭・relationメンバー順序／役割・未変更タグ保持・通信切断時の自動再送禁止・changeset作成失敗を追加。[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45751390279)・追加模擬HTTP試験PASS・Pages公開成功。ユーザー合意により実機検証は省略しStep 2完了。二重送信防止は既存UIのbusy／sentガードをソース確認済み、連打の動作検証は未実施。削除UI検証は保留。
 - Step 3：PROD OAuth／PKCE接続を追加。TESTと別のClient ID・sessionStorageキー、共通callbackはstateで振り分け。タグ変更確認画面に本番認証のみの操作を追加。本番書き込み禁止を維持。OSM本番アプリ登録・Actions Secret設定済み。ユーザー実機PASS（11/26、本番認証済み表示）。[再デプロイ成功](https://github.com/shuma-fujita/komorebi/actions/runs/45756245147)。
-- Step 4：ユーザー合意により本番内部登録処理を実装。共通タグwriter、競合判定はOSMのversion照合（HTTP 409）に一本化。送信には編集時versionを維持し、登録前の最新version・全タグ比較は廃止。確認差分の整合性検証、同一要素の同時送信防止、認証切れ、結果不明時の再送防止（モジュール内メモリ）、終了失敗の別通知。UI未接続・実本番送信なし。追加模擬HTTP試験のActions未確認。
+- Step 4：ユーザー合意により本番内部登録処理を実装。共通タグwriter、競合判定はOSMのversion照合（HTTP 409）に一本化。送信には編集時versionを維持し、登録前の最新version・全タグ比較は廃止。確認差分の整合性検証、認証切れ。ユーザー合意により内部同時送信ガードと成功version＋1照合を廃止し、OSM返却versionを採用。送信中のボタン無効化はStep 5で対応。結果不明時の再送防止（モジュール内メモリ）、終了失敗の別通知。UI未接続・実本番送信なし。追加模擬HTTP試験のActions未確認。
 - 次：Step 4のActions確認後、Step 5 登録UI・保存連携。結果不明時の再読み込み後の扱いと履歴確認導線はUI接続前に合意・実装する。
 
 ### ① 地図の自動更新・配信確認

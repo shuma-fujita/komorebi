@@ -183,7 +183,7 @@ try{
  // Real production writer with completely replaced HTTP and storage.
  const tokenStore=new Map([['komorebi:osm-production:token','prod-offline'],['komorebi:osm-test:token','test-offline']]);
  Object.defineProperty(globalThis,'sessionStorage',{configurable:true,value:{getItem:k=>tokenStore.get(k)??null,removeItem:k=>tokenStore.delete(k)}});
- let serverVersion='7',serverTags={shop:'yes'},mode='',gate=null;
+ let serverVersion='7',serverTags={shop:'yes'},mode='';
  globalThis.DOMParser=class{
   parseFromString(xml){
    assert.equal(xml,'offline-element');
@@ -200,7 +200,6 @@ try{
   const path=new URL(url).pathname;
   if(options.method==='GET'){
    assert.equal(path,'/api/0.6/node/123');assert.equal(options.cache,'no-store');
-   if(gate)await gate;
    return {ok:true,text:async()=>'offline-element'};
   }
   assert.equal(options.headers.Authorization,'Bearer prod-offline');
@@ -233,12 +232,8 @@ try{
  mode='conflict';
  await assert.rejects(sendOsmProductionTags(prodReview),assertCode('conflict'));
  assert.equal(calls.length,4);calls.length=0;
- let release;
- gate=new Promise(resolve=>{release=resolve;});
  mode='close';
- const first=sendOsmProductionTags(prodReview,'survey');
- await assert.rejects(sendOsmProductionTags(prodReview),assertCode('busy'));
- release();const result=await first;gate=null;
+ const result=await sendOsmProductionTags(prodReview,'survey');
  assert.equal(result.version,'8');assert.ok(result.closeWarning);
  assert.deepEqual({...result.changes},{level:'0;1'});
  assert.deepEqual(calls.map(c=>c.method),['GET','PUT','PUT','PUT']);

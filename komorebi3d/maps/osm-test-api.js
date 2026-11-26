@@ -1,7 +1,7 @@
 // Development OSM server ONLY. Never use live OSM endpoints here.
 // OAuth 2.0 Authorization Code + PKCE for a public browser application.
 import {parseOsmElement,buildOsmChangeComment,makeChangesetXml as sharedChangesetXml} from './osm-xml.js?v=step1e-20261126';
-import {prepareOsmTagWrite,writeReviewedOsmTags} from './osm-tag-writer.js?v=step4-20261126';
+import {prepareOsmTagWrite,writeReviewedOsmTags} from './osm-tag-writer.js?v=server-result-20261126';
 import {createOsmApi} from './osm-api.js?v=step4-20261126';
 export {buildOsmChangeComment};
 import {OSM_TEST,OSM_PRODUCTION} from './osm-environments.js?v=step3-20261126';

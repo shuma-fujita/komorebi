@@ -14,13 +14,12 @@ export function prepareOsmTagWrite(item,review){
  }
  return {target,tags,comment:buildOsmChangeComment(item.tags,tags)};
 }
-export async function writeReviewedOsmTags({api,origin,item,prepared,source='',token,onCloseError,onUpdateStart,validateVersion=false}){
+export async function writeReviewedOsmTags({api,origin,item,prepared,source='',token,onCloseError,onUpdateStart}){
  const {target,tags,comment}=prepared;
  return api.withChangeset({comment,source,token,onCloseError},async changesetId=>{
   const xml=makeElementXmlWithTags(item,changesetId,tags);
   onUpdateStart?.(changesetId);
   const newVersion=await api.write('/'+target.type+'/'+target.id,xml,token);
-  if(validateVersion&&(!/^[1-9]\d*$/.test(newVersion)||BigInt(newVersion)!==BigInt(item.version)+1n))throw Error('OSM更新結果のversionを確認できません。');
   return {changesetId,newVersion,elementUrl:origin+'/'+target.type+'/'+target.id};
  });
 }
