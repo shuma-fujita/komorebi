@@ -44,10 +44,12 @@ jobs:
       - name: Prepare Pages artifact without writing Client ID to git
         env:
           OSM_TEST_CLIENT_ID: ${{ secrets.OSM_TEST_CLIENT_ID }}
+          OSM_PRODUCTION_CLIENT_ID: ${{ secrets.OSM_PRODUCTION_CLIENT_ID }}
         run: |
           mkdir -p _site
           rsync -a --exclude='.git' --exclude='.github' --exclude='_site' ./ _site/
           node scripts/write-osm-test-oauth-config.mjs _site/komorebi3d/maps/osm-test-client-config.js
+          node scripts/write-osm-production-oauth-config.mjs _site/komorebi3d/maps/osm-production-client-config.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload GitHub Pages artifact

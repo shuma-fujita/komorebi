@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {OSM_CHANGESET_CREATED_BY,buildOsmChangesetTags} from '../komorebi3d/maps/osm-changeset-tags.js';
 import {makeChangesetXml,OSM_TEST_ORIGIN,sendOsmTestTags,createOsmTestCopy} from '../komorebi3d/maps/osm-test-api.js';
 
-import {createOsmApi} from '../komorebi3d/maps/osm-api.js?v=step1e-20261126';
-import {OSM_PRODUCTION} from '../komorebi3d/maps/osm-environments.js?v=step1a-20261126';
+import {createOsmApi} from '../komorebi3d/maps/osm-api.js?v=step3-20261126';
+import {OSM_PRODUCTION} from '../komorebi3d/maps/osm-environments.js?v=step3-20261126';
 
 assert.equal(OSM_CHANGESET_CREATED_BY,'Komorebi Builder');
 assert.deepEqual(buildOsmChangesetTags('Add level: 2'),{

@@ -44,13 +44,16 @@ export function createOsmOAuth(environment,{loadClientId,configError,loginRequir
   const raw=scopedStorageGet(AUTH_KEY);
   // Do not interpret unrelated authorization codes.
   if(!raw)return;
+  // Both environments share a callback URL. Only the matching state owns it.
+  let session;
+  try{session=JSON.parse(raw);}catch(_){return;}
+  if(!session?.state||params.get('state')!==session.state)return;
   const clean=()=>{const next=new URL(location.href);for(const k of ['code','state','error','error_description'])next.searchParams.delete(k);history.replaceState(null,'',next.pathname+next.search+next.hash);};
   try{
-   const session=JSON.parse(raw);
    if(params.get('error'))throw Error('OAuth認証が中断されました: '+params.get('error'));
    if(!session?.state||params.get('state')!==session.state||session.redirect!==redirectUri())throw Error('OAuthのstate/リダイレクト照合に失敗しました。');
    const body=new URLSearchParams({grant_type:'authorization_code',code:params.get('code')||'',redirect_uri:session.redirect,client_id:session.clientId,code_verifier:session.verifier});
-   const response=await fetch(environment.origin+'/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+   const response=await fetch(environment.origin+'/oauth2/token',{method:'POST',redirect:'error',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
    if(!response.ok)throw Error('トークン取得失敗 HTTP '+response.status+': '+(await response.text()).slice(0,180));
    const data=await response.json();
    if(!data.access_token||(data.scope&&!String(data.scope).split(' ').includes('write_api')))throw Error('write_api 権限のトークンが取得できませんでした。');

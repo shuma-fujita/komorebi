@@ -1,6 +1,6 @@
 import {levelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-text-v1-20261125';
 // Project building and ground-level POI labels using shared A/B viewport camera information.
-import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,sendOsmTestTags,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-tags-internal-20261126';
+import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,sendOsmTestTags,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=step3-20261126';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {osmElementPageUrl} from './osm-element-page-url.js?v=element-link-20261122';
 import {attachSheetMotion} from './sheet-motion.js?v=tag-focus-scroll-only-20261121';
@@ -14,7 +14,10 @@ import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} f
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=tags-internal-20261126';
 import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=storage-manager-v1-20261122';
+import {hasOsmProductionToken,forgetOsmProductionToken,consumeOsmProductionAuthError,startOsmProductionLogin,finishOsmProductionLogin} from './osm-production-auth.js?v=step3-20261126';
 const osmTestOAuthReturn=finishOsmTestLogin();
+// Matching state makes each callback belong to exactly one environment.
+const osmProductionOAuthReturn=finishOsmProductionLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
@@ -351,6 +354,28 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
 
   const controls=document.createElement('div');controls.style.cssText='display:flex;gap:8px;margin-top:12px;';
   const makeButton=(label,primary=false)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='flex:1;padding:11px 5px;border:1px solid #91aca0;border-radius:8px;background:'+(primary?'#236c56':'#fff')+';color:'+(primary?'white':'#163c30')+';font:700 14px system-ui;';return b;};
+  // Authentication-only controls, visible exclusively in production review.
+  const productionAuthPane=document.createElement('section');
+  productionAuthPane.hidden=true;
+  const productionLogin=makeButton('本番OSMにログイン');
+  productionLogin.className='komo-action';
+  const productionLogout=makeButton('本番認証を解除');
+  productionLogout.className='komo-action komo-action-secondary';
+  const productionAuthStatus=document.createElement('p');
+  productionAuthStatus.setAttribute('role','status');decorateStatus(productionAuthStatus);
+  const syncProductionAuth=()=>{
+   productionLogin.textContent=hasOsmProductionToken()?'本番OSMに再ログイン':'本番OSMにログイン';
+   productionLogout.disabled=!hasOsmProductionToken();
+   productionAuthStatus.textContent=hasOsmProductionToken()?'本番OSM認証済み（本番送信は無効）':'本番OSM未認証（認証のみ、本番送信なし）';
+  };
+  productionLogin.addEventListener('click',async()=>{
+   productionLogin.disabled=true;
+   try{await startOsmProductionLogin();}
+   catch(e){productionAuthStatus.textContent='認証開始エラー: '+e.message;productionLogin.disabled=false;}
+  });
+  productionLogout.addEventListener('click',()=>{forgetOsmProductionToken();syncProductionAuth();});
+  productionAuthPane.append(productionLogin,productionLogout,productionAuthStatus);
+  review.appendChild(productionAuthPane);
   // Only the linked TEST element can be sent, regardless of its tags or kind.
   const testPane=document.createElement('div');
   testPane.hidden=true;
@@ -676,6 +701,11 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     // The production-side review cannot display test-server sending controls.
     const isTestReview=activeSource==='test';
     productionReviewNotice.hidden=isTestReview;
+    productionAuthPane.hidden=isTestReview;
+    if(!isTestReview){
+     syncProductionAuth();
+     osmProductionOAuthReturn.then(()=>{syncProductionAuth();const authError=consumeOsmProductionAuthError();if(authError)productionAuthStatus.textContent='認証失敗: '+authError;});
+    }
     reviewStorageCheck.section.hidden=isTestReview;
     reviewStorageCheck.clearStatus();
     testPane.hidden=!isTestReview;
@@ -694,6 +724,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    pending=null;rows.hidden=false;tagsHeader.hidden=false;review.hidden=true;
    sourceRow.hidden=false;sourceStatus.hidden=false;refreshOsmPageLink();note.hidden=false;
    productionReviewNotice.hidden=true;
+   productionAuthPane.hidden=true;
    reviewStorageCheck.section.hidden=true;
    reviewStorageCheck.clearStatus();
    controls.replaceChildren(confirm);

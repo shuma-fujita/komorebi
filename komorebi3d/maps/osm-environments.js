@@ -9,5 +9,9 @@ export const OSM_TEST=Object.freeze({
 });
 export const OSM_PRODUCTION=Object.freeze({
  origin:'https://www.openstreetmap.org',
- apiOrigin:'https://api.openstreetmap.org'
+ apiOrigin:'https://api.openstreetmap.org',
+ redirectUri:'https://shuma-fujita.github.io/komorebi/komorebi3d/dev.html',
+ tokenKey:'komorebi:osm-production:token',
+ authKey:'komorebi:osm-production:oauth',
+ errorKey:'komorebi:osm-production:error'
 });

@@ -1,5 +1,5 @@
 // Shared transport and changeset lifecycle. Only TEST writes are enabled.
-import {OSM_TEST,OSM_PRODUCTION} from './osm-environments.js?v=step1a-20261126';
+import {OSM_TEST,OSM_PRODUCTION} from './osm-environments.js?v=step3-20261126';
 import {makeChangesetXml} from './osm-xml.js?v=step1e-20261126';
 export function createOsmApi(environment){
  if(environment!==OSM_TEST&&environment!==OSM_PRODUCTION)throw Error('OSM API環境設定が不正です。');
