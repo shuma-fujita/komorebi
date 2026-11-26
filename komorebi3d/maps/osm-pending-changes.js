@@ -148,14 +148,16 @@ export function getAllPendingOsmTagChanges(options={}){
   .map(entry=>({type:entry.type,id:entry.id,version:entry.osmVersion,changes:entry.changes}));
 }
 function absorbed(entry,element){
- const version=Number(element.version);
- if(!Number.isSafeInteger(version)||version<entry.osmVersion)return false;
- if(version>entry.osmVersion)return true;
+ if(entry.osmVersion!==null){
+  const version=Number(element.version);
+  return Number.isSafeInteger(version)&&version>=entry.osmVersion;
+ }
+ // An unsent local edit has no confirmed version; compare only its changes.
  const tags=element.tags||{};
  return Object.entries(entry.changes).every(([tag,val])=>
   val===null?!own(tags,tag):own(tags,tag)&&tags[tag]===val);
 }
-// Only confirmed OSM writes may be automatically cleared after Geofabrik catches up.
+// Clear confirmed writes by version, local reviews by matching tag changes.
 export function reconcilePendingOsmTagChanges(map,{source,onWarning}={}){
  if(source!=='new')return 0;
  if(!Array.isArray(map?.elements))throw Error('地図JSONの要素一覧が不正です。');
@@ -163,7 +165,7 @@ export function reconcilePendingOsmTagChanges(map,{source,onWarning}={}){
  let released=0;
  for(const entry of getAllSavedOsmTagChanges({onWarning})){
   const el=sourceById.get(entry.type+'/'+entry.id);
-  if(entry.osmVersion===null||!el||!absorbed(entry,el))continue;
+  if(!el||!absorbed(entry,el))continue;
   try{releaseStoredOsmTagChange(entry.type,entry.id);released++;}
   catch(error){warn(onWarning,'Geofabrik反映済み記録の開放失敗: '+String(error.message||error));}
  }
@@ -182,7 +184,7 @@ export function applySavedOsmTagChangesToMap(map,{source,onWarning}={}){
   const key=element.type+'/'+element.id,entry=records.get(key);
   if(!entry)continue;
   const mapVersion=Number(element.version);
-  if(entry.osmVersion!==null&&Number.isSafeInteger(mapVersion)&&mapVersion>entry.osmVersion)continue;
+  if(entry.osmVersion!==null&&Number.isSafeInteger(mapVersion)&&mapVersion>=entry.osmVersion)continue;
   originals.set(key,{...(element.tags||{})});
   let tags={...(element.tags||{})};
   if(entry.osmVersion!==null)for(const [tag,val] of Object.entries(entry.changes)){

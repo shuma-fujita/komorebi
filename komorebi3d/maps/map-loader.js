@@ -1,4 +1,4 @@
-import {reconcilePendingOsmTagChanges,applySavedOsmTagChangesToMap} from './osm-pending-changes.js?v=storage-manager-v1-20261122';
+import {reconcilePendingOsmTagChanges,applySavedOsmTagChangesToMap} from './osm-pending-changes.js?v=auto-release-20261126';
 // Two independent 2km Matsudo snapshots. No 500m or live Overpass fetch.
 const TILE_ROOTS=Object.freeze({
  old:'./maps/data/tiles-2km/',

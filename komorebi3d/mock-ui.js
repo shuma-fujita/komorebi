@@ -44,7 +44,7 @@ function renderFauxGame(state){
 // The game mock is a simple black-green A/B placeholder; no OSM editor overlays.
 
 import {mountDefaultPanelLayoutEditor} from './dev-panel-layout.js?v=storage-four-slots-20261122';
-import {mountLocalStorageManager} from './local-storage-panel.js?v=storage-name-readonly-v1-20261123';
+import {mountLocalStorageManager} from './local-storage-panel.js?v=auto-release-20261126';
 // Initialize the hidden optional panel before the layout parks it.
 mountLocalStorageManager(document,{readOnly:true});
 mountDefaultPanelLayoutEditor(document);

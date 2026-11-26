@@ -1,6 +1,6 @@
 // Same-origin localStorage inventory for the fifth Komorebi panel.
 // No migration, bulk deletion, OSM API calls, or silent key removal.
-import {releaseStoredOsmTagChange} from './maps/osm-pending-changes.js?v=storage-manager-v1-20261122';
+import {releaseStoredOsmTagChange} from './maps/osm-pending-changes.js?v=auto-release-20261126';
 const PREFIX='komorebi3d:osm-tag-changes:v2:';
 const RE_SHARED=/^(node|way|relation)\/([1-9]\d*)$/;
 const sensitiveKey=key=>/(?:token|oauth|secret|password|passwd|credential|auth|session|bearer|jwt|cookie|api[_:-]?key|private[_:-]?key)/i.test(key);

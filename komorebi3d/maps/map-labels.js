@@ -9,11 +9,11 @@ import {BUILDING_PREVIEW_RATIO,BUILDING_SHEET_RATIO} from './building-editor-lay
 import {guardSheetScroll} from './sheet-scroll-guard.js?v=ios-scroll-containment-20261120';
 import {attachBuildingPreviewGestures} from './building-preview-gestures.js?v=tap-toggle-orbit-20261121';
 import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy-auth-error-under-action-20261121';
-import {getSavedOsmTagChange,getAllSavedOsmTagChanges} from './osm-pending-changes.js?v=storage-manager-v1-20261122';
+import {getSavedOsmTagChange,getAllSavedOsmTagChanges} from './osm-pending-changes.js?v=auto-release-20261126';
 import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=level-warning-style-v2-20261124';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=tags-internal-20261126';
-import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=storage-manager-v1-20261122';
+import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=auto-release-20261126';
 import {hasOsmProductionToken,forgetOsmProductionToken,consumeOsmProductionAuthError,startOsmProductionLogin,finishOsmProductionLogin} from './osm-production-auth.js?v=step4-20261126';
 import {sendOsmProductionTags} from './osm-production-write.js?v=step5-20261126';
 const osmTestOAuthReturn=finishOsmTestLogin();

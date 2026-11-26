@@ -16,7 +16,7 @@
 - Step 2：既存の模擬HTTP試験にway輪郭・relationメンバー順序／役割・未変更タグ保持・通信切断時の自動再送禁止・changeset作成失敗を追加。[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45751390279)・追加模擬HTTP試験PASS・Pages公開成功。ユーザー合意により実機検証は省略しStep 2完了。二重送信防止は既存UIのbusy／sentガードをソース確認済み、連打の動作検証は未実施。削除UI検証は保留。
 - Step 3：PROD OAuth／PKCE接続を追加。TESTと別のClient ID・sessionStorageキー、共通callbackはstateで振り分け。タグ変更確認画面に本番認証のみの操作を追加。本番書き込み禁止を維持。OSM本番アプリ登録・Actions Secret設定済み。ユーザー実機PASS（11/26、本番認証済み表示）。[再デプロイ成功](https://github.com/shuma-fujita/komorebi/actions/runs/45756245147)。
 - Step 4：ユーザー合意により本番内部登録処理を実装。共通タグwriter、競合判定はOSMのversion照合（HTTP 409）に一本化。送信には編集時versionを維持し、登録前の最新version・全タグ比較は廃止。確認済み差分をそのまま利用（再計算・照合は廃止）、認証切れ対応。ユーザー合意により内部同時送信ガードと成功version＋1照合を廃止し、OSM返却versionを採用。送信中のボタン無効化はStep 5で対応。結果不明時の独自再送信ロックを廃止。エラー内容を通知し、同じ編集時versionで手動再送信を許可（自動再送信なし）、終了失敗の別通知。[追加模擬HTTP試験PASS・Actions/Pages成功](https://github.com/shuma-fujita/komorebi/actions/runs/45765853508)。Step 4完了。
-- Step 5：本番確認画面に登録ボタンを接続、送信中の操作制御・結果/エラー表示・手動再送信を実装。確認差分のみをOSMのタグ一覧に適用し未変更タグを保持、編集時versionは維持。成功時のみ既存の確定記録・新Geofabrikの即時反映/自動開放へ接続。localStorage動作確認用の保存・開放ボタンは維持。Actions・Safari実機は未確認。本番実送信はStep 6でユーザー合意後に検証。
+- Step 5：本番確認画面に登録ボタンを接続、送信中の操作制御・結果/エラー表示・手動再送信を実装。確認差分のみをOSMのタグ一覧に適用し未変更タグを保持、編集時versionは維持。成功時のみ既存の確定記録・新Geofabrikの即時反映/自動開放へ接続。localStorage動作確認用の保存・開放ボタンは維持。本番確定記録は新Geofabrikのversionが登録時以上ならタグ照合なしで自動開放。手動保存は変更タグがすべて一致すれば自動開放。Actions・Safari実機は未確認。本番実送信はStep 6でユーザー合意後に検証。
 
 ### ① 地図の自動更新・配信確認
 - Geofabrik関東PBF → 松戸2km JSON → コミット・Pages公開（A→B→C）。Aのcron指定は毎日10:17 JST。11/22は16:59 JSTに起動し、取得URLのHTTP 404で失敗。公式URL `https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf` に修正済み。起動遅延の根因は未特定。
@@ -46,7 +46,7 @@
 | 地図 | [map-loader.js](../komorebi3d/maps/map-loader.js)。旧2km／新Geofabrik 2kmを静的JSONからA/B独立取得。起動時のOverpass自動取得なし。「🧪 地図JSON読み込みログ」とコピー機能を維持 |
 | 建物・施設 | [map-builder.js](../komorebi3d/maps/map-builder.js)、[map-labels.js](../komorebi3d/maps/map-labels.js)、[map-occupants.js](../komorebi3d/maps/map-occupants.js)。建物単位の入居施設一覧、タグ編集、編集前／ドラフトのA/Bビルプレビュー（上30%／編集下70%） |
 | OSM | 本番は閲覧・ローカル下書き・確認・明示的な登録操作に対応。**本番登録UI接続済み・実送信はStep 6まで禁止。** テストはOAuth 2.0＋PKCE経由のコピーと任意タグ追加・変更（ユーザー実機PASS、削除UIなし／TEST API内部は削除対応） |
-| タグ差分 | [osm-pending-changes.js](../komorebi3d/maps/osm-pending-changes.js)。`komorebi3d:osm-tag-changes:v2:<type>/<id>`、1要素1キー。osmVersion:nullは未送信確認、正整数は本番保存成功記録。新Geofabrikに1回だけ重畳し、本番記録のみ反映確認後に自動開放 |
+| タグ差分 | [osm-pending-changes.js](../komorebi3d/maps/osm-pending-changes.js)。`komorebi3d:osm-tag-changes:v2:<type>/<id>`、1要素1キー。osmVersion:nullは未送信確認、正整数は本番保存成功記録。新Geofabrikに1回だけ重畳し、本番記録はversion以上、手動保存は変更タグ一致で自動開放 |
 
 ### 建物・入居施設
 - 建物と店舗はOSMの別要素。異なるIDは名前が同じでも保持。旧同名・15m近接照合や公開保留は廃止。同一店舗IDは元データ順の最初の有効要素を採用し、段階生成中に公開する（全店舗と建物の同時公開は保証しない）。建物紐付けは内包・最小建物優先、外周1m以内は曖昧でない場合のみ許容し警告。

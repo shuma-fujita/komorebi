@@ -22,14 +22,21 @@ saveStoredOsmTagChange(draft(1));
 assert.equal(data.size,1);
 assert.ok(data.has('komorebi3d:osm-tag-changes:v2:way/1'));
 assert.equal(getSavedOsmTagChange('way',1).osmVersion,null);
-assert.equal(reconcilePendingOsmTagChanges(map(1,99,next),{source:'new'}),0);
-assert.equal(data.size,1,'A local review must never be auto-cleared');
+assert.equal(reconcilePendingOsmTagChanges(map(1,99,base),{source:'new'}),0);
+assert.equal(data.size,1,'A newer version alone does not clear a local review');
 const snapshot=map(1,12,base);
 assert.equal(applySavedOsmTagChangesToMap(snapshot,{source:'new'}),1);
 assert.equal(snapshot.elements[0].version,12,'A test overlay does not change the OSM source version');
 assert.equal(snapshot.elements[0].tags['building:levels'],'5');
 assert.equal(snapshot.reviewStorageOriginalTags.get('way/1')['building:levels'],'4');
-releaseStoredOsmTagChange('way',1);
+assert.equal(reconcilePendingOsmTagChanges(map(1,99,next),{source:'old'}),0);
+assert.equal(reconcilePendingOsmTagChanges({elements:[]},{source:'new'}),0);
+assert.equal(reconcilePendingOsmTagChanges(map(1,99,{...next,name:'Unrelated tag'}),{source:'new'}),1);
+assert.equal(data.size,0,'Matching local changes are automatically cleared');
+saveStoredOsmTagChange({...draft(1),changes:{...next,name:null,shop:'yes'}});
+assert.equal(reconcilePendingOsmTagChanges(map(1,100,{...next,shop:'yes',name:'Still present'}),{source:'new'}),0);
+assert.equal(reconcilePendingOsmTagChanges(map(1,100,{...next}),{source:'new'}),0);
+assert.equal(reconcilePendingOsmTagChanges(map(1,100,{...next,shop:'yes'}),{source:'new'}),1);
 assert.equal(data.size,0);
 
 const sent=recordConfirmedOsmTagChanges({type:'way',id:'2',version:17,changes:next});
@@ -40,9 +47,15 @@ assert.equal(reconcilePendingOsmTagChanges(map(2,16,base),{source:'new'}),0);
 assert.equal(data.size,1);
 assert.equal(reconcilePendingOsmTagChanges(map(2,17,next),{source:'old'}),0);
 assert.equal(data.size,1,'Never reconcile against the old comparison map');
-assert.equal(reconcilePendingOsmTagChanges(map(2,17,next),{source:'new'}),1);
+assert.equal(reconcilePendingOsmTagChanges(map(2,16,next),{source:'new'}),0);
+assert.equal(reconcilePendingOsmTagChanges(map(2,null,next),{source:'new'}),0);
+assert.equal(applySavedOsmTagChangesToMap(map(2,17,base),{source:'new'}),0,'Do not overlay an already reached version');
+assert.equal(reconcilePendingOsmTagChanges(map(2,17,base),{source:'new'}),1);
 assert.equal(data.size,0);
 assert.equal(getSavedOsmTagChange('way',2),null);
+recordConfirmedOsmTagChanges({type:'way',id:'2',version:17,changes:next});
+assert.equal(reconcilePendingOsmTagChanges(map(2,18,base),{source:'new'}),1);
+assert.equal(data.size,0,'Later OSM versions supersede local edits');
 
 // Old-format keys are visible to the administrator but never moved or
 // silently deleted by current OSM code.

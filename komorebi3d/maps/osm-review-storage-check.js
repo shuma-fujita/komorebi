@@ -3,7 +3,7 @@
 // osmVersion=null is an unsent local review; this module does not send to OSM.
 import {osmTagChangeStorageKey,getSavedOsmTagChange,getAllSavedOsmTagChanges,
  saveStoredOsmTagChange,releaseStoredOsmTagChange,applySavedOsmTagChangesToMap}
- from './osm-pending-changes.js?v=storage-manager-v1-20261122';
+ from './osm-pending-changes.js?v=auto-release-20261126';
 const own=(object,key)=>Object.prototype.hasOwnProperty.call(object,key);
 const reviewKey=review=>osmTagChangeStorageKey(review?.osm?.type,review?.osm?.id);
 function testPayload(review){
