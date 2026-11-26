@@ -15,13 +15,14 @@ import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=tags-internal-20261126';
 import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=storage-manager-v1-20261122';
 import {hasOsmProductionToken,forgetOsmProductionToken,consumeOsmProductionAuthError,startOsmProductionLogin,finishOsmProductionLogin} from './osm-production-auth.js?v=step4-20261126';
+import {sendOsmProductionTags} from './osm-production-write.js?v=step5-20261126';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Matching state makes each callback belong to exactly one environment.
 const osmProductionOAuthReturn=finishOsmProductionLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
 import {shopsInFocusedBuilding} from './map-occupants.js?v=shared-outside-1m-20261119';
 
-export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null,onReviewStorageChange=null}={}){
+export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateChange=null,onEditorPreviewGesture=null,onEditorDraftChange=null,onReviewStorageChange=null,onConfirmedOsmTagSave=null,getProductionBaseTags=null}={}){
  const layer=document.createElement('div');
  layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3';
  host.appendChild(layer);
@@ -140,8 +141,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
  function openEditor(item){
   if(!item.osmType||!item.osmId)return;
   closeEditor();
-  const baseTags={...(item.originalTags||item.tags||{})};
-  const initial={...baseTags};
+  let baseTags={...(getProductionBaseTags?.(item)??item.originalTags??item.tags??{})};
+  let productionVersion=item.osmVersion??null;
+  const initial={...(item.tags??baseTags)};
   const editTarget={osmType:item.osmType,osmId:item.osmId};
   let tagOrderRules=cachedTagOrderRules;
   const mask=document.createElement('div');
@@ -202,7 +204,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    el.classList.add('komo-osm-feedback');
    const update=()=>{
     const message=el.textContent.trim();
-    const isError=/^(?:読み込み失敗|テスト送信失敗|コピー作成エラー|コピー準備エラー|認証開始エラー|認証失敗|テストAPI HTTP)/.test(message);
+    const isError=/^(?:読み込み失敗|テスト送信失敗|本番送信失敗|本番登録後の保存エラー|コピー作成エラー|コピー準備エラー|認証開始エラー|認証失敗|テストAPI HTTP)/.test(message);
     el.dataset.statusKind=isError?'error':'normal';
    };
    new MutationObserver(update).observe(el,{childList:true,characterData:true,subtree:true});
@@ -309,7 +311,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   });
   const note=document.createElement('p');
   note.className='komo-status';
-  note.textContent='本番OSMは読み取り専用です。テスト側では任意のタグを追加・変更して送信できます。';
+  note.textContent='本番OSM・テストOSMのタグを追加・変更できます。送信先を確認してください。';
   const metadata=document.createElement('p');
   metadata.textContent='OSM '+item.osmType+'/'+item.osmId+' ／ version: '+(item.osmVersion??'未取得');
   metadata.style.cssText='font-size:11px;color:#587166;margin:4px 0;';
@@ -354,7 +356,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
 
   const controls=document.createElement('div');controls.style.cssText='display:flex;gap:8px;margin-top:12px;';
   const makeButton=(label,primary=false)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='flex:1;padding:11px 5px;border:1px solid #91aca0;border-radius:8px;background:'+(primary?'#236c56':'#fff')+';color:'+(primary?'white':'#163c30')+';font:700 14px system-ui;';return b;};
-  // Authentication-only controls, visible exclusively in production review.
+  // Production registration is available exclusively in production review.
   const productionAuthPane=document.createElement('section');
   productionAuthPane.hidden=true;
   const productionLogin=makeButton('本番OSMにログイン');
@@ -363,10 +365,24 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   productionLogout.className='komo-action komo-action-secondary';
   const productionAuthStatus=document.createElement('p');
   productionAuthStatus.setAttribute('role','status');decorateStatus(productionAuthStatus);
+  let productionBusy=false,productionSent=false;
+  const productionSend=makeButton('本番OSMへ送信',true);
+  productionSend.className='komo-action';productionSend.disabled=true;
+  const productionStatus=document.createElement('p');
+  productionStatus.setAttribute('role','status');productionStatus.setAttribute('aria-live','polite');decorateStatus(productionStatus);
   const syncProductionAuth=()=>{
    productionLogin.textContent=hasOsmProductionToken()?'本番OSMに再ログイン':'本番OSMにログイン';
-   productionLogout.disabled=!hasOsmProductionToken();
-   productionAuthStatus.textContent=hasOsmProductionToken()?'本番OSM認証済み（本番送信は無効）':'本番OSM未認証（認証のみ、本番送信なし）';
+   productionLogin.disabled=productionBusy;
+   productionLogout.disabled=productionBusy||!hasOsmProductionToken();
+   productionAuthStatus.textContent=hasOsmProductionToken()?'本番OSM認証済み':'本番OSM未認証（ログインしてください）';
+   const hasChanges=Boolean(pending&&Object.keys(pending.changes).length);
+   const validVersion=/^[1-9]\d*$/.test(String(pending?.osm?.version??''));
+   productionSend.disabled=productionBusy||productionSent||!hasOsmProductionToken()||!hasChanges||!validVersion||typeof onConfirmedOsmTagSave!=='function';
+   productionSend.textContent=productionBusy?'送信中…':productionSent?'送信済み':'本番OSMへ送信';
+   productionSend.style.opacity=productionSend.disabled?'.5':'1';
+   back.disabled=productionBusy;
+   copyButton.disabled=productionBusy;
+   for(const button of reviewStorageCheck.section.querySelectorAll('button'))button.disabled=productionBusy;
   };
   productionLogin.addEventListener('click',async()=>{
    productionLogin.disabled=true;
@@ -374,7 +390,37 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    catch(e){productionAuthStatus.textContent='認証開始エラー: '+e.message;productionLogin.disabled=false;}
   });
   productionLogout.addEventListener('click',()=>{forgetOsmProductionToken();syncProductionAuth();});
-  productionAuthPane.append(productionLogin,productionLogout,productionAuthStatus);
+  productionSend.addEventListener('click',async()=>{
+   if(productionSend.disabled||activeSource!=='production'||!pending)return;
+   const submitted=pending;
+   productionBusy=true;productionStatus.textContent='本番OSMへ送信中…';syncProductionAuth();
+   try{
+    const result=await sendOsmProductionTags(submitted);
+    productionSent=true;
+    productionVersion=result.version;
+    baseTags={...result.tags};productionDraft={...baseTags};
+    productionReviewNotice.textContent='本番OSMへ登録しました。';
+    productionStatus.textContent='本番送信成功！ changeset: '+result.changesetId+' / 新version: '+result.version;
+    const resultLink=document.createElement('a');
+    resultLink.href=result.elementUrl;resultLink.target='_blank';resultLink.rel='noopener noreferrer';resultLink.textContent='本番OSMで更新された要素を見る';
+    productionStatus.append(document.createTextNode('\n'),resultLink);
+    if(result.closeWarning)productionStatus.append(document.createTextNode('\n変更セット終了時の警告: '+result.closeWarning));
+    try{
+     const saved=await onConfirmedOsmTagSave(result);
+     if(!saved?.persisted)productionStatus.append(document.createTextNode('\n端末保存に失敗しました。メモリに一時保持しています。'));
+     else productionStatus.append(document.createTextNode('\nGeofabrik反映待ちデータを保存しました。'));
+    }catch(error){
+     productionStatus.append(document.createTextNode('\n本番登録後の保存エラー: '+String(error.message||error)+'。OSMへの登録自体は成功しています。'));
+    }
+   }catch(error){
+    productionStatus.textContent='本番送信失敗: '+String(error.message||error);
+    if(error.elementUrl){
+     const link=document.createElement('a');link.href=error.elementUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='本番OSMの編集履歴を確認する';
+     productionStatus.append(document.createTextNode('\n'),link);
+    }
+   }finally{productionBusy=false;syncProductionAuth();}
+  });
+  productionAuthPane.append(productionLogin,productionLogout,productionAuthStatus,productionSend,productionStatus);
   review.appendChild(productionAuthPane);
   // Only the linked TEST element can be sent, regardless of its tags or kind.
   const testPane=document.createElement('div');
@@ -527,7 +573,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   const confirm=makeButton('変更内容を確認',true),back=makeButton('編集に戻る');
   confirm.className='komo-action';back.className='komo-action komo-action-secondary';
   confirm.hidden=true;
-  let activeSource='production',testTags=null,testVersion=null,testDraft=null,productionDraft=null,testReady=false,sourceRequest=0;
+  let activeSource='production',testTags=null,testVersion=null,testDraft=null,productionDraft=initial,testReady=false,sourceRequest=0;
   // Only an in-memory cache scoped to this editor. Fetched tags never enter localStorage.
   let testPrefetchPromise=null,testPrefetchResult=null;
   function preloadTestOsm(){
@@ -627,7 +673,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   };
   async function setSource(source){
    if(source!=='production'&&source!=='test')return;
-   if(busy)return;
+   if(busy||productionBusy)return;
    if(!review.hidden)back.click();
    if(activeSource==='test'&&testReady)testDraft=captureDraft();
    if(activeSource==='production'&&rows.children.length)productionDraft=captureDraft();
@@ -643,7 +689,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     tagOrderRules=cachedTagOrderRules;
     testReady=false;
     renderTags(productionDraft??baseTags,true);
-    sourceStatus.textContent='本番OSMのタグを編集・追加して変更内容を確認できます。この画面から本番OSMへの送信・保存は行いません。';
+    sourceStatus.textContent='地図の本番OSMタグを編集・追加できます。変更内容の確認画面から本番OSMに送信できます。';
     return;
    }
    sourceStatus.textContent='タグ表示順を読み込み中…';
@@ -680,17 +726,18 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     throw Error('テストOSMのタグを読み込んでから編集してください。');
    const isProduction=activeSource==='production';
    const osm=isProduction?
-    {type:item.osmType,id:item.osmId,version:item.osmVersion??null}:
+    {type:item.osmType,id:item.osmId,version:productionVersion}:
     {type:linkedTestTarget.type,id:linkedTestTarget.id,version:testVersion};
-   return buildOsmTagReview({
-    osm,originalTags:isProduction?baseTags:testTags,
+   const originalTags={...(isProduction?baseTags:testTags)};
+   return {...buildOsmTagReview({
+    osm,originalTags,
     rows:[...rows.children].map(row=>({key:row.children[0].value,value:row.children[1].value}))
-   });
+   }),originalTags};
   }
   let pending=null;
   // Both save sources now use one per-element storage key.
   // A local review writes osmVersion=null, never a confirmed OSM version.
-  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending?{...pending,originalTags:baseTags}:pending,onChange:onReviewStorageChange});
+  const reviewStorageCheck=prependOsmReviewStorageCheck(review,{getReview:()=>pending,onChange:onReviewStorageChange});
   reviewStorageCheck.section.hidden=true;
   confirm.addEventListener('click',()=>{
    try{
@@ -703,6 +750,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     productionReviewNotice.hidden=isTestReview;
     productionAuthPane.hidden=isTestReview;
     if(!isTestReview){
+     productionSent=false;
+     productionReviewNotice.textContent='確認した変更内容を本番OSMに送信できます。まだ送信していません。';
+     productionStatus.textContent=!Object.keys(pending.changes).length?'変更されたタグがありません。':!(/^[1-9]\d*$/.test(String(pending.osm.version??'')))?'OSM versionが取得できていません。':'';
      syncProductionAuth();
      osmProductionOAuthReturn.then(()=>{syncProductionAuth();const authError=consumeOsmProductionAuthError();if(authError)productionAuthStatus.textContent='認証失敗: '+authError;});
     }
@@ -720,7 +770,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    }catch(e){error.textContent=e.message;}
   });
   back.addEventListener('click',()=>{
-   if(busy)return;
+   if(busy||productionBusy)return;
+   const refreshProduction=activeSource==='production'&&productionSent;
    pending=null;rows.hidden=false;tagsHeader.hidden=false;review.hidden=true;
    sourceRow.hidden=false;sourceStatus.hidden=false;refreshOsmPageLink();note.hidden=false;
    productionReviewNotice.hidden=true;
@@ -730,6 +781,10 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    controls.replaceChildren(confirm);
    add.hidden=activeSource==='test'&&!testReady;
    updateConfirm();
+   if(refreshProduction){
+    productionSent=false;metadata.textContent='OSM '+item.osmType+'/'+item.osmId+' ／ version: '+productionVersion;
+    renderTags(baseTags,true);
+   }
    // After sending to test OSM, reload its fresh tags when review is dismissed.
    if(activeSource==='test'&&!testReady&&linkedTestTarget)void setSource('test');
   });

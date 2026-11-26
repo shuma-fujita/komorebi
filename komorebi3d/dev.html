@@ -782,7 +782,7 @@ import {createMapBuildSteps} from "./maps/map-builder.js?v=kfc-color-v2-20261125
 import {createMapFacadeTextureLayer} from "./maps/map-facade-textures.js?v=kfc-color-v2-20261125";
 import {matsudoCameraNear,MATSUDO_FAR_M} from "./maps/matsudo-camera-depth.js?v=adaptive-near-v2-20261124";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
-import {createMapLabels} from "./maps/map-labels.js?v=osm-server-result-20261126";
+import {createMapLabels} from "./maps/map-labels.js?v=osm-step5-20261126";
 import {createBuildingEditorPreview,buildingEditorCamera} from "./maps/building-editor-preview.js?v=kfc-color-v2-20261125";
 window.__komorebiModuleStarted=true;
 (function(){var d=document.getElementById("launch-diagnostic");if(d)d.textContent="診断：JavaScript実行OK / WebGL="+(function(){try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})()+" / Three.js読み込みを確認中";window.addEventListener("error",function(e){if(d)d.textContent="診断：JavaScriptエラー："+e.message});window.addEventListener("unhandledrejection",function(e){if(d)d.textContent="診断：読み込みエラー："+String(e.reason)});})();
@@ -1989,7 +1989,7 @@ function renderSavedOsmChange(world,entry){
  }
  return result;
 }
-// Future production OSM writer calls this only after the API confirms success.
+// Production OSM writer calls this only after the API confirms success.
 // The existing test OSM writer never calls it.
 function onConfirmedProductionOsmSaved(value){
  const onWarning=message=>{
@@ -2004,7 +2004,7 @@ function onConfirmedProductionOsmSaved(value){
   if(!world.ready)world.deferredEdits.set(result.entry.type+'/'+result.entry.id,result.entry);
   else{
    try{
-    const applied=renderSavedOsmChange(world,result.entry);
+    const applied=synchronizeReviewStorageWithScene(world,result.entry.type,result.entry.id);
     if(!applied.applied)addMapDebug('OSM差分: 画面への即時反映を保留 / '+applied.reason);
    }catch(error){
     onWarning('OSM差分の3D反映に失敗しました。保存済み差分は次回地図読み込み時に反映します: '+String(error.message||error));
@@ -2030,6 +2030,7 @@ function synchronizeReviewStorageWithScene(world,type,id){
  if(saved&&!originals.has(key))originals.set(key,{...(element.tags||{})});
  const original=originals.get(key);
  if(!saved&&!original)return {applied:true,rebuiltBuildings:0};
+ if(saved?.osmVersion!=null&&Number(element.version)>saved.osmVersion)return {applied:false,reason:'newer-in-map'};
  const target=saved?(saved.tags?{...saved.tags}:{...(original||element.tags||{})}):{...original};
  if(saved&&!saved.tags)for(const [name,value] of Object.entries(saved.changes)){
   if(value===null)delete target[name];else target[name]=value;
@@ -2040,8 +2041,9 @@ function synchronizeReviewStorageWithScene(world,type,id){
    changes[name]=Object.prototype.hasOwnProperty.call(target,name)?target[name]:null;
   }
  }
- if(!Object.keys(changes).length)return {applied:true,rebuiltBuildings:0};
- return renderSavedOsmChange(world,{type,id,version:element.version,changes});
+ const version=saved?.osmVersion??element.version;
+ if(!Object.keys(changes).length&&Number(version)===Number(element.version))return {applied:true,rebuiltBuildings:0};
+ return renderSavedOsmChange(world,{type,id,version,changes});
 }
 function onReviewStorageChange({kind,review}){
  // The reviewing UI has saved or released the shared OSM tag-change key,
@@ -2310,7 +2312,7 @@ async function loadMatsudoMapInBackground(){
     displayed.ready=true;
     if(source==='new'&&displayed.deferredEdits.size){
      for(const entry of displayed.deferredEdits.values()){
-      try{renderSavedOsmChange(displayed,entry);}
+      try{synchronizeReviewStorageWithScene(displayed,entry.type,entry.id);}
       catch(error){onLog('OSM差分: 読み込み中に受け取った編集の再反映失敗 / '+String(error.message||error));}
      }
      displayed.deferredEdits.clear();
@@ -2395,7 +2397,13 @@ function applyMatsudoScreenLabels(screen){
  matsudoLabels[screen]?.dispose();matsudoLabels[screen]=null;
  const data=matsudoMaps[screenConfigs[screen].map];
  if(data&&gameView?.surface){
-  matsudoLabels[screen]=createMapLabels(gameView.surface,{screen,mapSource:screenConfigs[screen].map,onEditorStateChange:setOsmEditorOpen,onEditorPreviewGesture:setEditorPreviewGesture,onEditorDraftChange:setEditorDraftChange,onReviewStorageChange});
+  matsudoLabels[screen]=createMapLabels(gameView.surface,{screen,mapSource:screenConfigs[screen].map,onEditorStateChange:setOsmEditorOpen,onEditorPreviewGesture:setEditorPreviewGesture,onEditorDraftChange:setEditorDraftChange,onReviewStorageChange,onConfirmedOsmTagSave:onConfirmedProductionOsmSaved,
+   getProductionBaseTags:item=>{
+    if(screenConfigs[screen].map!=='new')return null;
+    const saved=getOsmReviewStorageCheck(item.osmType,String(item.osmId));
+    if(!saved||saved.osmVersion!==null)return null;
+    return data.sourceMap?.reviewStorageOriginalTags?.get(item.osmType+'/'+item.osmId)??saved.baseTags??null;
+   }});
   matsudoLabels[screen].setLabels(data.labels);
   matsudoLabels[screen].setBuildingFeatures(data.mapFeatures);
   matsudoLabels[screen].setDebugAnchors(labelDebugVisible);

@@ -1,4 +1,4 @@
-// Internal production writer. Not imported by the game UI in Step 4.
+// Production writer. Only the confirmed tag changes are applied to the OSM element.
 import {OSM_PRODUCTION} from './osm-environments.js?v=step3-20261126';
 import {createOsmApi} from './osm-api.js?v=step4-20261126';
 import {readOsmProductionToken,forgetOsmProductionToken} from './osm-production-auth.js?v=step4-20261126';
@@ -39,11 +39,19 @@ export async function sendOsmProductionTags(review,source=''){
   // remain those of the reviewed draft; OSM alone decides version conflicts.
   const item={...current,version:osm.version,tags:originalTags};
   const prepared=prepareOsmTagWrite(item,{osm,tags});
+  // OSM PUT replaces the full tag set. Preserve server tags that were not
+  // edited, including tags omitted from the map or local-only overlays.
+  // Never adopt current.version: stale reviews are rejected by OSM.
+  const submittedTags=Object.assign(Object.create(null),current.tags);
+  for(const [name,value] of Object.entries(changes)){
+   if(value===null)delete submittedTags[name];else submittedTags[name]=value;
+  }
+  prepared.tags=copyTags(submittedTags);
   const result=await writeReviewedOsmTags({api,origin:OSM_PRODUCTION.origin,item,prepared,source,token,
    onUpdateStart:id=>{updateChangeset=id;},
    onCloseError:error=>{closeWarning=String(error.message||error);}
   });
-  return {...result,type:osm.type,id:osm.id,version:result.newVersion,changes,closeWarning};
+  return {...result,type:osm.type,id:osm.id,version:result.newVersion,changes,tags:submittedTags,closeWarning};
  }catch(error){
   const status=error.status;
   if(status===401){forgetOsmProductionToken();throw failure('auth_required','本番OSMの認証が切れました。再認証してください。',{status});}

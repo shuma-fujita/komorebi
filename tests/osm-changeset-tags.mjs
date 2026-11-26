@@ -223,7 +223,7 @@ try{
  await assert.rejects(sendOsmProductionTags(prodReview),e=>e.code==='conflict'&&e.status===409);
  assert.deepEqual(calls.map(c=>c.method),['GET','PUT','PUT','PUT']);
  assert.match(calls[2].body,/<node[^>]*version="7"/,'Never replace the reviewed version with the latest version');
- assert.match(calls[2].body,/k="shop" v="yes"/,'Never silently merge a newer baseline');
+ assert.match(calls[2].body,/k="shop" v="different"/,'Only reviewed keys may change; OSM rejects this stale version');
  assert.equal(new URL(calls[3].url).pathname,'/api/0.6/changeset/42/close');
  calls.length=0;serverVersion='7';serverTags={shop:'yes'};
  mode='auth';
@@ -256,10 +256,12 @@ try{
  await assert.rejects(sendOsmProductionTags(prodReview),e=>e.code==='conflict'&&e.status===409);
  assert.match(calls[2].body,/<node[^>]*version="7"/);
  assert.equal(calls.length,4,'OSM rejects the stale version after a lost successful response');
- calls.length=0;serverVersion='7';
+ calls.length=0;serverVersion='7';serverTags={shop:'yes',name:'Untouched server tag'};
  const retryResult=await sendOsmProductionTags(prodReview);
  assert.equal(retryResult.version,'8');
  assert.deepEqual({...retryResult.changes},prodReview.changes);
+ assert.equal(retryResult.tags.name,'Untouched server tag');
+ assert.match(calls[2].body,/k="name" v="Untouched server tag"/);
  assert.equal(calls.length,4,'Manual retry succeeds if original version still current');
 
 }finally{
