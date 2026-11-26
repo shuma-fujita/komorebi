@@ -42,6 +42,8 @@ import {smbc} from './smbc.js?v=smbc-v1-20261125';
 import {paintSmbcFacade} from './smbc-sign.js?v=smbc-v1-20261125';
 import {kfc} from './kfc.js?v=kfc-color-v2-20261125';
 import {paintKfcFacade} from './kfc-sign.js?v=kfc-color-v2-20261125';
+import {manekineko} from './manekineko.js?v=manekineko-v1-20261126';
+import {paintManekinekoFacade} from './manekineko-sign.js?v=manekineko-v1-20261126';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},
@@ -63,5 +65,6 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:misterDonut,paint:paintMisterDonutFacade},
  {brand:au,paint:paintAuFacade},
  {brand:smbc,paint:paintSmbcFacade},
- {brand:kfc,paint:paintKfcFacade}
+ {brand:kfc,paint:paintKfcFacade},
+ {brand:manekineko,paint:paintManekinekoFacade}
 ]);
