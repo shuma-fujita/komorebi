@@ -101,18 +101,19 @@ try{
  assert.match(calls[1].body,/k="level" v="0;1"/);
  assert.ok(calls.every(c=>c.redirect==='error'),'Writes must not follow redirects');
  calls.length=0;
- // Add, change and delete simultaneously; preserve non-tag element data.
- const nextReview={osm:review.osm,tags:{level:'-1;9',name:'New name'}};
+ // Add and change simultaneously; preserve non-tag element data.
+ const nextReview={osm:review.osm,tags:{shop:'supermarket',level:'-1;9',name:'New name'}};
  await sendOsmTestTags(item,nextReview);
  assert.match(calls[1].body,/k="level" v="-1;9"/);
  assert.match(calls[1].body,/k="name" v="New name"/);
- assert.doesNotMatch(calls[1].body,/k="shop"/);
+ assert.match(calls[1].body,/k="shop" v="supermarket"/);
  assert.match(calls[1].body,/lat="35"/);
  calls.length=0;
  await assert.rejects(sendOsmTestTags(item,{...review,osm:{...review.osm,version:'6'}}),/version/);
  await assert.rejects(sendOsmTestTags(item,{...review,osm:{...review.osm,id:'456'}}),/version/);
  await assert.rejects(sendOsmTestTags(item,{...review,tags:item.tags}),/変更された/);
- assert.equal(calls.length,0,'No changeset for wrong element, stale version or no-op');
+ await assert.rejects(sendOsmTestTags(item,{...review,tags:{level:'0;1'}}),/タグ削除/);
+ assert.equal(calls.length,0,'No changeset for wrong element, stale version, no-op or deletion');
  const copied=await createOsmTestCopy({type:'node',id:'123',tags:{shop:'yes'},points:[{lat:35,lon:139}]});
  assert.equal(copied.id,'456');
  assert.deepEqual(calls.map(c=>[c.method,new URL(c.url).pathname]),[

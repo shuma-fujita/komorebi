@@ -1,6 +1,6 @@
 import {levelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-text-v1-20261125';
 // Project building and ground-level POI labels using shared A/B viewport camera information.
-import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,sendOsmTestTags,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-tags-step1e-20261126';
+import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,sendOsmTestTags,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-no-delete-20261126';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {osmElementPageUrl} from './osm-element-page-url.js?v=element-link-20261122';
 import {attachSheetMotion} from './sheet-motion.js?v=tag-focus-scroll-only-20261121';
@@ -12,7 +12,7 @@ import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy
 import {getSavedOsmTagChange,getAllSavedOsmTagChanges} from './osm-pending-changes.js?v=storage-manager-v1-20261122';
 import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=level-warning-style-v2-20261124';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
-import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=step1e-20261126';
+import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=no-delete-20261126';
 import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=storage-manager-v1-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
@@ -306,7 +306,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   });
   const note=document.createElement('p');
   note.className='komo-status';
-  note.textContent='本番OSMは読み取り専用です。テスト側では任意のタグを追加・変更・削除して送信できます。';
+  note.textContent='本番OSMは読み取り専用です。テスト側では任意のタグを追加・変更して送信できます。';
   const metadata=document.createElement('p');
   metadata.textContent='OSM '+item.osmType+'/'+item.osmId+' ／ version: '+(item.osmVersion??'未取得');
   metadata.style.cssText='font-size:11px;color:#587166;margin:4px 0;';
@@ -327,13 +327,6 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    // immediately so a single tap opens the iPhone software keyboard.
    if(key&&editable)k.addEventListener('click',()=>v.focus({preventScroll:true}));
    row.append(k,v);
-   if(editable&&activeSource==='test'){
-    const remove=document.createElement('button');remove.type='button';remove.textContent='タグを削除';
-    remove.setAttribute('aria-label',key?key+' を削除':'追加したタグ行を削除');
-    remove.style.cssText='grid-column:1/-1;justify-self:end;padding:6px 10px;border:1px solid #b47f7a;border-radius:7px;background:transparent;color:#ffb8b0;font:12px system-ui;';
-    remove.addEventListener('click',()=>{row.remove();updateConfirm();emitPreviewDraft();});
-    row.appendChild(remove);
-   }
    rows.appendChild(row);
    syncLevelTagRowWarning(row);
    row.addEventListener('input',()=>syncLevelTagRowWarning(row));
@@ -655,7 +648,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    testTags={...data.tags};testVersion=data.version;
    testReady=true;
    renderTags(testDraft??testTags,true);
-   sourceStatus.textContent='テストOSM '+data.type+'/'+data.id+' を表示中。タグの追加・変更・削除を送信できます。';
+   sourceStatus.textContent='テストOSM '+data.type+'/'+data.id+' を表示中。タグの追加・変更を送信できます。';
   }
   function collect(){
    if(activeSource==='test'&&(!testReady||!testTags||!linkedTestTarget))
@@ -665,7 +658,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     {type:item.osmType,id:item.osmId,version:item.osmVersion??null}:
     {type:linkedTestTarget.type,id:linkedTestTarget.id,version:testVersion};
    return buildOsmTagReview({
-    osm,originalTags:isProduction?baseTags:testTags,allowDeletion:!isProduction,
+    osm,originalTags:isProduction?baseTags:testTags,
     rows:[...rows.children].map(row=>({key:row.children[0].value,value:row.children[1].value}))
    });
   }

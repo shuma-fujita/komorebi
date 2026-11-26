@@ -56,6 +56,10 @@ export async function sendOsmTestTags(item,review,source=''){
   if(!key||/[\u0000-\u001f=]/.test(key)||typeof value!=='string')throw Error('タグ名または値が不正です。');
   updatedTags[key]=value;
  }
+ // Tag deletion must remain disabled even if called outside the editor.
+ for(const key of Object.keys(item.tags)){
+  if(!Object.prototype.hasOwnProperty.call(updatedTags,key))throw Error('タグ削除には対応していません。');
+ }
  const comment=buildOsmChangeComment(item.tags,updatedTags);
  const token=readToken();
  return testApi.withChangeset({comment,source,token,onCloseError:(error,uploaded)=>console.warn(uploaded?'OSM test changeset written but closing failed':'OSM test changeset close failed',error)},async changesetId=>{
