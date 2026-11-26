@@ -65,17 +65,20 @@ try{
  // Exercise the actual TEST writers with offline HTTP and DOM substitutes.
  // No requests can reach either OSM server.
  const calls=[];
- let failUpdate=false,failClose=false;
+ let failUpdate=false,failClose=false,disconnect=false,failCreate=false;
  Object.defineProperty(globalThis,'sessionStorage',{configurable:true,value:{getItem:key=>key==='komorebi:osm-test:token'?'offline-token':null}});
  globalThis.fetch=async(url,options)=>{
   calls.push({url,...options});
   const path=new URL(url).pathname;
   assert.equal(new URL(url).origin,OSM_TEST_ORIGIN,'Write destination must be TEST');
   assert.equal(options.headers.Authorization,'Bearer offline-token');
-  if(path.endsWith('/create'))return {ok:true,text:async()=>'42'};
+  if(path.endsWith('/create'))return {ok:!failCreate,status:503,text:async()=>failCreate?'unavailable':'42'};
   if(path.endsWith('/close'))return {ok:!failClose,status:500,text:async()=>''};
   if(path.endsWith('/upload'))return {ok:true,text:async()=>'<diffResult/>'};
-  if(path.endsWith('/node/123'))return {ok:!failUpdate,status:409,text:async()=>failUpdate?'version conflict':'8'};
+  if(/\/(node|way|relation)\/123$/.test(path)){
+   if(disconnect)throw new TypeError('network disconnected');
+   return {ok:!failUpdate,status:409,text:async()=>failUpdate?'version conflict':'8'};
+  }
   throw Error('Unexpected mocked request: '+path);
  };
  globalThis.DOMParser=class{
@@ -131,7 +134,47 @@ try{
  failUpdate=true;
  await assert.rejects(sendOsmTestTags(item,review),/409/);
  assert.equal(new URL(calls.at(-1).url).pathname,'/api/0.6/changeset/42/close');
- failUpdate=false;failClose=true;calls.length=0;
+ failUpdate=false;calls.length=0;
+ disconnect=true;
+ await assert.rejects(sendOsmTestTags(item,review),/network disconnected/);
+ assert.deepEqual(calls.map(c=>new URL(c.url).pathname),[
+  '/api/0.6/changeset/create','/api/0.6/node/123','/api/0.6/changeset/42/close'
+ ],'Network failure must not trigger automatic retry');
+ disconnect=false;calls.length=0;
+ failCreate=true;
+ await assert.rejects(sendOsmTestTags(item,review),/503/);
+ assert.deepEqual(calls.map(c=>new URL(c.url).pathname),['/api/0.6/changeset/create']);
+ failCreate=false;calls.length=0;
+ // Preserve ordered geometry and membership, including repeated references.
+ for(const [type,children] of [
+  ['way',[['nd',{ref:'10'}],['nd',{ref:'20'}],['nd',{ref:'30'}],['nd',{ref:'10'}]]],
+  ['relation',[['member',{type:'way',ref:'10',role:'outer'}],['member',{type:'node',ref:'20',role:''}],['member',{type:'relation',ref:'30',role:'subarea'}],['member',{type:'way',ref:'10',role:'inner'}]]]
+ ]){
+  const element=new XmlNode(type);
+  element.setAttribute('id','123');element.setAttribute('version','7');element.setAttribute('visible','true');
+  for(const [name,attrs] of children){
+   const child=new XmlNode(name);
+   for(const [key,value] of Object.entries(attrs))child.setAttribute(key,value);
+   element.appendChild(child);
+  }
+  const originalTags={name:'Original',note:'Keep me',level:'0'};
+  for(const [k,v] of Object.entries(originalTags)){
+   const tag=new XmlNode('tag');tag.setAttribute('k',k);tag.setAttribute('v',v);element.appendChild(tag);
+  }
+  const feature={type,id:'123',version:'7',tags:originalTags,element};
+  const change={osm:{type,id:'123',version:'7'},tags:{...originalTags,level:'0;1',description:'Added'}};
+  await sendOsmTestTags(feature,change);
+  const body=calls[1].body;
+  assert.equal(new URL(calls[1].url).pathname,'/api/0.6/'+type+'/123');
+  const actualChildren=[...body.matchAll(/<(nd|member) ([^>]+)><\/\1>/g)].map(m=>[m[1],Object.fromEntries([...m[2].matchAll(/([a-z]+)="([^"]*)"/g)].map(a=>[a[1],a[2]]))]);
+  assert.deepEqual(actualChildren,children,'Ordered geometry and relation roles must survive tag edits');
+  assert.deepEqual(Object.fromEntries([...body.matchAll(/<tag k="([^"]+)" v="([^"]*)"><\/tag>/g)].map(m=>[m[1],m[2]])),change.tags);
+  assert.match(body,/version="7"/);
+  assert.equal(feature.tags.level,'0','Input snapshot is not mutated');
+  assert.equal(calls.length,3);
+  calls.length=0;
+ }
+ failClose=true;
  assert.equal((await sendOsmTestTags(item,review)).newVersion,'8','Close failure must not erase a successful edit');
  failClose=false;calls.length=0;
  await assert.rejects(createOsmApi(OSM_PRODUCTION).write('/node/123','xml','offline-token'),/本番OSMへの書き込みは無効/);
