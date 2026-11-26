@@ -208,13 +208,15 @@ try{
   if(path.endsWith('/close'))return {ok:mode!=='close',status:500,text:async()=>''};
   assert.equal(path,'/api/0.6/node/123');
   if(mode==='disconnect')throw new TypeError('offline');
+  if(mode==='server-error')return {ok:false,status:500,text:async()=>'Internal Server Error'};
+  if(mode==='lost-response'){serverVersion='8';throw new TypeError('response lost');}
   const submittedVersion=/version="(\d+)"/.exec(options.body)?.[1];
   const conflict=mode==='conflict'||submittedVersion!==serverVersion;
   return {ok:!conflict,status:409,text:async()=>conflict?'Version mismatch':'8'};
  };
  const prodReview={osm:review.osm,originalTags:{shop:'yes'},tags:{shop:'yes',level:'0;1'},changes:{level:'0;1'}};
  const assertCode=(code)=>error=>error.code===code;
- await assert.rejects(sendOsmProductionTags({...prodReview,changes:{}}),assertCode('review_required'));
+ await assert.rejects(sendOsmProductionTags({...prodReview,changes:null}),assertCode('review_required'));
  await assert.rejects(sendOsmProductionTags({...prodReview,tags:{shop:'yes'},changes:{}}),assertCode('no_changes'));
  assert.equal(calls.length,0);
  serverVersion='8';serverTags={shop:'different',name:'New server tag'};
@@ -243,8 +245,22 @@ try{
  calls.length=0;mode='disconnect';
  await assert.rejects(sendOsmProductionTags(prodReview),e=>e.code==='uncertain'&&e.changesetId==='42');
  assert.equal(calls.length,4);
+ assert.equal(calls.filter(c=>c.method==='PUT'&&new URL(c.url).pathname==='/api/0.6/node/123').length,1,'No automatic retry after disconnect');
+ calls.length=0;mode='server-error';
+ await assert.rejects(sendOsmProductionTags(prodReview),e=>e.code==='uncertain'&&e.status===500&&/Internal Server Error/.test(e.message));
+ assert.equal(calls.length,4,'Manual retry reaches OSM; no independent lock');
+ calls.length=0;mode='lost-response';
  await assert.rejects(sendOsmProductionTags(prodReview),assertCode('uncertain'));
- assert.equal(calls.length,4,'Uncertain update must not be repeated in this session');
+ assert.equal(calls.length,4);
+ calls.length=0;mode='';
+ await assert.rejects(sendOsmProductionTags(prodReview),e=>e.code==='conflict'&&e.status===409);
+ assert.match(calls[2].body,/<node[^>]*version="7"/);
+ assert.equal(calls.length,4,'OSM rejects the stale version after a lost successful response');
+ calls.length=0;serverVersion='7';
+ const retryResult=await sendOsmProductionTags(prodReview);
+ assert.equal(retryResult.version,'8');
+ assert.deepEqual({...retryResult.changes},prodReview.changes);
+ assert.equal(calls.length,4,'Manual retry succeeds if original version still current');
 
 }finally{
  for(const [key,descriptor] of Object.entries(savedGlobals)){

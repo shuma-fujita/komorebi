@@ -5,7 +5,6 @@ import {readOsmProductionToken,forgetOsmProductionToken} from './osm-production-
 import {parseOsmElement} from './osm-xml.js?v=server-conflict-20261126';
 import {prepareOsmTagWrite,writeReviewedOsmTags} from './osm-tag-writer.js?v=server-result-20261126';
 const api=createOsmApi(OSM_PRODUCTION,{enableProductionWrites:true});
-const uncertain=new Map();
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 const same=(a,b)=>Object.keys(a).length===Object.keys(b).length&&Object.keys(a).every(k=>own(b,k)&&a[k]===b[k]);
 function failure(code,message,details={}){
@@ -25,15 +24,11 @@ export async function sendOsmProductionTags(review,source=''){
  const osm={type:review?.osm?.type,id:String(review?.osm?.id??''),version:String(review?.osm?.version??'')};
  if(!['node','way','relation'].includes(osm.type)||!/^[1-9]\d*$/.test(osm.id)||!/^[1-9]\d*$/.test(osm.version))throw failure('review_required','本番OSMの対象・versionを確認し直してください。');
  const key=osm.type+'/'+osm.id;
- if(uncertain.has(key))throw failure('uncertain','前回の送信結果が未確認です。OSMの編集履歴を確認してください。',uncertain.get(key));
  const originalTags=copyTags(review.originalTags),tags=copyTags(review.tags);
  if(same(originalTags,tags))throw failure('no_changes','変更されたOSMタグがありません。');
- const changes=Object.create(null);
- for(const k of new Set([...Object.keys(originalTags),...Object.keys(tags)])){
-  if(!own(tags,k))changes[k]=null;
-  else if(!own(originalTags,k)||originalTags[k]!==tags[k])changes[k]=tags[k];
- }
- if(!review.changes||!same(changes,review.changes))throw failure('review_required','確認済みの差分とタグ一覧が一致しません。');
+ // Use the already confirmed changes without recomputing or comparing them.
+ if(!review.changes||typeof review.changes!=='object'||Array.isArray(review.changes))throw failure('review_required','確認済みの差分がありません。');
+ const changes=Object.assign(Object.create(null),review.changes);
  let token;
  try{token=readOsmProductionToken();}catch(_){throw failure('auth_required','本番OSMでOAuth認証してください。');}
  let updateChangeset=null,closeWarning=null;
@@ -55,8 +50,7 @@ export async function sendOsmProductionTags(review,source=''){
   if(status===409||status===412||status===404||status===410)throw failure('conflict','本番OSMの対象またはversionが変更されました。最新データを確認してください。',{status});
   if(updateChangeset&&(!status||status>=500)){
    const details={changesetId:updateChangeset,elementUrl:OSM_PRODUCTION.origin+'/'+key,changesetUrl:OSM_PRODUCTION.origin+'/changeset/'+updateChangeset,closeWarning};
-   uncertain.set(key,details);
-   throw failure('uncertain','送信結果が不明です。再送信せずOSMの編集履歴を確認してください。',details);
+   throw failure('uncertain','送信結果が不明です: '+String(error.message||error)+'。OSMの編集履歴を確認できます。同じ編集時versionで手動再送信できます。',{...details,status});
   }
   throw error;
  }
