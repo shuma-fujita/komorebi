@@ -13,8 +13,8 @@
 - Step 1-B：OAuth／PKCEをosm-oauth.jsに分離しTESTのみ接続。認証保存キー・固定callback・遅延Client ID取得を維持。ユーザー実機PASS（ゲーム起動・タグ編集画面・TEST OAuth認証）。Actions未確認。
 - Step 1-C：osm-api.js／osm-xml.jsを共通化し、TEST level登録・コピーに接続。本番は読み取りのみ、書き込みは共通APIで拒否。changesetテストを模擬HTTPへ修正後、[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45729395570)。TEST送信ボタン無反応の実機報告あり。送信条件・送信中・成功／失敗表示と再送信防止を追加。ユーザー実機PASS。無反応の原因は旧level整数制限（0;1）。
 - Step 1-E：TESTのタグ種類・値・件数・施設限定を撤廃。任意タグ追加・変更、対象IDとversionの照合を実装。ユーザー指示によりタグ削除ボタンは撤去済み。TEST API・共通変更確認の内部処理は削除対応（null差分）、編集画面は追加・変更のみ。削除UIは操作方法と安全対策の明示合意まで実装しない。本番読み取り専用を維持。[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45746050417)・ユーザー実機PASS（11/26）。
-- Step 2：既存の模擬HTTP試験にway輪郭・relationメンバー順序／役割・未変更タグ保持・通信切断時の自動再送禁止・changeset作成失敗を追加。Actions結果未確認。二重送信防止は既存UIのbusy／sentガードをソース確認済み、連打の動作検証は未実施。削除UI検証は保留。
-- 次：Step 2の検証結果確認後、Step 3 PROD認証。本番安全対策、UI・保存連携、実機検証は各工程で相談。
+- Step 2：既存の模擬HTTP試験にway輪郭・relationメンバー順序／役割・未変更タグ保持・通信切断時の自動再送禁止・changeset作成失敗を追加。[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45751390279)・追加模擬HTTP試験PASS・Pages公開成功。ユーザー合意により実機検証は省略しStep 2完了。二重送信防止は既存UIのbusy／sentガードをソース確認済み、連打の動作検証は未実施。削除UI検証は保留。
+- 次：Step 3 PROD OAuth認証（本番書き込み禁止を維持）。本番安全対策、UI・保存連携、実機検証は各工程で相談。
 
 ### ① 地図の自動更新・配信確認
 - Geofabrik関東PBF → 松戸2km JSON → コミット・Pages公開（A→B→C）。Aのcron指定は毎日10:17 JST。11/22は16:59 JSTに起動し、取得URLのHTTP 404で失敗。公式URL `https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf` に修正済み。起動遅延の根因は未特定。
