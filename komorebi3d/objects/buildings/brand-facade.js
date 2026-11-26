@@ -2,6 +2,7 @@
 // geometry is generated here; the fixed Komorebi Engine is left untouched.
 // Texture selection is handled by app-owned Renderer A/B facade layers.
 import {paintConvenienceGlazing,entranceLogoSize,paintConvenienceFasciaDividers} from './convenience/common.js?v=occupancy-facade-modes-v1-20261123';
+import {CONVENIENCE_DOOR_WIDTH_M} from './convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=frontage-nearby-v1-20261123';
 // Step 2: opaque color and PNG logo occupy disjoint regions of ONE plane.
 // Keep the existing logo plane (and existing glazing / fascia offsets).
@@ -53,7 +54,11 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  const isGroundOnly=facadeMode==='ground-only';
  // A branded ground floor reserves its upper 20% as the fascia.
  // The glazing ends below it; logos occupy only fascia + contiguous upper walls.
- const glassTop=withGroundGlass?bottom+(groundGlassTop-bottom)*.8:bottom;
+ const defaultGlassTop=withGroundGlass?bottom+(groundGlassTop-bottom)*.8:bottom;
+ // Expand the ground-only sign band up to the full entrance width, retaining
+ // at least 2m of glazing where the original floor allows it.
+ const hasEntrance=isGroundOnly&&walls.some(w=>w.i===entranceEdgeIndex&&w.length>=CONVENIENCE_DOOR_WIDTH_M-1e-7&&!blockedWalls?.has(w.i));
+ const glassTop=hasEntrance?Math.min(defaultGlassTop,Math.max(bottom+Math.min(2,defaultGlassTop-bottom),groundGlassTop-CONVENIENCE_DOOR_WIDTH_M/logoAspectRatio)):defaultGlassTop;
  const logoAreaBottom=withGroundGlass?glassTop:bottom;
  const facadeLogoWalls=withGroundGlass&&Number.isInteger(entranceEdgeIndex)
   ?walls.filter(w=>w.i===entranceEdgeIndex)
@@ -123,7 +128,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   // Convenience-scale signs apply to ground-only occupancy; continuous
   // upper-storey branding restores the full-height logo above the door.
   const entranceSize=isGroundOnly
-   ?entranceLogoSize(wall.length,groundGlassTop-logoAreaBottom,logoAspectRatio,{fit:true})
+   ?(hasEntrance&&wall.i===entranceEdgeIndex?{height:Math.min(groundGlassTop-logoAreaBottom,CONVENIENCE_DOOR_WIDTH_M/logoAspectRatio),width:Math.min(CONVENIENCE_DOOR_WIDTH_M,(groundGlassTop-logoAreaBottom)*logoAspectRatio)}:entranceLogoSize(wall.length,groundGlassTop-logoAreaBottom,logoAspectRatio,{fit:true}))
    :null;
   const imageHeight=entranceSize
    ?entranceSize.height

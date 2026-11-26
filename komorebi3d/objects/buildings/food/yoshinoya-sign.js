@@ -1,5 +1,5 @@
 // Shared image facade; orange sampled from the user's artwork.
-import {paintImageFacade} from '../brand-facade.js?v=wall-inlay-step2-v1-20261124';
+import {paintImageFacade} from '../brand-facade.js?v=door-logo-4m-v1-20261127';
 export const YOSHINOYA_BG=0xe08831;
 export const YOSHINOYA_ASPECT=646/320;
 export function paintYoshinoyaFacade(quad,mesh,polygon,options={}){
