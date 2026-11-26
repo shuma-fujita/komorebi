@@ -412,20 +412,49 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   consentLabel.append(consent,document.createTextNode(' テストサーバーの対象要素を実際に更新することを確認した'));
   const send=makeButton('テストサーバーへ送信',true);
   send.disabled=true;
+  send.className='komo-action';
+  const sendHint=document.createElement('p');
+  sendHint.className='komo-status';
+  sendHint.setAttribute('role','status');
+  sendHint.textContent='送信条件を確認してください。';
   const testStatus=document.createElement('p');
+  testStatus.setAttribute('role','status');
+  testStatus.setAttribute('aria-live','polite');
   decorateStatus(testStatus);
-  let loaded=null,levelValue=null,busy=false;
+  let loaded=null,levelValue=null,busy=false,sending=false,sent=false;
+  const getSendBlockers=()=>{
+   const reasons=[];
+   if(busy)reasons.push(sending?'送信中です。':'テスト対象の読み込み中です。');
+   if(!hasOsmTestToken())reasons.push('テスト環境にログインしてください。');
+   if(levelValue===null)reasons.push('level=0〜8の追加1件だけにしてください。');
+   if(!loaded)reasons.push('「テスト対象を読み込む」を押してください。');
+   if(!consent.checked)reasons.push('送信前の確認にチェックしてください。');
+   return reasons;
+  };
   const syncTestControls=()=>{
    oauth.textContent=hasOsmTestToken()?'再認証する':'テスト環境にログイン';
-   send.disabled=busy||!hasOsmTestToken()||!loaded||!consent.checked||levelValue===null;
-   loadTarget.disabled=busy;
+   const reasons=getSendBlockers();
+   send.disabled=sent||reasons.length>0;
+   send.style.opacity=send.disabled?'.5':'1';
+   send.style.filter=send.disabled?'grayscale(1)':'';
+   send.textContent=sending?'送信中…':sent?'送信済み':'テストサーバーへ送信';
+   sendHint.textContent=sending?'テストサーバーへ送信中です。再度押さないでください。':sent?'送信完了。結果を下に表示しています。':reasons.length?'送信できない理由：\n'+reasons.join('\n'):'送信できます。対象と変更内容を確認してください。';
+   sendHint.style.whiteSpace='pre-wrap';
+   loadTarget.disabled=busy||sent;
+   targetType.disabled=busy||sent;
+   targetId.disabled=busy||sent;
+   consent.disabled=busy||sent;
+   oauth.disabled=busy;
+   logout.disabled=busy;
   };
   oauth.addEventListener('click',async()=>{
    try{await startOsmTestLogin();}catch(e){testStatus.textContent='認証開始エラー: '+e.message;}
   });
   logout.addEventListener('click',()=>{forgetOsmTestToken();testStatus.textContent='テスト用認証を解除しました。';syncTestControls();});
   async function loadTest(){
-   loaded=null;testDetails.hidden=true;syncTestControls();busy=true;
+   if(busy||sent)return;
+   busy=true;loaded=null;consent.checked=false;testDetails.hidden=true;syncTestControls();
+   testStatus.textContent='テスト対象を読み込み中…';
    try{
     await osmTestOAuthReturn;
     const data=await getOsmTestElement(targetType.value,targetId.value.trim());
@@ -443,10 +472,12 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   targetId.addEventListener('input',()=>{loaded=null;testDetails.hidden=true;syncTestControls();});
   consent.addEventListener('change',syncTestControls);
   send.addEventListener('click',async()=>{
-   if(!loaded||levelValue===null||!consent.checked||busy)return;
-   busy=true;syncTestControls();testStatus.textContent='テストサーバーへ送信中…';
+   const reasons=getSendBlockers();
+   if(sent||reasons.length){syncTestControls();return;}
+   busy=true;sending=true;syncTestControls();testStatus.textContent='テストサーバーへ送信中…';
    try{
     const result=await sendOsmTestLevel(loaded,levelValue,selectedChangesetSource());
+    sent=true;loaded=null;consent.checked=false;
     // After an actual test write, discard the old snapshot and refresh silently.
     testPrefetchPromise=null;testPrefetchResult=null;
     testTags=null;testDraft=null;testReady=false;
@@ -455,10 +486,13 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     const resultLink=document.createElement('a');resultLink.href=result.elementUrl;resultLink.target='_blank';resultLink.rel='noopener noreferrer';resultLink.textContent='テスト環境で更新された要素を見る';
     testStatus.append(document.createTextNode('\n'),resultLink);
     loaded=null;consent.checked=false;
-   }catch(e){testStatus.textContent='テスト送信失敗: '+e.message+'。本番OSMへの送信は行っていません。';}
-   finally{busy=false;syncTestControls();}
+   }catch(e){
+    if(sent)testStatus.textContent='テスト送信成功後の画面更新エラー: '+e.message+'。再送信せずテストOSMで確認してください。';
+    else{loaded=null;consent.checked=false;testDetails.hidden=true;testStatus.textContent='テスト送信失敗: '+e.message+'。本番OSMへの送信は行っていません。再送信前にテスト対象を読み直してください。';}
+   }
+   finally{busy=false;sending=false;syncTestControls();}
   });
-  testPane.append(testHeading,testHelp,oauth,logout,typeLabel,targetId.parentElement,loadTarget,testDetails,changesetSourceLabel,changesetSourceOtherLabel,consentLabel,send,testStatus);
+  testPane.append(testHeading,testHelp,oauth,logout,typeLabel,targetId.parentElement,loadTarget,testDetails,changesetSourceLabel,changesetSourceOtherLabel,consentLabel,send,sendHint,testStatus);
   review.appendChild(testPane);
 
   const confirm=makeButton('変更内容を確認',true),back=makeButton('編集に戻る');
@@ -564,6 +598,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   };
   async function setSource(source){
    if(source!=='production'&&source!=='test')return;
+   if(busy)return;
    if(!review.hidden)back.click();
    if(activeSource==='test'&&testReady)testDraft=captureDraft();
    if(activeSource==='production'&&rows.children.length)productionDraft=captureDraft();
@@ -641,7 +676,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     reviewStorageCheck.clearStatus();
     testPane.hidden=!isTestReview||!eligible;
     if(isTestReview){
-     loaded=null;consent.checked=false;testDetails.hidden=true;
+     if(!busy){sent=false;loaded=null;consent.checked=false;testDetails.hidden=true;}
      levelValue=null;
      if(eligible&&Object.keys(pending.changes).length===1&&Object.prototype.hasOwnProperty.call(pending.changes,'level')&&/^(?:[0-8])$/.test(String(pending.tags.level))){
       levelValue=Number(pending.tags.level);
@@ -656,6 +691,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    }catch(e){error.textContent=e.message;}
   });
   back.addEventListener('click',()=>{
+   if(busy)return;
    pending=null;rows.hidden=false;tagsHeader.hidden=false;review.hidden=true;
    sourceRow.hidden=false;sourceStatus.hidden=false;refreshOsmPageLink();note.hidden=false;
    productionReviewNotice.hidden=true;
