@@ -1,6 +1,6 @@
 import {levelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-text-v1-20261125';
 // Project building and ground-level POI labels using shared A/B viewport camera information.
-import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,validateOsmTestLevelTarget,sendOsmTestLevel,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-api-step1c-20261126';
+import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,sendOsmTestTags,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=osm-tags-step1e-20261126';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {osmElementPageUrl} from './osm-element-page-url.js?v=element-link-20261122';
 import {attachSheetMotion} from './sheet-motion.js?v=tag-focus-scroll-only-20261121';
@@ -12,7 +12,7 @@ import {applyBuildingTagEditorTheme} from './building-tag-editor-theme.js?v=copy
 import {getSavedOsmTagChange,getAllSavedOsmTagChanges} from './osm-pending-changes.js?v=storage-manager-v1-20261122';
 import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} from './osm-pending-tag-visual.js?v=level-warning-style-v2-20261124';
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
-import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=production-preview-20261122';
+import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=step1e-20261126';
 import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=storage-manager-v1-20261122';
 const osmTestOAuthReturn=finishOsmTestLogin();
 import {pickFocusedBuilding,pickBuildingAtScreen} from './map-focus.js?v=tap-unlimited-20261119';
@@ -306,7 +306,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   });
   const note=document.createElement('p');
   note.className='komo-status';
-  note.textContent='本番OSMは読み取り専用です。テスト側ではタグを追加・確認できます。実際のテストOSMへの送信は、現在level追加のみ対応しています。';
+  note.textContent='本番OSMは読み取り専用です。テスト側では任意のタグを追加・変更・削除して送信できます。';
   const metadata=document.createElement('p');
   metadata.textContent='OSM '+item.osmType+'/'+item.osmId+' ／ version: '+(item.osmVersion??'未取得');
   metadata.style.cssText='font-size:11px;color:#587166;margin:4px 0;';
@@ -326,7 +326,15 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    // Existing OSM keys cannot be renamed. Tapping the key focuses its value
    // immediately so a single tap opens the iPhone software keyboard.
    if(key&&editable)k.addEventListener('click',()=>v.focus({preventScroll:true}));
-   row.append(k,v);rows.appendChild(row);
+   row.append(k,v);
+   if(editable&&activeSource==='test'){
+    const remove=document.createElement('button');remove.type='button';remove.textContent='タグを削除';
+    remove.setAttribute('aria-label',key?key+' を削除':'追加したタグ行を削除');
+    remove.style.cssText='grid-column:1/-1;justify-self:end;padding:6px 10px;border:1px solid #b47f7a;border-radius:7px;background:transparent;color:#ffb8b0;font:12px system-ui;';
+    remove.addEventListener('click',()=>{row.remove();updateConfirm();emitPreviewDraft();});
+    row.appendChild(remove);
+   }
+   rows.appendChild(row);
    syncLevelTagRowWarning(row);
    row.addEventListener('input',()=>syncLevelTagRowWarning(row));
   }
@@ -350,15 +358,13 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
 
   const controls=document.createElement('div');controls.style.cssText='display:flex;gap:8px;margin-top:12px;';
   const makeButton=(label,primary=false)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='flex:1;padding:11px 5px;border:1px solid #91aca0;border-radius:8px;background:'+(primary?'#236c56':'#fff')+';color:'+(primary?'white':'#163c30')+';font:700 14px system-ui;';return b;};
-  // This block is available only to a real-world facility with no level tag.
-  // Development server objects must be explicitly loaded by their own ID.
-  const eligible=item.kind==='poi'&&['shop','amenity','office','tourism','healthcare','leisure'].some(key=>baseTags[key])&&!Object.prototype.hasOwnProperty.call(baseTags,'level');
+  // Only the linked TEST element can be sent, regardless of its tags or kind.
   const testPane=document.createElement('div');
   testPane.hidden=true;
   testPane.style.cssText='margin-top:12px;border-top:1px solid #b4c9bb;padding-top:12px;';
   const testHeading=document.createElement('strong');testHeading.textContent='OSMテストサーバーへ送信（本番には送信しません）';
   const testHelp=document.createElement('p');
-  testHelp.textContent='本番の店舗IDは利用できません。テストサーバーにある階数未登録の店舗・施設IDを入力してください。送信対象はlevelタグのみです。';
+  testHelp.textContent='編集中のテストOSM要素に、確認したタグ変更を送信します。本番OSMには送信しません。';
   testHelp.style.cssText='font-size:12px;color:#4e655b;';
   const testField=(captionText,placeholder,value='')=>{
    const wrap=document.createElement('label');wrap.style.cssText='display:block;font-size:12px;font-weight:700;margin:8px 0;';
@@ -372,8 +378,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   for(const type of ['node','way','relation']){const option=document.createElement('option');option.value=type;option.textContent=type;targetType.appendChild(option);}
   const typeLabel=document.createElement('label');typeLabel.style.cssText='display:block;font-size:12px;font-weight:700;margin:8px 0;';typeLabel.textContent='テスト対象の要素種別';
   typeLabel.appendChild(targetType);
-  const targetId=testField('テストサーバーの店舗・施設ID','4365808698 または node/4365808698',savedTestLink?.id||'');
+  const targetId=testField('テストサーバーの要素ID','4365808698 または node/4365808698',savedTestLink?.id||'');
   if(savedTestLink)targetType.value=savedTestLink.type;
+  targetType.disabled=true;targetId.readOnly=true;
   const loadTarget=makeButton('テスト対象を読み込む');
   const testDetails=document.createElement('pre');
   testDetails.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;background:#e8f0eb;border-radius:7px;padding:8px;';
@@ -421,12 +428,12 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   testStatus.setAttribute('role','status');
   testStatus.setAttribute('aria-live','polite');
   decorateStatus(testStatus);
-  let loaded=null,levelValue=null,busy=false,sending=false,sent=false;
+  let loaded=null,busy=false,sending=false,sent=false;
   const getSendBlockers=()=>{
    const reasons=[];
    if(busy)reasons.push(sending?'送信中です。':'テスト対象の読み込み中です。');
    if(!hasOsmTestToken())reasons.push('テスト環境にログインしてください。');
-   if(levelValue===null)reasons.push('level=0〜8の追加1件だけにしてください。');
+   if(!pending||!Object.keys(pending.changes).length)reasons.push('変更されたタグがありません。');
    if(!loaded)reasons.push('「テスト対象を読み込む」を押してください。');
    if(!consent.checked)reasons.push('送信前の確認にチェックしてください。');
    return reasons;
@@ -441,8 +448,8 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    sendHint.textContent=sending?'テストサーバーへ送信中です。再度押さないでください。':sent?'送信完了。結果を下に表示しています。':reasons.length?'送信できない理由：\n'+reasons.join('\n'):'送信できます。対象と変更内容を確認してください。';
    sendHint.style.whiteSpace='pre-wrap';
    loadTarget.disabled=busy||sent;
-   targetType.disabled=busy||sent;
-   targetId.disabled=busy||sent;
+   targetType.disabled=true;
+   targetId.readOnly=true;
    consent.disabled=busy||sent;
    oauth.disabled=busy;
    logout.disabled=busy;
@@ -457,12 +464,16 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    testStatus.textContent='テスト対象を読み込み中…';
    try{
     await osmTestOAuthReturn;
-    const data=await getOsmTestElement(targetType.value,targetId.value.trim());
+    if(!pending||!linkedTestTarget)throw Error('先にテストOSMの編集内容を確認してください。');
+    const data=await getOsmTestElement(linkedTestTarget.type,linkedTestTarget.id);
+    if(data.type!==pending.osm.type||data.id!==pending.osm.id||String(data.version)!==String(pending.osm.version)){
+     testPrefetchPromise=null;testPrefetchResult=null;testDraft=null;testReady=false;
+     throw Error('テストOSMのversionが変更されました。編集に戻って最新タグを確認してください。');
+    }
     targetType.value=data.type;targetId.value=data.id;
-    validateOsmTestLevelTarget(data);
     loaded=data;
     testDetails.hidden=false;
-    testDetails.textContent=JSON.stringify({server:OSM_TEST_ORIGIN,type:data.type,id:data.id,version:data.version,name:data.tags.name||data.tags['name:ja']||'名称なし',shop:data.tags.shop||null,amenity:data.tags.amenity||null,oldLevel:'未登録',newLevel:String(levelValue)},null,2);
+    testDetails.textContent=JSON.stringify({server:OSM_TEST_ORIGIN,type:data.type,id:data.id,version:data.version,name:data.tags.name||data.tags['name:ja']||'名称なし',changes:pending.changes,tags:pending.tags},null,2);
     testStatus.textContent='テスト対象を確認してください。名前が想定と異なる場合は送信しないでください。';
    }catch(e){testStatus.textContent='読み込み失敗: '+e.message;}
    finally{busy=false;syncTestControls();}
@@ -476,7 +487,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    if(sent||reasons.length){syncTestControls();return;}
    busy=true;sending=true;syncTestControls();testStatus.textContent='テストサーバーへ送信中…';
    try{
-    const result=await sendOsmTestLevel(loaded,levelValue,selectedChangesetSource());
+    const result=await sendOsmTestTags(loaded,pending,selectedChangesetSource());
     sent=true;loaded=null;consent.checked=false;
     // After an actual test write, discard the old snapshot and refresh silently.
     testPrefetchPromise=null;testPrefetchResult=null;
@@ -498,7 +509,7 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
   const confirm=makeButton('変更内容を確認',true),back=makeButton('編集に戻る');
   confirm.className='komo-action';back.className='komo-action komo-action-secondary';
   confirm.hidden=true;
-  let activeSource='production',testTags=null,testDraft=null,productionDraft=null,testReady=false,sourceRequest=0;
+  let activeSource='production',testTags=null,testVersion=null,testDraft=null,productionDraft=null,testReady=false,sourceRequest=0;
   // Only an in-memory cache scoped to this editor. Fetched tags never enter localStorage.
   let testPrefetchPromise=null,testPrefetchResult=null;
   function preloadTestOsm(){
@@ -641,10 +652,10 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     return;
    }
    const data=result.data;
-   testTags={...data.tags};
+   testTags={...data.tags};testVersion=data.version;
    testReady=true;
    renderTags(testDraft??testTags,true);
-   sourceStatus.textContent='テストOSM '+data.type+'/'+data.id+' を表示中。変更の送信は現在levelタグの追加だけに対応しています。';
+   sourceStatus.textContent='テストOSM '+data.type+'/'+data.id+' を表示中。タグの追加・変更・削除を送信できます。';
   }
   function collect(){
    if(activeSource==='test'&&(!testReady||!testTags||!linkedTestTarget))
@@ -652,9 +663,9 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
    const isProduction=activeSource==='production';
    const osm=isProduction?
     {type:item.osmType,id:item.osmId,version:item.osmVersion??null}:
-    {type:linkedTestTarget.type,id:linkedTestTarget.id,version:null};
+    {type:linkedTestTarget.type,id:linkedTestTarget.id,version:testVersion};
    return buildOsmTagReview({
-    osm,originalTags:isProduction?baseTags:testTags,
+    osm,originalTags:isProduction?baseTags:testTags,allowDeletion:!isProduction,
     rows:[...rows.children].map(row=>({key:row.children[0].value,value:row.children[1].value}))
    });
   }
@@ -674,16 +685,11 @@ export function createMapLabels(host,{screen=null,mapSource='old',onEditorStateC
     productionReviewNotice.hidden=isTestReview;
     reviewStorageCheck.section.hidden=isTestReview;
     reviewStorageCheck.clearStatus();
-    testPane.hidden=!isTestReview||!eligible;
+    testPane.hidden=!isTestReview;
     if(isTestReview){
      if(!busy){sent=false;loaded=null;consent.checked=false;testDetails.hidden=true;}
-     levelValue=null;
-     if(eligible&&Object.keys(pending.changes).length===1&&Object.prototype.hasOwnProperty.call(pending.changes,'level')&&/^(?:[0-8])$/.test(String(pending.tags.level))){
-      levelValue=Number(pending.tags.level);
-      testStatus.textContent='準備OK: level='+levelValue+'。'+(savedTestLink?'コピー済みのテストIDを入力済みです。':'初回は上部の「テスト環境へコピー」から複製してください。')+' 認証後、テスト対象を読み込んでください。';
-     }else if(eligible){
-      testStatus.textContent='テスト送信には、追加する変更を level=0〜8 の1項目だけにしてください（1階は0）。';
-     }
+     targetType.value=linkedTestTarget.type;targetId.value=linkedTestTarget.id;
+     testStatus.textContent=Object.keys(pending.changes).length?'準備OK：'+Object.keys(pending.changes).length+'件のタグ変更。認証後、テスト対象を読み込んでください。':'変更されたタグがありません。';
      osmTestOAuthReturn.then(()=>{const authError=consumeOsmTestAuthError();if(authError)testStatus.textContent='認証失敗: '+authError;syncTestControls();});
      syncTestControls();
     }

@@ -7,7 +7,7 @@ export function hasOsmTagChanges(originalTags={},draftTags={}){
   Object.keys(originalTags).some(key=>!own(draftTags,key));
 }
 
-export function buildOsmTagReview({osm,originalTags={},rows}={}){
+export function buildOsmTagReview({osm,originalTags={},rows,allowDeletion=false}={}){
  if(!osm||!['node','way','relation'].includes(osm.type)||!String(osm.id??'').trim())
   throw Error('OSM要素の情報が不正です。');
  if(!Array.isArray(rows))throw Error('タグ一覧が不正です。');
@@ -23,7 +23,7 @@ export function buildOsmTagReview({osm,originalTags={},rows}={}){
  for(const key of new Set([...Object.keys(originalTags),...Object.keys(tags)])){
   if(originalTags[key]!==tags[key])changes[key]=own(tags,key)?tags[key]:null;
  }
- // Preserve the existing editor restriction on deletion in both modes.
- if(Object.values(changes).some(value=>value===null))throw Error('タグ削除には対応していません。');
+ // Production local drafts retain their existing deletion restriction.
+ if(!allowDeletion&&Object.values(changes).some(value=>value===null))throw Error('タグ削除には対応していません。');
  return {osm:{type:osm.type,id:String(osm.id),version:osm.version??null},tags,changes};
 }

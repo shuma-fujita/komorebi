@@ -7,7 +7,7 @@ export function parseOsmElement(xml,type,id,label='OSM'){
  if(root?.tagName!=='osm'||!element||element.getAttribute('id')!==String(id))throw Error('指定した'+label+'要素が見つかりません。');
  const version=element.getAttribute('version');
  if(!version)throw Error(label+'要素のversionが取得できません。');
- const tags={};
+ const tags=Object.create(null);
  for(const tag of element.children)if(tag.tagName==='tag')tags[tag.getAttribute('k')]=tag.getAttribute('v');
  return {type,id:String(id),version,tags,element};
 }
@@ -36,7 +36,7 @@ export function makeChangesetXml(comment,source=''){
  }
  return new XMLSerializer().serializeToString(doc);
 }
-export function makeElementXmlWithAddedTag(item,changesetId,key,value){
+export function makeElementXmlWithTags(item,changesetId,tags){
  const doc=document.implementation.createDocument(null,'osm',null);doc.documentElement.setAttribute('version','0.6');
  const element=doc.createElement(item.type);
  for(const key of ['id','version','lat','lon','visible']){
@@ -44,11 +44,13 @@ export function makeElementXmlWithAddedTag(item,changesetId,key,value){
  }
  element.setAttribute('changeset',changesetId);
  for(const child of item.element.children){
-  if(!['tag','nd','member'].includes(child.tagName))continue;
+  if(!['nd','member'].includes(child.tagName))continue;
   const clone=doc.importNode(child,true);
   element.appendChild(clone);
  }
- const tag=doc.createElement('tag');tag.setAttribute('k',key);tag.setAttribute('v',String(value));element.appendChild(tag);
+ for(const [key,value] of Object.entries(tags)){
+  const tag=doc.createElement('tag');tag.setAttribute('k',key);tag.setAttribute('v',String(value));element.appendChild(tag);
+ }
  doc.documentElement.appendChild(element);
  return new XMLSerializer().serializeToString(doc);
 }

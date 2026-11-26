@@ -1,9 +1,9 @@
 // Verify changeset attribution without API calls or browser access.
 import assert from 'node:assert/strict';
 import {OSM_CHANGESET_CREATED_BY,buildOsmChangesetTags} from '../komorebi3d/maps/osm-changeset-tags.js';
-import {makeChangesetXml,OSM_TEST_ORIGIN,sendOsmTestLevel,createOsmTestCopy} from '../komorebi3d/maps/osm-test-api.js';
+import {makeChangesetXml,OSM_TEST_ORIGIN,sendOsmTestTags,createOsmTestCopy} from '../komorebi3d/maps/osm-test-api.js';
 
-import {createOsmApi} from '../komorebi3d/maps/osm-api.js?v=step1c-20261126';
+import {createOsmApi} from '../komorebi3d/maps/osm-api.js?v=step1e-20261126';
 import {OSM_PRODUCTION} from '../komorebi3d/maps/osm-environments.js?v=step1a-20261126';
 
 assert.equal(OSM_CHANGESET_CREATED_BY,'Komorebi Builder');
@@ -87,19 +87,32 @@ try{
  const item={type:'node',id:'123',version:'7',tags:{shop:'yes'},element:new XmlNode('node')};
  for(const [key,value] of Object.entries({id:'123',version:'7',lat:'35',lon:'139'}))item.element.setAttribute(key,value);
  const shop=new XmlNode('tag');shop.setAttribute('k','shop');shop.setAttribute('v','yes');item.element.appendChild(shop);
- const saved=await sendOsmTestLevel(item,2,'survey');
+ const review={osm:{type:'node',id:'123',version:'7'},tags:{shop:'yes',level:'0;1'}};
+ const saved=await sendOsmTestTags(item,review,'survey');
  assert.equal(saved.newVersion,'8');
  assert.deepEqual(calls.map(c=>[c.method,new URL(c.url).pathname]),[
   ['PUT','/api/0.6/changeset/create'],['PUT','/api/0.6/node/123'],['PUT','/api/0.6/changeset/42/close']
  ]);
  assert.match(calls[0].body,/k="created_by" v="Komorebi Builder"/);
  assert.match(calls[0].body,/k="source" v="survey"/);
- assert.match(calls[0].body,/k="comment" v="add - level : 2"/);
+ assert.match(calls[0].body,/k="comment" v="add - level : 0;1"/);
  assert.match(calls[1].body,/version="7"/);
  assert.match(calls[1].body,/k="shop" v="yes"/);
- assert.match(calls[1].body,/k="level" v="2"/);
+ assert.match(calls[1].body,/k="level" v="0;1"/);
  assert.ok(calls.every(c=>c.redirect==='error'),'Writes must not follow redirects');
  calls.length=0;
+ // Add, change and delete simultaneously; preserve non-tag element data.
+ const nextReview={osm:review.osm,tags:{level:'-1;9',name:'New name'}};
+ await sendOsmTestTags(item,nextReview);
+ assert.match(calls[1].body,/k="level" v="-1;9"/);
+ assert.match(calls[1].body,/k="name" v="New name"/);
+ assert.doesNotMatch(calls[1].body,/k="shop"/);
+ assert.match(calls[1].body,/lat="35"/);
+ calls.length=0;
+ await assert.rejects(sendOsmTestTags(item,{...review,osm:{...review.osm,version:'6'}}),/version/);
+ await assert.rejects(sendOsmTestTags(item,{...review,osm:{...review.osm,id:'456'}}),/version/);
+ await assert.rejects(sendOsmTestTags(item,{...review,tags:item.tags}),/変更された/);
+ assert.equal(calls.length,0,'No changeset for wrong element, stale version or no-op');
  const copied=await createOsmTestCopy({type:'node',id:'123',tags:{shop:'yes'},points:[{lat:35,lon:139}]});
  assert.equal(copied.id,'456');
  assert.deepEqual(calls.map(c=>[c.method,new URL(c.url).pathname]),[
@@ -110,10 +123,10 @@ try{
  assert.doesNotMatch(calls[0].body,/k="source"/);
  calls.length=0;
  failUpdate=true;
- await assert.rejects(sendOsmTestLevel(item,2),/409/);
+ await assert.rejects(sendOsmTestTags(item,review),/409/);
  assert.equal(new URL(calls.at(-1).url).pathname,'/api/0.6/changeset/42/close');
  failUpdate=false;failClose=true;calls.length=0;
- assert.equal((await sendOsmTestLevel(item,2)).newVersion,'8','Close failure must not erase a successful edit');
+ assert.equal((await sendOsmTestTags(item,review)).newVersion,'8','Close failure must not erase a successful edit');
  failClose=false;calls.length=0;
  await assert.rejects(createOsmApi(OSM_PRODUCTION).write('/node/123','xml','offline-token'),/本番OSMへの書き込みは無効/);
  assert.equal(calls.length,0,'Production write must be rejected before network access');
