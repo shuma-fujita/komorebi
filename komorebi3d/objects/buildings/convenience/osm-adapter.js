@@ -1,4 +1,4 @@
-import {normalizeDrawingLevel} from '../../../maps/osm-level-format.js?v=level-format-v1-20261124';
+export {resolveStorePaint as resolveConveniencePaint} from '../store-levels.js?v=shared-floor-20261126';
 import {BUILDING_POI_OUTSIDE_TOLERANCE_METRES} from '../../../maps/building-poi-match-const.js?v=shared-outside-1m-20261119';
 // OSM adapter: brand matching, OSM floor metadata and legacy storefront walls.
 import {CONVENIENCE_DOOR_WIDTH_M} from './const.js?v=convenience-one-sign-v3-20261112';
@@ -106,65 +106,11 @@ export function matchConvenienceBuildings(elements,project,halfSize){
  }
  return matched;
 }
-// A valid OSM level is a zero-based integer; semicolons specify multiple floors.
-// Unknown/malformed values deliberately paint the whole building to reveal map issues.
-function parseLevels(raw){
- if(raw===undefined||raw===null||String(raw).trim()==='')return null;
- const parts=normalizeDrawingLevel(raw).split(';').map(value=>value.trim());
- if(parts.some(value=>!/^[-+]?\d+$/.test(value)))return 'invalid';
- const values=parts.map(Number);
- if(values.some(value=>!Number.isSafeInteger(value)))return 'invalid';
- return [...new Set(values)];
-}
 function validPositiveNumber(value){
  if(value===undefined||value===null||!/^\d+(?:\.\d+)?$/.test(String(value).trim()))return null;
  const n=Number(value);
  return Number.isFinite(n)&&n>0?n:null;
 }
-// Return sorted wall spans. Null brand means the ordinary building facade.
-// Missing both height and floor count, or contradictory metadata, paints the whole wall.
-export function resolveConveniencePaint(stores,tags,height,inferredLevels=null){
- if(!stores?.length)return [];
- const whole=brand=>[{bottom:0,top:height,brand}];
- const first=stores[0].brand;
- if('min_height'in tags||'building:min_level'in tags)return whole(first);
- const explicitHeight=validPositiveNumber(tags.height);
- const declaredLevels=tags['building:levels'];
- const levelCount=declaredLevels===undefined?null:validPositiveNumber(declaredLevels);
- const validInferred=Number.isSafeInteger(inferredLevels)&&inferredLevels>0;
- if((explicitHeight===null&&levelCount===null&&!validInferred)||
-    (declaredLevels!==undefined&&(levelCount===null||!Number.isInteger(levelCount))))return whole(first);
- // For inferred buildings, use the same 4m floors used to build its geometry.
- const floorHeight=levelCount!==null?height/levelCount:validInferred?height/inferredLevels:3;
- if(!Number.isFinite(floorHeight)||floorHeight<=0)return whole(first);
- const spans=[];
- for(const store of stores){
-  const levels=parseLevels(store.level);
-  if(levels===null||levels==='invalid')return whole(first);
-  for(const level of levels){
-   if(level<0)continue; // Underground geometry does not exist yet.
-   const bottom=level*floorHeight,top=Math.min(height,(level+1)*floorHeight);
-   if(levelCount!==null&&level>=levelCount||bottom>=height-1e-8||top<=bottom)return whole(first);
-   spans.push({bottom,top,brand:store.brand});
-  }
- }
- spans.sort((a,b)=>a.bottom-b.bottom||a.top-b.top);
- for(let i=0;i<spans.length;i++){
-  for(let j=i+1;j<spans.length&&spans[j].bottom<spans[i].top-1e-8;j++){
-   if(spans[i].brand.id!==spans[j].brand.id)return whole(first);
-  }
- }
- // Duplicate same-brand store nodes or levels must not double-paint a wall.
- const unique=[];
- for(const span of spans){
-  const previous=unique[unique.length-1];
-  if(previous&&previous.brand.id===span.brand.id&&span.bottom<previous.top-1e-8)
-   previous.top=Math.max(previous.top,span.top);
-  else unique.push({...span});
- }
- return unique;
-}
-
 function convenienceStoreFacade(quad,mesh,a,b,bottom,top,side,outward,brand,{blocked=false,baseColor=0xa8afb5}={}){
  if(!brand.sign)return false;
  const dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz);

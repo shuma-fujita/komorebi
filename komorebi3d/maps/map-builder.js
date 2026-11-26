@@ -1,17 +1,16 @@
-import {normalizeDrawingLevel} from './osm-level-format.js?v=level-format-v1-20261124';
 import {inferBuildingLevelsFromTenants} from './map-tenant-levels.js?v=level-format-v1-20261124';
 import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans} from '../objects/buildings/love-hotel/osm-adapter.js?v=brothel-floor5-20261119';
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls} from './entrance-wall-selection.js?v=vehicle-door-priority-restored-v2-20261124';
-import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=level-format-v1-20261124';
-import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=kfc-color-v2-20261125';
+import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=shared-floor-20261126';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=shared-floor-20261126';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=wall-dedup-step1-v1-20261124';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
 import {paintParkingArea} from '../objects/parking/common.js?v=parking-orange-u-inward-v3-20261122';
-import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=level-format-v1-20261124';
+import {matchConvenienceBuildings,resolveConveniencePaint,paintConvenienceWall,resolveOsmConvenienceRoofColor} from '../objects/buildings/convenience/osm-adapter.js?v=shared-floor-20261126';
 // Step 4-B: keep the Step 3 initial ordering, then reprioritize only unfinished
 // features when the helicopter moves >= 50m. Sorting yields every 512 operations
 // so the browser can enforce the existing per-frame time budget.
@@ -286,21 +285,8 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    const logoWallIndices=selectLogoWalls(p,roadSegments,nearbyBuildings,blockedWalls);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
-   // Only explicit tenant levels can reserve a floor against a PNG logo.
-   // Legacy convenience/food painting deliberately falls back to the WHOLE
-   // building when a tenant lacks level. Treating that speculative fallback
-   // as a real occupancy block would hide correctly tagged McD / DAISO floors.
-   const otherStoreSpans=[];
-   for(const stores of [convenienceBuildings.get(e.id),foodBuildings.get(e.id)])
-    for(const store of stores||[]){
-     if(['mcdonalds','gusto','torikizoku','bamiyan','isomaru'].includes(store.brand?.id))continue; // Image pass owns these brands.
-     const levels=normalizeDrawingLevel(store.level??'').split(';').map(s=>s.trim());
-     if(!levels.length||levels.some(s=>!/^\d+$/.test(s)||!Number.isSafeInteger(Number(s))))
-      continue;
-     otherStoreSpans.push(...resolveConveniencePaint([store],tags,height,inferredLevels));
-    }
-   const available=span=>!otherStoreSpans.some(other=>
-    span.bottom<other.top-1e-8&&span.top>other.bottom+1e-8);
+   // Only actual rendered storefront spans can reserve a floor against a PNG logo.
+   const otherStoreSpans=[...convenienceSpans,...foodSpans];
    // First generate actual branded surfaces, then fill only the remaining
    // original wall intervals. The fallback solid color is still present even
    // while PNGs are loading or unavailable in the isolated editor preview.

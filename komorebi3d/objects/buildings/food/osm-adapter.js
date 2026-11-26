@@ -1,7 +1,7 @@
 // Identify restaurant POIs and map them to real OSM building footprints.
 import {matchStoreBuildings} from '../store-matching.js?v=store-poi-brand-v1-20261122';
-import {resolveImageBrandPaint} from '../store-levels.js?v=level-format-v1-20261124';
-import {resolveConveniencePaint} from '../convenience/osm-adapter.js?v=level-format-v1-20261124';
+import {resolveImageBrandPaint} from '../store-levels.js?v=shared-floor-20261126';
+import {resolveStorePaint} from '../store-levels.js?v=shared-floor-20261126';
 import {mcdonalds} from './mcdonalds.js?v=mcdonalds-poi-level-v2-20261122';
 import {gusto} from './gusto.js?v=food-gusto-v1-20261122';
 import {torikizoku} from './torikizoku.js?v=food-torikizoku-v1-20261122';
@@ -25,11 +25,11 @@ function identifyFood(tags){
 export function matchFoodBuildings(elements,project,halfSize){
  return matchStoreBuildings(elements,project,halfSize,identifyFood);
 }
-// Same physical floor-spanning rules and missing-level fallback as convenience.
+// Same strict floor-spanning rules as every storefront.
 export function resolveFoodPaint(stores,tags,height,inferredLevels=null){
  // Image-backed brands draw on UV wall faces rather than ordinary food stripes.
  const imageBrands=new Set(['mcdonalds','gusto','torikizoku','bamiyan','isomaru']);
- return resolveConveniencePaint(stores?.filter(s=>!imageBrands.has(s.brand?.id)),tags,height,inferredLevels);
+ return resolveStorePaint(stores?.filter(s=>!imageBrands.has(s.brand?.id)),tags,height,inferredLevels);
 }
 // Use the same zero-based OSM 'level' interpretation as convenience stores.
 // No hard-coded building IDs or floors. An absent/invalid level must not

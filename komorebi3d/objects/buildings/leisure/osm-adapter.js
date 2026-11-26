@@ -1,6 +1,6 @@
 // Shared OSM building association / zero-based tenant floors for Kaikatsu CLUB.
 import {matchStoreBuildings} from '../store-matching.js?v=store-poi-brand-v1-20261122';
-import {resolveImageBrandPaint} from '../store-levels.js?v=store-poi-level-v1-20261122';
+import {resolveImageBrandPaint} from '../store-levels.js?v=shared-floor-20261126';
 import {kaikatsu} from './kaikatsu.js?v=kaikatsu-name-v1-20261122';
 const normalize=value=>String(value||'').normalize('NFKC').toLowerCase()
  .replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');

@@ -1,7 +1,7 @@
 // DAISO / variety-store POI matching, using the same spatial and level
 // conventions as the McDonald's food-brand pipeline.
 import {matchStoreBuildings} from '../store-matching.js?v=store-poi-brand-v1-20261122';
-import {resolveImageBrandPaint} from '../store-levels.js?v=store-poi-level-v1-20261122';
+import {resolveImageBrandPaint} from '../store-levels.js?v=shared-floor-20261126';
 import {daiso} from './daiso.js?v=daiso-image-brand-20261122';
 const normalize=value=>String(value||'').normalize('NFKC').toLowerCase()
  .replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');

@@ -16,7 +16,7 @@
 - Step 2：既存の模擬HTTP試験にway輪郭・relationメンバー順序／役割・未変更タグ保持・通信切断時の自動再送禁止・changeset作成失敗を追加。[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45751390279)・追加模擬HTTP試験PASS・Pages公開成功。ユーザー合意により実機検証は省略しStep 2完了。二重送信防止は既存UIのbusy／sentガードをソース確認済み、連打の動作検証は未実施。削除UI検証は保留。
 - Step 3：PROD OAuth／PKCE接続を追加。TESTと別のClient ID・sessionStorageキー、共通callbackはstateで振り分け。タグ変更確認画面に本番認証のみの操作を追加。本番書き込み禁止を維持。OSM本番アプリ登録・Actions Secret設定済み。ユーザー実機PASS（11/26、本番認証済み表示）。[再デプロイ成功](https://github.com/shuma-fujita/komorebi/actions/runs/45756245147)。
 - Step 4：ユーザー合意により本番内部登録処理を実装。共通タグwriter、競合判定はOSMのversion照合（HTTP 409）に一本化。送信には編集時versionを維持し、登録前の最新version・全タグ比較は廃止。確認済み差分をそのまま利用（再計算・照合は廃止）、認証切れ対応。ユーザー合意により内部同時送信ガードと成功version＋1照合を廃止し、OSM返却versionを採用。送信中のボタン無効化はStep 5で対応。結果不明時の独自再送信ロックを廃止。エラー内容を通知し、同じ編集時versionで手動再送信を許可（自動再送信なし）、終了失敗の別通知。[追加模擬HTTP試験PASS・Actions/Pages成功](https://github.com/shuma-fujita/komorebi/actions/runs/45765853508)。Step 4完了。
-- Step 5：本番確認画面に登録ボタンを接続、送信中の操作制御・結果/エラー表示・手動再送信を実装。確認差分のみをOSMのタグ一覧に適用し未変更タグを保持、編集時versionは維持。成功時のみ既存の確定記録・新Geofabrikの即時反映/自動開放へ接続。localStorage動作確認用の保存・開放ボタンは維持。本番確定記録は新Geofabrikのversionが登録時以上ならタグ照合なしで自動開放。手動保存は変更タグがすべて一致すれば自動開放。Actions・Safari実機は未確認。本番実送信はStep 6でユーザー合意後に検証。
+- Step 5：本番確認画面に登録ボタンを接続、送信中の操作制御・結果/エラー表示・手動再送信を実装。確認差分のみをOSMのタグ一覧に適用し未変更タグを保持、編集時versionは維持。成功時のみ既存の確定記録・新Geofabrikの即時反映/自動開放へ接続。localStorage動作確認用の保存・開放ボタンは維持。本番確定記録は新Geofabrikのversionが登録時以上ならタグ照合なしで自動開放。手動保存は変更タグがすべて一致すれば自動開放。[Actions・模擬HTTP・保存試験・Pages成功](https://github.com/shuma-fujita/komorebi/actions/runs/45773806140)。ユーザー実機PASS（本番確認画面、手動保存・表示・再読み込み・開放、TEST登録）。Step 5完了。Step 6は本番実送信・確定保存・Geofabrik反映検証待ち。
 
 ### ① 地図の自動更新・配信確認
 - Geofabrik関東PBF → 松戸2km JSON → コミット・Pages公開（A→B→C）。Aのcron指定は毎日10:17 JST。11/22は16:59 JSTに起動し、取得URLのHTTP 404で失敗。公式URL `https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf` に修正済み。起動遅延の根因は未特定。
@@ -54,7 +54,7 @@
 - 書式警告は入居施設一覧・タグ編集画面で既存の黄色警告行デザインを再利用。「⚠ levelの書式が正しくありません。」「末尾の「;」は不要です。」。編集時に正すと書式警告だけ消え、Geofabrik反映待ち等は維持。ゲーム画面に直接適用。
 
 ### 店舗外観・ロゴ
-- [objects/buildings/](../komorebi3d/objects/buildings/) の共通ブランド描画を利用。画像ロゴは主にlogos/brands、共通階判定・建物照合・UV描画。名前／ブランド（マックはwikidataも）で判定し、画像ロゴの業種別固定分岐・店舗ID／階の固定を避ける。明示的levelが必要で、欠損／不正では全館に描画しない（通常ローソンも例外にしない）。駅前ローソンのlocalStorage階指定は通常経路を使う。
+- [objects/buildings/](../komorebi3d/objects/buildings/) の共通ブランド描画を利用。画像ロゴは主にlogos/brands、共通階判定・建物照合・UV描画。名前／ブランド（マックはwikidataも）で判定し、画像ロゴの業種別固定分岐・店舗ID／階の固定を避ける。旧コンビニ・飲食店とPNGの階判定をstore-levels.jsに統一。明示的levelが必要で、欠損／不正／範囲外では描画しない。全館フォールバック撤廃。地下のみは描画なし。ラブホテルの建物属性・階判定は今回対象外。Actions・実機未確認。駅前ローソンのlocalStorage階指定は通常経路を使う。
 - 画像はPNG。1階のみ／1階から連続する上階／上階のみで共通外観を分岐。1階にだけガラス・自動ドアを設け、連続階は統合。1階＋上階は入口面にロゴ1個。上階のみは非遮蔽の道路側ファサード単位の代表面を選択。固定最大個数やブランド別例外を増やさない。隣接建物に塞がれる1階のガラス・ドア・看板帯は抑制。
 - [entrance-wall-selection.js](../komorebi3d/maps/entrance-wall-selection.js)：非遮蔽・幅4m以上の入口候補を車道への直接近接→歩道越しの車道→道路向き→非遮蔽の順に評価し、同順位の連続壁中央を選択。上階ロゴは短い折れ壁も同一ファサードとして扱い、近接する同方向代表面の重複を抑制。詳細な閾値は最新コードを参照。
 - 遠距離の壁チラつき対策は完了：画像店舗の該当区間の通常壁を生成せず、単色背景とPNGロゴ矩形を重複なしで分割。背景色は読み込み時抽出、未読込は定義色。A/Bと編集プレビューで共通。Step 3（ガラス／ドア下地の重複）、Step 4（枠線／装飾）、Step 5（性能比較）は必要時のみ再開。三角形数・生成時間・FPSの改善量は未計測。

@@ -39,7 +39,14 @@ const paint=(tags,height,inferred)=>resolveConveniencePaint([{brand:family,level
 assert.deepEqual(paint({},8,2),[[0,4]]);
 assert.deepEqual(resolveConveniencePaint([{brand:family,level:'1;2;3;'}],{},16,4).map(s=>[s.bottom,s.top]),[[4,8],[8,12],[12,16]]);
 assert.deepEqual(paint({height:'8','building:levels':'2'},8,null),[[0,4]]);
-assert.deepEqual(paint({},4,null),[[0,4]]);
+assert.deepEqual(paint({},4,null),[],'Missing building floor metadata cannot trigger a whole-wall fallback');
+const other={id:'other'};
+const resolve=(level)=>resolveConveniencePaint([{brand:family,level}],{'building:levels':'4'},16);
+for(const level of [undefined,'','1;;2','4','0;4','-1'])assert.deepEqual(resolve(level),[]);
+assert.deepEqual(resolve('0;2').map(s=>[s.bottom,s.top]),[[0,4],[8,12]]);
+assert.deepEqual(resolve('-1;0').map(s=>[s.bottom,s.top]),[[0,4]]);
+assert.deepEqual(resolveConveniencePaint([{brand:family,level:''},{brand:other,level:'1'}],{'building:levels':'4'},16).map(s=>[s.brand.id,s.bottom,s.top]),[['other',4,8]]);
+assert.deepEqual(resolveConveniencePaint([{brand:family,level:'0;1'},{brand:other,level:'1;2'}],{'building:levels':'4'},16).map(s=>[s.brand.id,s.bottom,s.top]),[['familymart',0,4],['other',8,12]]);
 
 const run=(tags)=>buildMap({elements:[building(wayId,tags),fam,goo]},
  {latitude:0,longitude:0,halfSize:250});

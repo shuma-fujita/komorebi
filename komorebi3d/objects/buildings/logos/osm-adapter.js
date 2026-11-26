@@ -2,7 +2,7 @@
 // A named POI may be a restaurant, pub, shop, office, leisure facility, etc.
 import {LOGO_BRANDS} from './brands/index.js?v=kfc-color-v2-20261125';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
-import {resolveLogoLevels} from './levels.js?v=level-format-v1-20261124';
+import {resolveLogoLevels} from './levels.js?v=shared-floor-20261126';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()
  .replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 const nameKeys=['brand:ja','brand','brand:en','name:ja','name','name:en'];
