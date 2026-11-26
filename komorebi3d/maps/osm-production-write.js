@@ -2,8 +2,8 @@
 import {OSM_PRODUCTION} from './osm-environments.js?v=step3-20261126';
 import {createOsmApi} from './osm-api.js?v=step4-20261126';
 import {readOsmProductionToken,forgetOsmProductionToken} from './osm-production-auth.js?v=step4-20261126';
-import {parseOsmElement} from './osm-xml.js?v=step1e-20261126';
-import {prepareOsmTagWrite,writeReviewedOsmTags} from './osm-tag-writer.js?v=step4-20261126';
+import {parseOsmElement} from './osm-xml.js?v=server-conflict-20261126';
+import {prepareOsmTagWrite,writeReviewedOsmTags} from './osm-tag-writer.js?v=server-conflict-20261126';
 const api=createOsmApi(OSM_PRODUCTION,{enableProductionWrites:true});
 const active=new Set(),uncertain=new Map();
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
@@ -41,9 +41,10 @@ export async function sendOsmProductionTags(review,source=''){
  let updateChangeset=null,closeWarning=null;
  try{
   const xml=await api.read('/'+key,status=>'本番OSMの取得失敗 HTTP '+status);
-  const item=parseOsmElement(xml,osm.type,osm.id,'本番');
-  if(item.element.getAttribute('visible')==='false'||String(item.version)!==osm.version||!same(item.tags,originalTags))
-   throw failure('conflict','本番OSMの内容が変更されました。最新データを確認し直してください。');
+  const current=parseOsmElement(xml,osm.type,osm.id,'本番');
+  // Geometry comes from the fetched element. The version and baseline must
+  // remain those of the reviewed draft; OSM alone decides version conflicts.
+  const item={...current,version:osm.version,tags:originalTags};
   const prepared=prepareOsmTagWrite(item,{osm,tags});
   const result=await writeReviewedOsmTags({api,origin:OSM_PRODUCTION.origin,item,prepared,source,token,validateVersion:true,
    onUpdateStart:id=>{updateChangeset=id;},

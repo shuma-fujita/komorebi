@@ -1,5 +1,5 @@
 // Common reviewed-tag validation and changeset writer. No UI or persistence.
-import {buildOsmChangeComment,makeElementXmlWithTags} from './osm-xml.js?v=step1e-20261126';
+import {buildOsmChangeComment,makeElementXmlWithTags} from './osm-xml.js?v=server-conflict-20261126';
 export function prepareOsmTagWrite(item,review){
  const target={type:item?.type,id:String(item?.id??'')};
  if(!['node','way','relation'].includes(target.type)||!/^[1-9]\d*$/.test(target.id)||

@@ -39,9 +39,10 @@ export function makeChangesetXml(comment,source=''){
 export function makeElementXmlWithTags(item,changesetId,tags){
  const doc=document.implementation.createDocument(null,'osm',null);doc.documentElement.setAttribute('version','0.6');
  const element=doc.createElement(item.type);
- for(const key of ['id','version','lat','lon','visible']){
+ for(const key of ['id','lat','lon','visible']){
   const value=item.element.getAttribute(key);if(value!=null)element.setAttribute(key,value);
  }
+ element.setAttribute('version',String(item.version));
  element.setAttribute('changeset',changesetId);
  for(const child of item.element.children){
   if(!['nd','member'].includes(child.tagName))continue;
