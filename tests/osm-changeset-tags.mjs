@@ -112,8 +112,13 @@ try{
  await assert.rejects(sendOsmTestTags(item,{...review,osm:{...review.osm,version:'6'}}),/version/);
  await assert.rejects(sendOsmTestTags(item,{...review,osm:{...review.osm,id:'456'}}),/version/);
  await assert.rejects(sendOsmTestTags(item,{...review,tags:item.tags}),/変更された/);
- await assert.rejects(sendOsmTestTags(item,{...review,tags:{level:'0;1'}}),/タグ削除/);
- assert.equal(calls.length,0,'No changeset for wrong element, stale version, no-op or deletion');
+ assert.equal(calls.length,0,'No changeset for wrong element, stale version or no-op');
+ // The low-level TEST writer supports deletion; no editor action exposes it.
+ await sendOsmTestTags(item,{...review,tags:{level:'0;1'}});
+ assert.doesNotMatch(calls[1].body,/k="shop"/);
+ assert.match(calls[1].body,/k="level" v="0;1"/);
+ assert.match(calls[0].body,/delete\s+- shop/);
+ calls.length=0;
  const copied=await createOsmTestCopy({type:'node',id:'123',tags:{shop:'yes'},points:[{lat:35,lon:139}]});
  assert.equal(copied.id,'456');
  assert.deepEqual(calls.map(c=>[c.method,new URL(c.url).pathname]),[

@@ -12,7 +12,7 @@
 - Step 1-A：TESTの接続先・認証保存キー・固定redirect URIとPROD読み取り先を環境設定に分離。既存TEST処理と本番書き込み禁止は維持。ユーザー実機起動PASS（11/26）。Actions・認証回帰は未確認。
 - Step 1-B：OAuth／PKCEをosm-oauth.jsに分離しTESTのみ接続。認証保存キー・固定callback・遅延Client ID取得を維持。ユーザー実機PASS（ゲーム起動・タグ編集画面・TEST OAuth認証）。Actions未確認。
 - Step 1-C：osm-api.js／osm-xml.jsを共通化し、TEST level登録・コピーに接続。本番は読み取りのみ、書き込みは共通APIで拒否。changesetテストを模擬HTTPへ修正後、[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45729395570)。TEST送信ボタン無反応の実機報告あり。送信条件・送信中・成功／失敗表示と再送信防止を追加。ユーザー実機PASS。無反応の原因は旧level整数制限（0;1）。
-- Step 1-E：TESTのタグ種類・値・件数・施設限定を撤廃。任意タグ追加・変更、対象IDとversionの照合を実装。ユーザー指示によりタグ削除ボタンを撤去し、TEST・本番ともタグ削除は禁止。削除機能は操作方法と安全対策の明示合意まで実装しない。本番読み取り専用を維持。Actions・実機未確認。
+- Step 1-E：TESTのタグ種類・値・件数・施設限定を撤廃。任意タグ追加・変更、対象IDとversionの照合を実装。ユーザー指示によりタグ削除ボタンは撤去済み。TEST API内部は削除対応、編集画面は追加・変更のみ。削除UIは操作方法と安全対策の明示合意まで実装しない。本番読み取り専用を維持。Actions・実機未確認。
 - 次：Step 2 汎用タグ登録の検証、その後PROD認証、本番安全対策、UI・保存連携、実機検証。各工程はユーザーと相談して進める。
 
 ### ① 地図の自動更新・配信確認
@@ -42,7 +42,7 @@
 | UI | [build-ui.mjs](../komorebi3d/build-ui.mjs) と共通パネル部品。4枠（開発情報・ゲーム・テスト操作・実行ステータス）、5種類目のlocalStorage管理を枠に追加可能。mockは3Dなし・黒緑ダミー・ストレージ読み取り専用。ゲーム内の地図タグや入居施設警告はdevで直接開発し、mockに仮UIを増やさない |
 | 地図 | [map-loader.js](../komorebi3d/maps/map-loader.js)。旧2km／新Geofabrik 2kmを静的JSONからA/B独立取得。起動時のOverpass自動取得なし。「🧪 地図JSON読み込みログ」とコピー機能を維持 |
 | 建物・施設 | [map-builder.js](../komorebi3d/maps/map-builder.js)、[map-labels.js](../komorebi3d/maps/map-labels.js)、[map-occupants.js](../komorebi3d/maps/map-occupants.js)。建物単位の入居施設一覧、タグ編集、編集前／ドラフトのA/Bビルプレビュー（上30%／編集下70%） |
-| OSM | 本番は閲覧・ローカル下書き・確認まで。**本番API送信は未実装。** テストはOAuth 2.0＋PKCE経由のコピーと任意タグ追加・変更（実機未確認、削除禁止） |
+| OSM | 本番は閲覧・ローカル下書き・確認まで。**本番API送信は未実装。** テストはOAuth 2.0＋PKCE経由のコピーと任意タグ追加・変更（実機未確認、削除UIなし／TEST API内部は削除対応） |
 | タグ差分 | [osm-pending-changes.js](../komorebi3d/maps/osm-pending-changes.js)。`komorebi3d:osm-tag-changes:v2:<type>/<id>`、1要素1キー。osmVersion:nullは未送信確認、正整数は将来の本番保存成功記録。新Geofabrikに1回だけ重畳し、本番記録のみ反映確認後に自動開放 |
 
 ### 建物・入居施設
