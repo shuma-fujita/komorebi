@@ -23,7 +23,5 @@ export function buildOsmTagReview({osm,originalTags={},rows}={}){
  for(const key of new Set([...Object.keys(originalTags),...Object.keys(tags)])){
   if(originalTags[key]!==tags[key])changes[key]=own(tags,key)?tags[key]:null;
  }
- // Tag deletion is not enabled in either environment.
- if(Object.values(changes).some(value=>value===null))throw Error('タグ削除には対応していません。');
  return {osm:{type:osm.type,id:String(osm.id),version:osm.version??null},tags,changes};
 }

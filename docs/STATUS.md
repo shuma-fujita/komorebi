@@ -12,7 +12,7 @@
 - Step 1-A：TESTの接続先・認証保存キー・固定redirect URIとPROD読み取り先を環境設定に分離。既存TEST処理と本番書き込み禁止は維持。ユーザー実機起動PASS（11/26）。Actions・認証回帰は未確認。
 - Step 1-B：OAuth／PKCEをosm-oauth.jsに分離しTESTのみ接続。認証保存キー・固定callback・遅延Client ID取得を維持。ユーザー実機PASS（ゲーム起動・タグ編集画面・TEST OAuth認証）。Actions未確認。
 - Step 1-C：osm-api.js／osm-xml.jsを共通化し、TEST level登録・コピーに接続。本番は読み取りのみ、書き込みは共通APIで拒否。changesetテストを模擬HTTPへ修正後、[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45729395570)。TEST送信ボタン無反応の実機報告あり。送信条件・送信中・成功／失敗表示と再送信防止を追加。ユーザー実機PASS。無反応の原因は旧level整数制限（0;1）。
-- Step 1-E：TESTのタグ種類・値・件数・施設限定を撤廃。任意タグ追加・変更、対象IDとversionの照合を実装。ユーザー指示によりタグ削除ボタンは撤去済み。TEST API内部は削除対応、編集画面は追加・変更のみ。削除UIは操作方法と安全対策の明示合意まで実装しない。本番読み取り専用を維持。Actions・実機未確認。
+- Step 1-E：TESTのタグ種類・値・件数・施設限定を撤廃。任意タグ追加・変更、対象IDとversionの照合を実装。ユーザー指示によりタグ削除ボタンは撤去済み。TEST API・共通変更確認の内部処理は削除対応（null差分）、編集画面は追加・変更のみ。削除UIは操作方法と安全対策の明示合意まで実装しない。本番読み取り専用を維持。Actions・実機未確認。
 - 次：Step 2 汎用タグ登録の検証、その後PROD認証、本番安全対策、UI・保存連携、実機検証。各工程はユーザーと相談して進める。
 
 ### ① 地図の自動更新・配信確認
