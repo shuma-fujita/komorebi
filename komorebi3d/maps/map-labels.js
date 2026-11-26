@@ -1,6 +1,6 @@
 import {levelFormatWarning,syncLevelTagRowWarning} from './osm-level-warning.js?v=level-warning-text-v1-20261125';
 // Project building and ground-level POI labels using shared A/B viewport camera information.
-import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,sendOsmTestTags,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=step3-20261126';
+import {OSM_TEST_ORIGIN,hasOsmTestToken,forgetOsmTestToken,consumeOsmTestAuthError,startOsmTestLogin,finishOsmTestLogin,getOsmTestElement,sendOsmTestTags,loadOsmCopySource,createOsmTestCopy} from './osm-test-api.js?v=step4-20261126';
 import {getOsmTestLink,saveOsmTestLink} from './osm-test-links.js?v=osm-test-links-20261120';
 import {osmElementPageUrl} from './osm-element-page-url.js?v=element-link-20261122';
 import {attachSheetMotion} from './sheet-motion.js?v=tag-focus-scroll-only-20261121';
@@ -14,7 +14,7 @@ import {applyPendingTagVisualStyle,syncPendingTagRows,PENDING_GEOFABRIK_LABEL} f
 import {loadOsmTagOrder,orderOsmTagEntries} from './osm-tag-order.js?v=priority-display-20261121';
 import {hasOsmTagChanges,buildOsmTagReview} from './osm-tag-review.js?v=tags-internal-20261126';
 import {prependOsmReviewStorageCheck} from './osm-review-storage-check.js?v=storage-manager-v1-20261122';
-import {hasOsmProductionToken,forgetOsmProductionToken,consumeOsmProductionAuthError,startOsmProductionLogin,finishOsmProductionLogin} from './osm-production-auth.js?v=step3-20261126';
+import {hasOsmProductionToken,forgetOsmProductionToken,consumeOsmProductionAuthError,startOsmProductionLogin,finishOsmProductionLogin} from './osm-production-auth.js?v=step4-20261126';
 const osmTestOAuthReturn=finishOsmTestLogin();
 // Matching state makes each callback belong to exactly one environment.
 const osmProductionOAuthReturn=finishOsmProductionLogin();

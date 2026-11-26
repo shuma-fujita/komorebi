@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {OSM_CHANGESET_CREATED_BY,buildOsmChangesetTags} from '../komorebi3d/maps/osm-changeset-tags.js';
 import {makeChangesetXml,OSM_TEST_ORIGIN,sendOsmTestTags,createOsmTestCopy} from '../komorebi3d/maps/osm-test-api.js';
 
-import {createOsmApi} from '../komorebi3d/maps/osm-api.js?v=step3-20261126';
+import {createOsmApi} from '../komorebi3d/maps/osm-api.js?v=step4-20261126';
+import {sendOsmProductionTags} from '../komorebi3d/maps/osm-production-write.js';
 import {OSM_PRODUCTION} from '../komorebi3d/maps/osm-environments.js?v=step3-20261126';
 
 assert.equal(OSM_CHANGESET_CREATED_BY,'Komorebi Builder');
@@ -179,6 +180,74 @@ try{
  failClose=false;calls.length=0;
  await assert.rejects(createOsmApi(OSM_PRODUCTION).write('/node/123','xml','offline-token'),/本番OSMへの書き込みは無効/);
  assert.equal(calls.length,0,'Production write must be rejected before network access');
+ // Real production writer with completely replaced HTTP and storage.
+ const tokenStore=new Map([['komorebi:osm-production:token','prod-offline'],['komorebi:osm-test:token','test-offline']]);
+ Object.defineProperty(globalThis,'sessionStorage',{configurable:true,value:{getItem:k=>tokenStore.get(k)??null,removeItem:k=>tokenStore.delete(k)}});
+ let serverVersion='7',serverTags={shop:'yes'},mode='',gate=null;
+ globalThis.DOMParser=class{
+  parseFromString(xml){
+   assert.equal(xml,'offline-element');
+   const node=new XmlNode('node');
+   for(const [k,v] of Object.entries({id:'123',version:serverVersion,lat:'35',lon:'139'}))node.setAttribute(k,v);
+   for(const [k,v] of Object.entries(serverTags)){const tag=new XmlNode('tag');tag.setAttribute('k',k);tag.setAttribute('v',v);node.appendChild(tag);}
+   const root=new XmlNode('osm');root.querySelector=type=>type==='node'?node:null;
+   return {querySelector:()=>null,documentElement:root};
+  }
+ };
+ globalThis.fetch=async(url,options)=>{
+  calls.push({url,...options});
+  assert.equal(new URL(url).origin,OSM_PRODUCTION.apiOrigin);
+  const path=new URL(url).pathname;
+  if(options.method==='GET'){
+   assert.equal(path,'/api/0.6/node/123');assert.equal(options.cache,'no-store');
+   if(gate)await gate;
+   return {ok:true,text:async()=>'offline-element'};
+  }
+  assert.equal(options.headers.Authorization,'Bearer prod-offline');
+  assert.equal(options.redirect,'error');
+  if(path.endsWith('/create'))return {ok:mode!=='auth',status:401,text:async()=>'42'};
+  if(path.endsWith('/close'))return {ok:mode!=='close',status:500,text:async()=>''};
+  assert.equal(path,'/api/0.6/node/123');
+  if(mode==='disconnect')throw new TypeError('offline');
+  return {ok:mode!=='conflict',status:409,text:async()=>'8'};
+ };
+ const prodReview={osm:review.osm,originalTags:{shop:'yes'},tags:{shop:'yes',level:'0;1'},changes:{level:'0;1'}};
+ const assertCode=(code)=>error=>error.code===code;
+ await assert.rejects(sendOsmProductionTags({...prodReview,changes:{}}),assertCode('review_required'));
+ await assert.rejects(sendOsmProductionTags({...prodReview,tags:{shop:'yes'},changes:{}}),assertCode('no_changes'));
+ assert.equal(calls.length,0);
+ serverVersion='8';
+ await assert.rejects(sendOsmProductionTags(prodReview),assertCode('conflict'));
+ assert.equal(calls.length,1);calls.length=0;serverVersion='7';
+ serverTags={shop:'different'};
+ await assert.rejects(sendOsmProductionTags(prodReview),assertCode('conflict'));
+ assert.equal(calls.length,1);calls.length=0;serverTags={shop:'yes'};
+ mode='auth';
+ await assert.rejects(sendOsmProductionTags(prodReview),assertCode('auth_required'));
+ assert.equal(tokenStore.has('komorebi:osm-production:token'),false);
+ assert.equal(tokenStore.get('komorebi:osm-test:token'),'test-offline');
+ assert.equal(calls.length,2);calls.length=0;tokenStore.set('komorebi:osm-production:token','prod-offline');
+ mode='conflict';
+ await assert.rejects(sendOsmProductionTags(prodReview),assertCode('conflict'));
+ assert.equal(calls.length,4);calls.length=0;
+ let release;
+ gate=new Promise(resolve=>{release=resolve;});
+ mode='close';
+ const first=sendOsmProductionTags(prodReview,'survey');
+ await assert.rejects(sendOsmProductionTags(prodReview),assertCode('busy'));
+ release();const result=await first;gate=null;
+ assert.equal(result.version,'8');assert.ok(result.closeWarning);
+ assert.deepEqual({...result.changes},{level:'0;1'});
+ assert.deepEqual(calls.map(c=>c.method),['GET','PUT','PUT','PUT']);
+ assert.match(calls[2].body,/k="shop" v="yes"/);
+ assert.match(calls[2].body,/k="level" v="0;1"/);
+ assert.match(calls[2].body,/lat="35"/);
+ calls.length=0;mode='disconnect';
+ await assert.rejects(sendOsmProductionTags(prodReview),e=>e.code==='uncertain'&&e.changesetId==='42');
+ assert.equal(calls.length,4);
+ await assert.rejects(sendOsmProductionTags(prodReview),assertCode('uncertain'));
+ assert.equal(calls.length,4,'Uncertain update must not be repeated in this session');
+
 }finally{
  for(const [key,descriptor] of Object.entries(savedGlobals)){
   if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];

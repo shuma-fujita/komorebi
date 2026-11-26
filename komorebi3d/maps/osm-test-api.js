@@ -1,7 +1,8 @@
 // Development OSM server ONLY. Never use live OSM endpoints here.
 // OAuth 2.0 Authorization Code + PKCE for a public browser application.
-import {parseOsmElement,buildOsmChangeComment,makeChangesetXml as sharedChangesetXml,makeElementXmlWithTags} from './osm-xml.js?v=step1e-20261126';
-import {createOsmApi} from './osm-api.js?v=step3-20261126';
+import {parseOsmElement,buildOsmChangeComment,makeChangesetXml as sharedChangesetXml} from './osm-xml.js?v=step1e-20261126';
+import {prepareOsmTagWrite,writeReviewedOsmTags} from './osm-tag-writer.js?v=step4-20261126';
+import {createOsmApi} from './osm-api.js?v=step4-20261126';
 export {buildOsmChangeComment};
 import {OSM_TEST,OSM_PRODUCTION} from './osm-environments.js?v=step3-20261126';
 import {createOsmOAuth} from './osm-oauth.js?v=step3-20261126';
@@ -46,22 +47,8 @@ export function makeChangesetXml(comment='Add verified shop floor level (develop
 }
 // Only the reviewed TEST element and its exact version may be edited.
 export async function sendOsmTestTags(item,review,source=''){
- const target=normalizeOsmTestTarget(item?.type,item?.id);
- if(!review?.osm||review.osm.type!==target.type||String(review.osm.id)!==target.id||
-    String(review.osm.version)!==String(item.version)||!/^[1-9]\d*$/.test(String(item.version)))
-  throw Error('テスト対象またはversionが変更されました。編集内容を確認し直してください。');
- if(!review.tags||typeof review.tags!=='object'||Array.isArray(review.tags))throw Error('タグ一覧が不正です。');
- const updatedTags=Object.create(null);
- for(const [key,value] of Object.entries(review.tags)){
-  if(!key||/[\u0000-\u001f=]/.test(key)||typeof value!=='string')throw Error('タグ名または値が不正です。');
-  updatedTags[key]=value;
- }
- const comment=buildOsmChangeComment(item.tags,updatedTags);
- const token=readToken();
- return testApi.withChangeset({comment,source,token,onCloseError:(error,uploaded)=>console.warn(uploaded?'OSM test changeset written but closing failed':'OSM test changeset close failed',error)},async changesetId=>{
-  const newVersion=await testApi.write('/'+target.type+'/'+target.id,makeElementXmlWithTags(item,changesetId,updatedTags),token);
-  return {changesetId,newVersion,elementUrl:OSM_TEST_ORIGIN+'/'+target.type+'/'+target.id};
- });
+ const prepared=prepareOsmTagWrite(item,review);
+ return writeReviewedOsmTags({api:testApi,origin:OSM_TEST_ORIGIN,item,prepared,source,token:readToken(),onCloseError:(error,uploaded)=>console.warn(uploaded?'OSM test changeset written but closing failed':'OSM test changeset close failed',error)});
 }
 
 // Read the canonical public OSM element only; never authenticate or write to production.

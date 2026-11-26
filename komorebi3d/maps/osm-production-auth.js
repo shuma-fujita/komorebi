@@ -11,3 +11,5 @@ export const forgetOsmProductionToken=oauth.forgetToken;
 export const consumeOsmProductionAuthError=oauth.consumeAuthError;
 export const startOsmProductionLogin=oauth.startLogin;
 export const finishOsmProductionLogin=oauth.finishLogin;
+
+export const readOsmProductionToken=oauth.readToken;

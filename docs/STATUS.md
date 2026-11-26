@@ -14,8 +14,9 @@
 - Step 1-C：osm-api.js／osm-xml.jsを共通化し、TEST level登録・コピーに接続。本番は読み取りのみ、書き込みは共通APIで拒否。changesetテストを模擬HTTPへ修正後、[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45729395570)。TEST送信ボタン無反応の実機報告あり。送信条件・送信中・成功／失敗表示と再送信防止を追加。ユーザー実機PASS。無反応の原因は旧level整数制限（0;1）。
 - Step 1-E：TESTのタグ種類・値・件数・施設限定を撤廃。任意タグ追加・変更、対象IDとversionの照合を実装。ユーザー指示によりタグ削除ボタンは撤去済み。TEST API・共通変更確認の内部処理は削除対応（null差分）、編集画面は追加・変更のみ。削除UIは操作方法と安全対策の明示合意まで実装しない。本番読み取り専用を維持。[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45746050417)・ユーザー実機PASS（11/26）。
 - Step 2：既存の模擬HTTP試験にway輪郭・relationメンバー順序／役割・未変更タグ保持・通信切断時の自動再送禁止・changeset作成失敗を追加。[Actions成功](https://github.com/shuma-fujita/komorebi/actions/runs/45751390279)・追加模擬HTTP試験PASS・Pages公開成功。ユーザー合意により実機検証は省略しStep 2完了。二重送信防止は既存UIのbusy／sentガードをソース確認済み、連打の動作検証は未実施。削除UI検証は保留。
-- Step 3：PROD OAuth／PKCE接続を追加。TESTと別のClient ID・sessionStorageキー、共通callbackはstateで振り分け。タグ変更確認画面に本番認証のみの操作を追加。本番書き込み禁止を維持。OSM本番アプリ登録、Actions Secret OSM_PRODUCTION_CLIENT_ID設定、公開後の認証実機確認は未実施。
-- 次：Step 3認証確認後、Step 4 本番登録安全対策（書き込み禁止方針の変更は別途合意）。
+- Step 3：PROD OAuth／PKCE接続を追加。TESTと別のClient ID・sessionStorageキー、共通callbackはstateで振り分け。タグ変更確認画面に本番認証のみの操作を追加。本番書き込み禁止を維持。OSM本番アプリ登録・Actions Secret設定済み。ユーザー実機PASS（11/26、本番認証済み表示）。[再デプロイ成功](https://github.com/shuma-fujita/komorebi/actions/runs/45756245147)。
+- Step 4：ユーザー合意により本番内部登録処理を実装。共通タグwriter、最新version・全タグ・確認差分照合、同一要素の同時送信防止、認証切れ、結果不明時の再送防止（モジュール内メモリ）、終了失敗の別通知。UI未接続・実本番送信なし。追加模擬HTTP試験のActions未確認。
+- 次：Step 4のActions確認後、Step 5 登録UI・保存連携。結果不明時の再読み込み後の扱いと履歴確認導線はUI接続前に合意・実装する。
 
 ### ① 地図の自動更新・配信確認
 - Geofabrik関東PBF → 松戸2km JSON → コミット・Pages公開（A→B→C）。Aのcron指定は毎日10:17 JST。11/22は16:59 JSTに起動し、取得URLのHTTP 404で失敗。公式URL `https://download.geofabrik.de/asia/japan/kanto/kanto-latest.osm.pbf` に修正済み。起動遅延の根因は未特定。
@@ -44,7 +45,7 @@
 | UI | [build-ui.mjs](../komorebi3d/build-ui.mjs) と共通パネル部品。4枠（開発情報・ゲーム・テスト操作・実行ステータス）、5種類目のlocalStorage管理を枠に追加可能。mockは3Dなし・黒緑ダミー・ストレージ読み取り専用。ゲーム内の地図タグや入居施設警告はdevで直接開発し、mockに仮UIを増やさない |
 | 地図 | [map-loader.js](../komorebi3d/maps/map-loader.js)。旧2km／新Geofabrik 2kmを静的JSONからA/B独立取得。起動時のOverpass自動取得なし。「🧪 地図JSON読み込みログ」とコピー機能を維持 |
 | 建物・施設 | [map-builder.js](../komorebi3d/maps/map-builder.js)、[map-labels.js](../komorebi3d/maps/map-labels.js)、[map-occupants.js](../komorebi3d/maps/map-occupants.js)。建物単位の入居施設一覧、タグ編集、編集前／ドラフトのA/Bビルプレビュー（上30%／編集下70%） |
-| OSM | 本番は閲覧・ローカル下書き・確認まで。**本番API送信は未実装。** テストはOAuth 2.0＋PKCE経由のコピーと任意タグ追加・変更（ユーザー実機PASS、削除UIなし／TEST API内部は削除対応） |
+| OSM | 本番は閲覧・ローカル下書き・確認まで。**本番API送信は内部実装済み・UI未接続。実送信なし。** テストはOAuth 2.0＋PKCE経由のコピーと任意タグ追加・変更（ユーザー実機PASS、削除UIなし／TEST API内部は削除対応） |
 | タグ差分 | [osm-pending-changes.js](../komorebi3d/maps/osm-pending-changes.js)。`komorebi3d:osm-tag-changes:v2:<type>/<id>`、1要素1キー。osmVersion:nullは未送信確認、正整数は将来の本番保存成功記録。新Geofabrikに1回だけ重畳し、本番記録のみ反映確認後に自動開放 |
 
 ### 建物・入居施設
@@ -71,7 +72,7 @@
 
 ## 4. 保護対象・開発の進め方
 
-- [開発ルール](rules/README.md) を最初に読む。GitHub mainへの作成・変更・削除・コミットはユーザーの明示許可を得てから。固定Engine参照 `56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e`、森、地図原本、OAuth／PKCE、本番OSM未送信方針、地図JSONログを保護。
+- [開発ルール](rules/README.md) を最初に読む。GitHub mainへの作成・変更・削除・コミットはユーザーの明示許可を得てから。固定Engine参照 `56bb2bc2743f5a4441fa28783becf4e6fa6fbc4e`、森、地図原本、OAuth／PKCE、本番OSM実送信禁止（Step 6まで。Step 4内部実装は合意済み）、地図JSONログを保護。
 - v2保存データに旧v1キーを自動移行・一括削除しない。個別操作のみ。ストレージ全消去禁止。
 - パネルUIはmock先行、承認後devへ。3D・地図・ゲーム内表示はdevで直接。公開時にゲームHTMLを自動再生成・上書きしない。既存の共通デザイン・共通処理を優先し、旧仕様の名残を無条件に引き継がない。
 - 静的チェック・自動テスト・Actions・Pages配信・Safari実機は区別。次の作業に必要な最新コードを読み、小工程で進める。devkitは任意の補助で、本体の依存関係にしない。

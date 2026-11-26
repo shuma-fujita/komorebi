@@ -1,4 +1,4 @@
-// Environment constants only. Production remains read-only in Step 1-A.
+// Environment constants only. Production writes require explicit internal API opt-in.
 export const OSM_TEST=Object.freeze({
  origin:'https://master.apis.dev.openstreetmap.org',
  apiOrigin:'https://master.apis.dev.openstreetmap.org',
