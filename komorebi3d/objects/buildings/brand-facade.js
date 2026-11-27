@@ -54,11 +54,9 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  const isGroundOnly=facadeMode==='ground-only';
  // A branded ground floor reserves its upper 20% as the fascia.
  // The glazing ends below it; logos occupy only fascia + contiguous upper walls.
- const defaultGlassTop=withGroundGlass?bottom+(groundGlassTop-bottom)*.8:bottom;
- // Expand the ground-only sign band up to the full entrance width, retaining
- // at least 2m of glazing where the original floor allows it.
+ const glassTop=withGroundGlass?bottom+(groundGlassTop-bottom)*.8:bottom;
+ // The existing fascia height is fixed. Fit the image inside the full door-width area.
  const hasEntrance=isGroundOnly&&walls.some(w=>w.i===entranceEdgeIndex&&w.length>=CONVENIENCE_DOOR_WIDTH_M-1e-7&&!blockedWalls?.has(w.i));
- const glassTop=hasEntrance?Math.min(defaultGlassTop,Math.max(bottom+Math.min(2,defaultGlassTop-bottom),groundGlassTop-CONVENIENCE_DOOR_WIDTH_M/logoAspectRatio)):defaultGlassTop;
  const logoAreaBottom=withGroundGlass?glassTop:bottom;
  const facadeLogoWalls=withGroundGlass&&Number.isInteger(entranceEdgeIndex)
   ?walls.filter(w=>w.i===entranceEdgeIndex)

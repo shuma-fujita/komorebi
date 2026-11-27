@@ -1,5 +1,5 @@
 // Shared image facade; keep all non-logo walls white.
-import {paintImageFacade} from '../brand-facade.js?v=door-logo-4m-v1-20261127';
+import {paintImageFacade} from '../brand-facade.js?v=door-logo-4m-fixed-fascia-v2-20261127';
 export const HIDAKAYA_BG=0xffffff;
 export const HIDAKAYA_ASPECT=588/128;
 export function paintHidakayaFacade(quad,mesh,polygon,options={}){

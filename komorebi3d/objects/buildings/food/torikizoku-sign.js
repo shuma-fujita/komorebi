@@ -1,6 +1,6 @@
 // Outer image whitespace was cropped from the uploaded logo.
 // Use its original solid yellow as the full wall's background color.
-import {paintImageFacade} from '../brand-facade.js?v=door-logo-4m-v1-20261127';
+import {paintImageFacade} from '../brand-facade.js?v=door-logo-4m-fixed-fascia-v2-20261127';
 export const TORIKIZOKU_BG=0xf5ca01;
 export function paintTorikizokuFacade(quad,mesh,polygon,options={}){
  return paintImageFacade(quad,mesh,polygon,{
