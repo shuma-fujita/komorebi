@@ -10,6 +10,35 @@ import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=logo-fron
 const WALL_IMAGE_OFFSET_M=.012;
 const WALL_COLOR_OFFSET_M=WALL_IMAGE_OFFSET_M;
 
+// Horizontal density is independent of building height and floor count.
+// Use the nominal full-size sign width and the existing wall-fit margin,
+// not the occupied vertical span, to keep the selection stable across floors.
+const MAX_UPPER_LOGO_HEIGHT_M=2.65;
+const LOGO_WALL_MARGIN_M=.35;
+const DENSE_LOGO_FRACTION=.8;
+export function suppressDenseLogoWalls(polygon,indices,aspectRatio){
+ const n=polygon.length;
+ if(indices.length<2||!Number.isFinite(aspectRatio)||aspectRatio<=0)return indices.slice();
+ const widths=polygon.map((p,i)=>Math.hypot(polygon[(i+1)%n][0]-p[0],polygon[(i+1)%n][1]-p[1]));
+ const dense=new Set(indices.filter(i=>widths[i]>0&&
+  Math.min(MAX_UPPER_LOGO_HEIGHT_M*aspectRatio,Math.max(0,widths[i]-LOGO_WALL_MARGIN_M))/widths[i]>=DENSE_LOGO_FRACTION));
+ // Only contiguous dense selected walls compete. Separate or spacious
+ // directions retain their signs. A chain of dense faces is one cluster.
+ const visited=new Set(),removed=new Set();
+ for(const i of dense){
+  if(visited.has(i))continue;
+  const cluster=[i];visited.add(i);
+  for(let j=0;j<cluster.length;j++){
+   const k=cluster[j];
+   for(const neighbor of [(k+n-1)%n,(k+1)%n])
+    if(dense.has(neighbor)&&!visited.has(neighbor)){visited.add(neighbor);cluster.push(neighbor);}
+  }
+  cluster.sort((a,b)=>widths[b]-widths[a]||a-b);
+  for(const loser of cluster.slice(1))removed.add(loser);
+ }
+ return indices.filter(i=>!removed.has(i));
+}
+
 function texturedQuad(surface,a,b,c,d,ua,ub,uc,ud){
  for(const [p,uv] of [[a,ua],[b,ub],[c,uc],[a,ua],[c,uc],[d,ud]]){
   surface.positions.push(...p);
@@ -61,9 +90,13 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  // The existing fascia height is fixed. Fit the image inside the full door-width area.
  const hasEntrance=isGroundOnly&&walls.some(w=>w.i===entranceEdgeIndex&&w.length>=CONVENIENCE_DOOR_WIDTH_M-1e-7&&!blockedWalls?.has(w.i));
  const logoAreaBottom=withGroundGlass?glassTop:bottom;
- const facadeLogoWalls=withGroundGlass&&Number.isInteger(entranceEdgeIndex)
+ let facadeLogoWalls=withGroundGlass&&Number.isInteger(entranceEdgeIndex)
   ?walls.filter(w=>w.i===entranceEdgeIndex)
   :logoOnGroundFasciaOnly&&withGroundGlass?[]:logoWalls;
+ if(facadeMode==='upper-only'){
+  const retained=new Set(suppressDenseLogoWalls(polygon,facadeLogoWalls.map(w=>w.i),logoAspectRatio));
+  facadeLogoWalls=facadeLogoWalls.filter(w=>retained.has(w.i));
+ }
  const surface={texture,ownerKey,backgroundColor,backgroundUV,backgroundSample,backgroundPositions:[],positions:[],uvs:[]};
  // Background color is geometry, never an image-covered wall.
  const place=(wall,u,y,offset)=>{
@@ -133,7 +166,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
    :null;
   const imageHeight=entranceSize
    ?entranceSize.height
-   :Math.min(2.65,imageAreaTop-logoAreaBottom-.28,(wall.length-.35)/logoAspectRatio);
+   :Math.min(MAX_UPPER_LOGO_HEIGHT_M,imageAreaTop-logoAreaBottom-.28,(wall.length-LOGO_WALL_MARGIN_M)/logoAspectRatio);
   if(imageHeight<=0){solid(wall,0,wall.length,wallBottom,top);continue;}
   const imageWidth=entranceSize?entranceSize.width:imageHeight*logoAspectRatio;
   const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;

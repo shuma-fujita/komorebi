@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import {chooseFacadeCornerColor as choose} from '../komorebi3d/maps/map-facade-textures.js';
+import {suppressDenseLogoWalls} from '../komorebi3d/objects/buildings/brand-facade.js';
 import {buildMap} from '../komorebi3d/maps/map-builder.js';
 import {createMapFacadeTextureLayer} from '../komorebi3d/maps/map-facade-textures.js';
 import {paintIsomaruFacade} from '../komorebi3d/objects/buildings/food/isomaru-sign.js';
@@ -194,3 +195,11 @@ try{
  if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;
 }
 console.log('Ground glass / entrance, centered logo, Step 1 and Step 2 wall inlay regression PASS');
+
+// Horizontal crowding must not remove roomy or separate directions.
+const compactOutline=[[0,0],[7,0],[9,6],[-1,6]];
+const denseSelected=suppressDenseLogoWalls(compactOutline,[0,1,2],692/193);
+assert.equal(denseSelected.length,1,'Connected crowded signs share one representative');
+assert.deepEqual(suppressDenseLogoWalls(compactOutline,[0,1,2],1),[0,1,2],'Square artwork leaves space');
+assert.deepEqual(suppressDenseLogoWalls(compactOutline.map(p=>p.map(v=>v*3)),[0,1,2],692/193),[0,1,2],'Roomy larger footprint preserves directions');
+assert.deepEqual(suppressDenseLogoWalls(compactOutline,[0,2],692/193),[0,2],'Nonadjacent dense signs remain independent');
