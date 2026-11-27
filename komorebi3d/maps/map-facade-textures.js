@@ -27,6 +27,36 @@ const TEXTURE_URLS=Object.freeze({
  hoshino:new URL('../assets/textures/brands/hoshino.png?v=brand-png-20261123',import.meta.url).href
 });
 
+ // The map builder is synchronous; decode PNG dimensions before it starts.
+ // The registry is shared with both texture renderers, including previews.
+ const imageAspectRatios=new Map();
+ let metadataPending=null;
+ export function getFacadeImageAspectRatio(texture,fallback=1){
+  return imageAspectRatios.get(texture)??fallback;
+ }
+ export function prepareFacadeImageMetadata(){
+  if(typeof Image==='undefined')return Promise.resolve(imageAspectRatios.size);
+  if(metadataPending)return metadataPending;
+  const pending=Object.entries(TEXTURE_URLS).filter(([name])=>!imageAspectRatios.has(name));
+  metadataPending=Promise.all(pending.map(([name,url])=>new Promise(resolve=>{
+   const image=new Image();
+   let finished=false;
+   const done=()=>{
+    if(finished)return;finished=true;
+    clearTimeout(timer);image.onload=null;image.onerror=null;resolve();
+   };
+   const timer=setTimeout(done,8000);
+   image.onload=()=>{
+    const w=image.naturalWidth,h=image.naturalHeight;
+    if(Number.isFinite(w)&&Number.isFinite(h)&&w>0&&h>0)imageAspectRatios.set(name,w/h);
+    done();
+   };
+   image.onerror=done;
+   image.src=url;
+  }))).then(()=>imageAspectRatios.size).finally(()=>{metadataPending=null;});
+  return metadataPending;
+ }
+
 function perspective(fov,aspect,near,far){
  const f=1/Math.tan(fov/2);
  return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)/(near-far),-1,0,0,2*far*near/(near-far),0]);
@@ -125,11 +155,29 @@ export function chooseFacadeCornerColor(pixels,fallback){
  for(const [color,count] of counts)if(count>=3)return color;
  return fallback;
 }
-function sampledColor(face,resource){
+// Find the most common opaque color family along the actual PNG perimeter.
+ // Return an actual sampled RGB, not the bucket's approximated color.
+ export function chooseFacadeEdgeColor(pixels,fallback){
+  const groups=new Map();
+  for(const p of pixels){
+   if(p[3]!==255)continue;
+   const key=(p[0]>>4)*256+(p[1]>>4)*16+(p[2]>>4);
+   if(!groups.has(key))groups.set(key,[]);
+   groups.get(key).push(p);
+  }
+  const group=[...groups.values()].sort((a,b)=>b.length-a.length)[0];
+  if(!group?.length)return fallback;
+  const mean=[0,1,2].map(i=>group.reduce((sum,p)=>sum+p[i],0)/group.length);
+  const distance=p=>mean.reduce((sum,m,i)=>sum+(p[i]-m)**2,0);
+  const p=group.reduce((best,p)=>distance(p)<distance(best)?p:best);
+  return (p[0]<<16)|(p[1]<<8)|p[2];
+ }
+ function sampledColor(face,resource){
  if(!resource.ready)return face.backgroundColor;
  const [u,v]=face.backgroundUV||[.04,.04];
  const legacy=u!==.04||v!==.04;
- const key=legacy?u+','+v:'corners:'+face.backgroundColor;
+ const edge=face.backgroundSample==='edge';
+ const key=edge?'edge:'+face.backgroundColor:legacy?u+','+v:'corners:'+face.backgroundColor;
  if(resource.colors.has(key))return resource.colors.get(key)??face.backgroundColor;
  let color=null;
  try{
@@ -142,7 +190,14 @@ function sampledColor(face,resource){
     ctx.drawImage(image,x,y,1,1,0,0,1,1);
     return ctx.getImageData(0,0,1,1).data;
    };
-   if(legacy){
+   if(edge){
+    const pixels=[];
+    for(let i=0;i<12;i++){
+     const x=Math.round((w-1)*i/11),y=Math.round((h-1)*i/11);
+     pixels.push(read(x,0),read(x,h-1),read(0,y),read(w-1,y));
+    }
+    color=chooseFacadeEdgeColor(pixels,face.backgroundColor);
+   }else if(legacy){
     const p=read(Math.min(w-1,Math.max(0,Math.floor(u*w))),Math.min(h-1,Math.max(0,Math.floor((1-v)*h))));
     if(p[3]===255)color=(p[0]<<16)|(p[1]<<8)|p[2];
    }else{

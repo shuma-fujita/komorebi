@@ -1,5 +1,5 @@
 // White wall around the user's square Bamiyan logo.
-import {paintImageFacade} from '../brand-facade.js?v=door-logo-4m-fixed-fascia-v2-20261127';
+import {paintImageFacade} from '../brand-facade.js?v=png-native-ratio-edge-v1-20261127';
 export const BAMIYAN_BG=0xffffff;
 export function paintBamiyanFacade(quad,mesh,polygon,options={}){
  return paintImageFacade(quad,mesh,polygon,{

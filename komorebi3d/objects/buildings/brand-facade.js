@@ -3,6 +3,7 @@
 // Texture selection is handled by app-owned Renderer A/B facade layers.
 import {paintConvenienceGlazing,entranceLogoSize,paintConvenienceFasciaDividers} from './convenience/common.js?v=occupancy-facade-modes-v1-20261123';
 import {CONVENIENCE_DOOR_WIDTH_M} from './convenience/const.js?v=convenience-one-sign-v3-20261112';
+import {getFacadeImageAspectRatio} from '../../maps/map-facade-textures.js?v=png-native-ratio-edge-v1-20261127';
 import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=frontage-nearby-v1-20261123';
 // Step 2: opaque color and PNG logo occupy disjoint regions of ONE plane.
 // Keep the existing logo plane (and existing glazing / fascia offsets).
@@ -23,11 +24,13 @@ export function imageFacadeMode({bottom,top,groundGlassTop}={}){
  return top>groundGlassTop+1e-8?'ground-and-upper':'ground-only';
 }
 
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
   typeof texture!=='string'||!texture||!Array.isArray(backgroundUV)||backgroundUV.length!==2||backgroundUV.some(v=>!Number.isFinite(v)||v<0||v>1)||!Number.isFinite(logoAspectRatio)||logoAspectRatio<=0||!Number.isInteger(backgroundColor)||backgroundColor<0||backgroundColor>0xffffff)return false;
+ // Use the actual decoded PNG ratio; retain the configured ratio only if the image could not load.
+ if(Array.isArray(texturedFaces))logoAspectRatio=getFacadeImageAspectRatio(texture,logoAspectRatio);
  let twiceArea=0;
  for(let i=0;i<polygon.length;i++){
   const p=polygon[i],q=polygon[(i+1)%polygon.length];
@@ -61,7 +64,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
  const facadeLogoWalls=withGroundGlass&&Number.isInteger(entranceEdgeIndex)
   ?walls.filter(w=>w.i===entranceEdgeIndex)
   :logoOnGroundFasciaOnly&&withGroundGlass?[]:logoWalls;
- const surface={texture,ownerKey,backgroundColor,backgroundUV,backgroundPositions:[],positions:[],uvs:[]};
+ const surface={texture,ownerKey,backgroundColor,backgroundUV,backgroundSample,backgroundPositions:[],positions:[],uvs:[]};
  // Background color is geometry, never an image-covered wall.
  const place=(wall,u,y,offset)=>{
   const {a,dx,dz,length}=wall;
