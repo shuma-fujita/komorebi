@@ -1,5 +1,5 @@
 // Show the original complete wide artwork without cropping the edge waves.
-import {paintImageFacade} from '../brand-facade.js?v=png-native-ratio-edge-v1-20261127';
+import {paintImageFacade} from '../brand-facade.js?v=logo-one-per-direction-v1-20261127';
 export const ISOMARU_BG=0xffffff;
 export const ISOMARU_ASPECT=192/128;
 export function paintIsomaruFacade(quad,mesh,polygon,options={}){

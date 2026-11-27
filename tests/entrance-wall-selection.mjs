@@ -34,8 +34,10 @@ const candidates=eligibleFacadeWalls(square,westRoad,[eastNeighbor],1.2,blocked)
 assert.deepEqual(candidates.map(w=>w.i),[0,2,3],'No obstructed wall may be a candidate');
 assert.deepEqual(candidates.filter(w=>w.roadEligible).map(w=>w.i),[3],
  'West-facing road remains eligible even when east face is longer');
-assert.deepEqual(selectLogoWalls(square,westRoad,[eastNeighbor],blocked),[3],
- 'Upper-only logos prefer unblocked road-facing facade');
+assert.deepEqual(selectLogoWalls(square,westRoad,[eastNeighbor],blocked),[0,2,3],
+ 'An unobstructed direction does not require a road');
+assert.deepEqual(selectLogoWalls(square,westRoad,[]),[0,1,2,3],
+ 'A detached square has one logo per exposed direction even with just one road');
 assert.deepEqual(selectLogoWalls(square,[],[eastNeighbor],blocked),[0,2,3],
  'Missing road information falls back to accessible facade walls');
 assert.equal(selectEntranceWall(square,westRoad,[eastNeighbor],4,blocked),3,
@@ -78,7 +80,7 @@ assert.equal(selectEntranceWall(square,[southWalk,southGray,northWalk,
 const subdivided=[[0,0],[3,0],[9,1],[20,1],[20,15],[0,15]];
 assert.deepEqual(selectLogoWalls(subdivided,[],[]).sort((a,b)=>a-b),[1,3,4,5],
  'Without road data, separate building corners retain independent frontages');
-assert.deepEqual(selectLogoWalls(subdivided,[[[-10,-8],[30,-8]]],[]),[1],
+assert.deepEqual(selectLogoWalls(subdivided,[[[-10,-8],[30,-8]]],[]),[1,3,4,5],
  'Multiple south-facing road edges produce only one central logo');
 const sameSide=eligibleFacadeWalls(subdivided,[],[],1.2).filter(x=>[0,1,2].includes(x.i));
 assert.ok(sameSide.length===3&&
@@ -100,15 +102,15 @@ assert.deepEqual(selectLogoWalls(hexagon,[],[],new Set([0,2,4])).sort((a,b)=>a-b
 // OSM wall segments. A prominent central logo, not repeated end logos.
 const curved=[[0,0],[8,0],[13,-2],[18,-2],[23,0],[31,0],[31,18],[0,18]];
 const curvedRoad=[[[-6,-10],[38,-10]]];
-assert.deepEqual(selectLogoWalls(curved,curvedRoad,[]),[2],
- 'Curved road-facing storefront has ONE sign on its central wall');
+assert.deepEqual(selectLogoWalls(curved,curvedRoad,[]),[2,5,6,7],
+ 'Curved frontage retains its central sign and other exposed directions');
 const curvedFaces=[];
 assert.equal(paintImageFacade(()=>{},{},curved,{
  bottom:3,top:6,texture:'test',backgroundColor:0x0066aa,texturedFaces:curvedFaces,
  logoWallIndices:selectLogoWalls(curved,curvedRoad,[])
 }),true);
-assert.equal(curvedFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,1,
- 'Actual curved facade places one UV logo, not one per bend');
+assert.equal(curvedFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,4,
+ 'Actual curved facade places one UV logo per selected direction, not one per bend');
 // Reproduction of the missing center-frontage logo: short OSM connector
 // walls break the old (filter-to-1.2m FIRST) algorithm into two logos even
 // though the entire street-facing wall is one continuous, gentle frontage.
@@ -122,17 +124,17 @@ assert.ok(bridgeRoadEligible.includes(0)&&bridgeRoadEligible.includes(5),
 assert.ok(!bridgeRoadEligible.some(i=>i>=1&&i<=4),
  'Tiny middle walls are individually ineligible for logo placement');
 const bridged=selectLogoWalls(bridge,bridgeRoad,[]);
-assert.equal(bridged.length,1,
+assert.equal(bridged.length,4,
  'Tiny center connector walls must not split one shop front into two logos');
-assert.ok([0,5].includes(bridged[0]),
+assert.ok(bridged.filter(i=>[0,5].includes(i)).length===1,
  'The representative remains on a wall wide enough for a real logo');
 const bridgeFaces=[];
 paintImageFacade(()=>{}, {},bridge,{
  bottom:3,top:6,texture:'test',backgroundColor:0x664422,
  texturedFaces:bridgeFaces,logoWallIndices:bridged
 });
-assert.equal(bridgeFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,1,
- 'Actual storefront texture has just one logo across the bridged frontage');
+assert.equal(bridgeFaces[0].uvs.filter((v,i)=>i%12===0&&v===1).length,4,
+ 'Actual storefront texture has one logo per exposed direction including the bridged frontage');
 
 // Real Matsudo Geofabrik footprint (13 sides, metres relative to its POI).
 // The 0.44m sideways jog must join parallel neighbours; only the central
@@ -174,9 +176,11 @@ const amsOutline=[[0,0],[-9.04,-2.46],[-8.96,-2.93],[-14.37,-4.9],
 const amsRoads=[[[-47.34,27.36],[-34.35,-15.85]],
  [[11.55,-27.45],[-3.53,24.2]]];
 const amsBlocked=new Set([0,2,4,8,10]);
+// This reduced fixture omits surrounding buildings; the north-facing wall
+// remains eligible unless its road line is obstructed, as in the real tile.
 const amsLogos=selectLogoWalls(amsOutline,amsRoads,[],amsBlocked);
-assert.deepEqual(amsLogos,[5,11],
- 'Nearby same-road logos merge without losing another street-facing wall');
+assert.deepEqual(amsLogos,[5,6,11],
+ 'Same-direction logos merge without losing another exposed direction');
 const amsFaces=[];
 paintImageFacade(()=>{}, {},amsOutline,{bottom:3,top:6,
  texture:'test',backgroundColor:0xf5ca01,texturedFaces:amsFaces,
@@ -184,22 +188,22 @@ paintImageFacade(()=>{}, {},amsOutline,{bottom:3,top:6,
 let amsUVs=0;
 for(let i=0;i<amsFaces[0].uvs.length;i+=12)
  if(logoUVPatterns.has(amsFaces[0].uvs.slice(i,i+12).join(',')))amsUVs++;
-assert.equal(amsUVs,2,'Two distinct road-side UV logos remain');
+assert.equal(amsUVs,3,'Three exposed directions remain in the reduced fixture');
 const distantParallel=[[0,0],[10,0],[10,10],[20,10],
  [20,0],[30,0],[30,20],[0,20]];
-assert.deepEqual(selectLogoWalls(distantParallel,[[[-10,-6],[40,-6]]],[]),[0,2,4],
- 'Separated parallel frontages remain independent');
+assert.deepEqual(selectLogoWalls(distantParallel,[[[-10,-6],[40,-6]]],[]),[0,5,6,7],
+ 'Separated parallel frontages merge regardless of distance; other directions remain');
 
 // A tiny 45-degree chamfer at a TRUE right-angle corner is not a bridge.
 const chamfer=[[0,0],[19.5,0],[20,.5],[20,20],[0,20]];
-assert.deepEqual(selectLogoWalls(chamfer,[[[0,-8],[20,-8]],[[28,0],[28,20]]],[]).sort((a,b)=>a-b),[0,2],
+assert.deepEqual(selectLogoWalls(chamfer,[[[0,-8],[20,-8]],[[28,0],[28,20]]],[]).sort((a,b)=>a-b),[0,2,3,4],
  'Perpendicular street frontages remain separate despite a tiny corner chamfer');
 
 // Torikizoku style: two separate sharp street faces, each retaining a logo.
 const twoRoads=[[[0,-8],[20,-8]],[[28,0],[28,20]]];
-assert.deepEqual(selectLogoWalls(square,twoRoads,[]).sort((a,b)=>a-b),[0,1],
+assert.deepEqual(selectLogoWalls(square,twoRoads,[]).sort((a,b)=>a-b),[0,1,2,3],
  'Two perpendicular road fronts remain independent facade groups');
-assert.deepEqual(selectLogoWalls(square,twoRoads,[eastNeighbor],blocked),[0],
+assert.deepEqual(selectLogoWalls(square,twoRoads,[eastNeighbor],blocked),[0,2,3],
  'A neighboring building still excludes its blocked road-facing frontage');
 
 const boxed=[
@@ -284,10 +288,10 @@ for(let i=0;i<roadFaces[0].uvs.length;i+=12){
  const p=roadFaces[0].positions.slice(i/12*18,i/12*18+18);
  logos.push({x:p[0],z:p[2]});
 }
-assert.equal(logos.length,1,'Only visible road-facing facade receives a logo');
-assert.ok(Math.abs(logos[0].x)<.02,'Logo is on the previously unused west road face');
+assert.equal(logos.length,3,'Each exposed direction receives a logo');
+assert.ok(logos.some(logo=>Math.abs(logo.x)<.02),'West road face retains its logo');
 assert.equal(roadQuads.filter(q=>q.at(-1)===0xffcc00).length,0);
-assert.equal(roadFaces[0].backgroundPositions.length,7*18,
+assert.equal(roadFaces[0].backgroundPositions.length,13*18,
  'Branded solid wall remains on every facade, including the blocked side');
 
 const multiFaces=[];
