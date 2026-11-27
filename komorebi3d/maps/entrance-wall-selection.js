@@ -221,6 +221,26 @@ function uniqueLogoDirections(frontages){
    kept.push(candidate);
  return kept.map(wall=>wall.i).sort((a,b)=>a-b);
 }
+// Keep the central sign on a continuous curved corner. Otherwise retain
+// distinct directions until the building-wide comparison.
+function frontageRepresentatives(drawable,closed=false){
+ const primary=drawable.find(edge=>edge.i===frontageRepresentative(drawable));
+ if(closed)return [primary];
+ const comfortable=Math.min(3,Math.max(...drawable.map(edge=>edge.len)));
+ const wide=drawable.filter(edge=>edge.len>=comfortable-1e-8);
+ const index=wide.indexOf(primary),before=wide[index-1],after=wide[index+1];
+ const dot=(a,b)=>a.normal[0]*b.normal[0]+a.normal[1]*b.normal[1];
+ const cross=(a,b)=>a.normal[0]*b.normal[1]-a.normal[1]*b.normal[0];
+ const same=(a,b)=>dot(a,b)>=SAME_DIRECTION_COS;
+ const corner=before&&after&&!same(before,primary)&&!same(primary,after)&&
+  cross(before,primary)*cross(primary,after)>0&&
+  dot(before,primary)>FRONTAGE_CORNER_COS&&dot(primary,after)>FRONTAGE_CORNER_COS;
+ if(corner)return [primary];
+ const kept=[primary];
+ for(const candidate of wide.slice().sort((a,b)=>b.len-a.len||a.i-b.i))
+  if(!kept.some(other=>same(other,candidate)))kept.push(candidate);
+ return kept;
+}
 export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null){
  // Recognize whole contiguous frontages BEFORE asking whether each tiny OSM
  // wall individually faces the road. Otherwise a short / oblique middle wall
@@ -233,8 +253,7 @@ export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=
  const candidates=groups.flatMap(run=>{
   const drawable=run.filter(edge=>edge.len>=1.2&&!edge.roadBlocked);
   if(!drawable.length)return [];
-  const i=frontageRepresentative(drawable);
-  return [drawable.find(edge=>edge.i===i)];
+  return frontageRepresentatives(drawable,run.length===polygon.length);
  });
  return uniqueLogoDirections(candidates);
 }

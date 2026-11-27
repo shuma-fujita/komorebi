@@ -1,6 +1,6 @@
 // Unified brand-logo pipeline. OSM category is *not* the brand identity.
 // A named POI may be a restaurant, pub, shop, office, leisure facility, etc.
-import {LOGO_BRANDS} from './brands/index.js?v=logo-one-per-direction-v1-20261127';
+import {LOGO_BRANDS} from './brands/index.js?v=logo-frontage-representatives-v1-20261127';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=shared-floor-20261126';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()

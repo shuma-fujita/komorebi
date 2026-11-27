@@ -189,6 +189,18 @@ let amsUVs=0;
 for(let i=0;i<amsFaces[0].uvs.length;i+=12)
  if(logoUVPatterns.has(amsFaces[0].uvs.slice(i,i+12).join(',')))amsUVs++;
 assert.equal(amsUVs,3,'Three exposed directions remain in the reduced fixture');
+
+// Two exposed walls meeting directly must retain both distinct directions.
+// A genuine chamfer retains its central representative.
+const directCorner=[[0,0],[20,0],[30,20],[0,20]];
+const directSelected=selectLogoWalls(directCorner,[],[],new Set([2,3]));
+assert.deepEqual(directSelected,[0,1],
+ 'Direct junction keeps both usable directions');
+const broadChamfer=[[0,0],[20,0],[25,5],[25,15],[0,15]];
+const chamferSelected=selectLogoWalls(broadChamfer);
+assert.ok(chamferSelected.includes(1)&&!chamferSelected.includes(0)&&!chamferSelected.includes(2),
+ 'Gradual corner retains its central representative');
+
 const distantParallel=[[0,0],[10,0],[10,10],[20,10],
  [20,0],[30,0],[30,20],[0,20]];
 assert.deepEqual(selectLogoWalls(distantParallel,[[[-10,-6],[40,-6]]],[]),[0,5,6,7],

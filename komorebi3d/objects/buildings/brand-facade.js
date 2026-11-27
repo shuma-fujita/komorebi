@@ -4,7 +4,7 @@
 import {paintConvenienceGlazing,entranceLogoSize,paintConvenienceFasciaDividers} from './convenience/common.js?v=occupancy-facade-modes-v1-20261123';
 import {CONVENIENCE_DOOR_WIDTH_M} from './convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {getFacadeImageAspectRatio} from '../../maps/map-facade-textures.js?v=png-native-ratio-edge-v1-20261127';
-import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=logo-one-per-direction-v1-20261127';
+import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=logo-frontage-representatives-v1-20261127';
 // Step 2: opaque color and PNG logo occupy disjoint regions of ONE plane.
 // Keep the existing logo plane (and existing glazing / fascia offsets).
 const WALL_IMAGE_OFFSET_M=.012;
