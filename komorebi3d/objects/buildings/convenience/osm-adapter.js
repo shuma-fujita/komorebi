@@ -4,13 +4,13 @@ import {BUILDING_POI_OUTSIDE_TOLERANCE_METRES} from '../../../maps/building-poi-
 import {CONVENIENCE_DOOR_WIDTH_M} from './const.js?v=convenience-one-sign-v3-20261112';
 import {convenienceRoofColor,paintConvenienceGlazing,paintConvenienceSign} from './common.js?v=occupancy-facade-modes-v1-20261123';
 import {sevenEleven} from './seven-eleven.js?v=seven-sign-green-bands-v2-20261112';
-import {familymart} from './familymart.js?v=convenience-sign-v1-20261112';
 import {lawsonStore100} from './lawson-store100.js?v=lawson-storefront-20261119';
 import {ministop} from './ministop.js?v=ministop-white-logo-v2-20261112';
 // Distance tolerance in centimetres; edit 100 to adjust the allowed POI offset.
 export const CONVENIENCE_MATCH_TOLERANCE_CM=BUILDING_POI_OUTSIDE_TOLERANCE_METRES*100;
 // Standard Lawson now uses the shared image-logo facade. Keep Store 100 dedicated.
-const brands=[sevenEleven,familymart,lawsonStore100,ministop];
+// FamilyMart is handled by the category-independent Commons image-logo pass.
+const brands=[sevenEleven,lawsonStore100,ministop];
 const normalized=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 function identifyBrand(tags){
  if(tags.shop!=='convenience')return null;

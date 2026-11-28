@@ -9,6 +9,13 @@ import {isomaru} from '../../food/isomaru.js?v=isomaru-wide-v1-20261122';
 import {torikizoku} from '../../food/torikizoku.js?v=food-torikizoku-v1-20261122';
 import {hoshino} from './hoshino.js?v=hoshino-coffee-logo-v1-20261123';
 import {lawson} from './lawson.js?v=lawson-image-v1-20261123';
+import {familymart} from '../../convenience/familymart.js?v=convenience-sign-v1-20261112';
+import {paintImageFacade} from '../facade.js?v=shared-facade-priority-v1-20261128';
+const sukiya=Object.freeze({id:'sukiya',names:['すき家','sukiya']});
+const commonsOnlyFacade=(texture,backgroundColor)=>(quad,mesh,polygon,options={})=>
+ paintImageFacade(quad,mesh,polygon,{...options,texture,backgroundColor});
+const paintFamilymartFacade=commonsOnlyFacade('familymart',0xffffff);
+const paintSukiyaFacade=commonsOnlyFacade('sukiya',0xffffff);
 import {rakutenMobile} from './rakuten-mobile.js?v=rakuten-mobile-v1-20261123';
 import {yoshinoya} from '../../food/yoshinoya.js?v=food-image-logo-v1-20261123';
 import {hidakaya} from '../../food/hidakaya.js?v=food-image-logo-v1-20261123';
@@ -58,6 +65,8 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:torikizoku,paint:paintTorikizokuFacade},
  {brand:hoshino,paint:paintHoshinoFacade},
  {brand:lawson,paint:paintLawsonFacade},
+ {brand:familymart,paint:paintFamilymartFacade},
+ {brand:sukiya,paint:paintSukiyaFacade},
  {brand:rakutenMobile,paint:paintRakutenMobileFacade},
  {brand:yoshinoya,paint:paintYoshinoyaFacade},
  {brand:hidakaya,paint:paintHidakayaFacade},

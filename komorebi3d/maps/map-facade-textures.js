@@ -2,9 +2,11 @@
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
 import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=commons-edge-v1-20261128';
-// Pilot: reuse the existing local PNG texture keys as reliable fallbacks.
-const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819',yoshinoya:'Q776272'});
+// Commons-only brands have null PNG URLs; existing brands retain local PNG fallbacks.
+const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819',yoshinoya:'Q776272',familymart:'Q1191685',sukiya:'Q6137375'});
 const TEXTURE_URLS=Object.freeze({
+ familymart:null,
+ sukiya:null,
  wikidataQ38076:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
  matsumotoKiyoshi:new URL('../assets/textures/brands/matsumoto-kiyoshi.png?v=matsumoto-kiyoshi-v1-20261127',import.meta.url).href,
@@ -47,7 +49,7 @@ const TEXTURE_URLS=Object.freeze({
    // The geometry is built synchronously after this preparation. For Commons
    // brands, use the *selected* remote logo ratio rather than the square
    // fallback PNG ratio, so wide wordmarks fill the entrance fascia.
-   const fallback=()=>new Promise(resolve=>{
+   const fallback=()=>!url?Promise.resolve():new Promise(resolve=>{
     const image=new Image();
     const timer=setTimeout(()=>{image.onload=null;image.onerror=null;resolve();},8000);
     image.onload=()=>{
@@ -244,6 +246,7 @@ export function createMapFacadeTextureLayer(renderer){
   scene=new THREE.Scene();
   scene.fog=renderer.scene?.fog??null;
  }else shader=programFor(gl);
+ // PNG-free Commons brands use the same texture path with no network-dependent placeholder file.
  // Every brand owns its texture; all geometry and camera operations remain
  // identical across the fixed WebGL1/Three.js rendering backends.
  for(const [name,url] of Object.entries(TEXTURE_URLS)){
@@ -403,10 +406,10 @@ export function createMapFacadeTextureLayer(renderer){
    });
   };
   image.onerror=()=>{
-   if(!disposed){resource.failed=true;console.warn('PNG facade not found:',url);}
+   if(!disposed&&url){resource.failed=true;console.warn('PNG facade not found:',url);}
   };
   resources.set(name,resource);
-  image.src=url;
+  if(url)image.src=url;
  }
  function solidMaterial(color){
   if(!solidMaterials.has(color))solidMaterials.set(color,new THREE.MeshBasicMaterial({
