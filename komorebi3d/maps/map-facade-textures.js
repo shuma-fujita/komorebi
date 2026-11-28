@@ -302,26 +302,27 @@ export function createMapFacadeTextureLayer(renderer){
   // Sample the original Commons image, before fitting it into the PNG-sized canvas.
   // Four fully transparent corners mean a white sign background for Commons logos.
   // Other ambiguous corners retain the original PNG/facade behavior.
-  const commonsCornerColor=remote=>{
+  const inspectCommonsCorners=remote=>{
    try{
     const w=remote.naturalWidth,h=remote.naturalHeight;
-    if(!(w>0&&h>0))return null;
+    if(!(w>0&&h>0))return {color:null,transparent:null};
     const canvas=document.createElement('canvas');canvas.width=canvas.height=1;
     const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    if(!ctx)return null;
+    if(!ctx)return {color:null,transparent:null};
     const read=(x,y)=>{
      ctx.clearRect(0,0,1,1);
      ctx.drawImage(remote,x,y,1,1,0,0,1,1);
      return ctx.getImageData(0,0,1,1).data;
     };
     const pixels=[read(0,0),read(w-1,0),read(0,h-1),read(w-1,h-1)];
-    const color=pixels.every(p=>p[3]===0)?0xffffff:chooseFacadeCornerColor(pixels,null);
+    const transparent=pixels.every(p=>p[3]===0);
+    const color=transparent?0xffffff:chooseFacadeCornerColor(pixels,null);
     if(name==='lawson')reportWikidataLogoStage('Q1557223','corners','success',
      pixels.map(p=>'#'+[...p].slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join('')+'/a'+p[3]).join(' ')+' => '+(color===null?'判定不可':'#'+color.toString(16).padStart(6,'0')));
-    return color;
+    return {color,transparent};
    }catch(error){
     if(name==='lawson')reportWikidataLogoStage('Q1557223','corners','failed',error?.message||error);
-    return null;
+    return {color:null,transparent:null};
    }
   };
   const wikidataId=WIKIDATA_BRANDS[name];
@@ -368,19 +369,20 @@ export function createMapFacadeTextureLayer(renderer){
     const geometryMatchesCommons=Number.isFinite(actualAspect)&&actualAspect>0&&
      Math.abs(actualAspect/remoteAspect-1)<.01;
     const scale=Math.min(width/sw,height/sh);
-    // Give Commons logos 20% breathing room on each side of the UV sign.
+    // Preserve baked-in margins on background-bearing logos. Unknown corners retain the previous padding.
     // Keep the existing contain fallback when the actual UV ratio differs.
-    const padding=geometryMatchesCommons?.2:0;
+    const corners=inspectCommonsCorners(remote);
+    const padding=geometryMatchesCommons&&corners.transparent!==false ? .2 : 0;
     const w=geometryMatchesCommons?width*(1-2*padding):sw*scale;
     const h=geometryMatchesCommons?height*(1-2*padding):sh*scale;
     if(name==='lawson')reportWikidataLogoStage(wikidataId,'size','success',
      '元画像 '+remote.naturalWidth+'×'+remote.naturalHeight+'px / '+cropStatus+
      ' / 切抜 '+sw+'×'+sh+'px (x='+sx+', y='+sy+')'+
      ' / 配置 '+w.toFixed(1)+'×'+h.toFixed(1)+'px / キャンバス '+width+'×'+height+'px'+
-     ' / UV実形状比率 '+(actualAspect||0).toFixed(2)+' / '+(geometryMatchesCommons?'全面配置':'従来配置（比率不一致）'));
+     ' / 追加余白 '+(padding*100)+'% / UV実形状比率 '+(actualAspect||0).toFixed(2)+' / '+(geometryMatchesCommons?'全面配置':'従来配置（比率不一致）'));
     ctx.drawImage(remote,sx,sy,sw,sh,(width-w)/2,(height-h)/2,w,h);
     if(upload(canvas)){
-     resource.commonsCornerColor=commonsCornerColor(remote);
+     resource.commonsCornerColor=corners.color;
      resource.dynamicReady=true;
      if(name==='lawson')reportWikidataLogoStage(wikidataId,'background','success',
       'Commons背景：'+(resource.commonsCornerColor===null?'判定不可（従来色）':'#'+resource.commonsCornerColor.toString(16).padStart(6,'0')));
