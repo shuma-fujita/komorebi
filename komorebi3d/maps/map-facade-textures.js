@@ -368,9 +368,9 @@ export function createMapFacadeTextureLayer(renderer){
     const geometryMatchesCommons=Number.isFinite(actualAspect)&&actualAspect>0&&
      Math.abs(actualAspect/remoteAspect-1)<.01;
     const scale=Math.min(width/sw,height/sh);
-    // Give Commons logos 10% breathing room on each side of the UV sign.
+    // Give Commons logos 20% breathing room on each side of the UV sign.
     // Keep the existing contain fallback when the actual UV ratio differs.
-    const padding=geometryMatchesCommons?.1:0;
+    const padding=geometryMatchesCommons?.2:0;
     const w=geometryMatchesCommons?width*(1-2*padding):sw*scale;
     const h=geometryMatchesCommons?height*(1-2*padding):sh*scale;
     if(name==='lawson')reportWikidataLogoStage(wikidataId,'size','success',
