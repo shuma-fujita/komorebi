@@ -7,6 +7,7 @@ export function reportWikidataLogoStage(id,stage,state,detail=''){
  window.dispatchEvent(event);
 }
 const logoStages=new Map();
+const lawsonStages=new Map();
 let logoImageUrl='';
 let logoFileName='';
 let logoSelection='未選択';
@@ -62,12 +63,18 @@ function renderLogoDiagnostic(){
   '<div>Commonsページ：'+(logoFileName?'<a href="'+escape('https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(logoFileName.replace(/ /g,'_')))+'" target="_blank" rel="noopener noreferrer" style="overflow-wrap:anywhere">'+escape('https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(logoFileName.replace(/ /g,'_')))+'</a>':'未取得')+'</div>'+
   '<div>Wikidataページ：<a href="https://www.wikidata.org/wiki/Q38076" target="_blank" rel="noopener noreferrer">https://www.wikidata.org/wiki/Q38076</a></div>'+
   '<div>'+(error?'PNGフォールバック：'+escape(error.detail):'取得処理：'+(logoStages.size?'実行中／結果表示':'対象ロゴの描画待ち'))+'</div>';
+ const lawson=(key)=>{const x=lawsonStages.get(key);return x?x.state+'：'+x.detail:'未測定';};
+ content.innerHTML+='<div style="margin-top:10px;border-top:1px solid #aaa;padding-top:8px"><strong>🏪 ローソン背景色診断 / Q1557223</strong></div>'+
+  '<div>UV看板：'+escape(lawson('face'))+'</div>'+
+  '<div>Commons四隅：'+escape(lawson('corners'))+'</div>'+
+  '<div>背景採用：'+escape(lawson('background'))+'</div>'+
+  '<div>テクスチャ A：'+escape(lawson('A'))+' / B：'+escape(lawson('B'))+'</div>';
  mountLogoCopyButton(panel);
 }
 if(typeof window!=='undefined')window.addEventListener('komorebi:wikidata-logo',event=>{
  const {id,stage,state,detail}=event.detail||{};
- if(id!=='Q38076'||!stage)return;
- logoStages.set(stage,{state,detail});
+ if(!stage||!['Q38076','Q1557223'].includes(id))return;
+ (id==='Q38076'?logoStages:lawsonStages).set(stage,{state,detail});
  renderLogoDiagnostic();
 });
 if(typeof document!=='undefined'){
