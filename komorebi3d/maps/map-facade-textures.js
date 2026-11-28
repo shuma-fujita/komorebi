@@ -364,7 +364,9 @@ export function createMapFacadeTextureLayer(renderer){
     // successfully. Fill the square texture in that case: UV geometry restores
     // the original proportions. Otherwise preserve the old contain fallback.
     const remoteAspect=remote.naturalWidth/remote.naturalHeight;
-    const geometryMatchesCommons=Math.abs((imageAspectRatios.get(name)||0)/remoteAspect-1)<.01;
+    const actualAspect=resource.geometryAspect;
+    const geometryMatchesCommons=Number.isFinite(actualAspect)&&actualAspect>0&&
+     Math.abs(actualAspect/remoteAspect-1)<.01;
     const scale=Math.min(width/sw,height/sh);
     const w=geometryMatchesCommons?width:sw*scale;
     const h=geometryMatchesCommons?height:sh*scale;
@@ -372,7 +374,7 @@ export function createMapFacadeTextureLayer(renderer){
      '元画像 '+remote.naturalWidth+'×'+remote.naturalHeight+'px / '+cropStatus+
      ' / 切抜 '+sw+'×'+sh+'px (x='+sx+', y='+sy+')'+
      ' / 配置 '+w.toFixed(1)+'×'+h.toFixed(1)+'px / キャンバス '+width+'×'+height+'px'+
-     ' / UV比率 '+(imageAspectRatios.get(name)||0).toFixed(2)+' / '+(geometryMatchesCommons?'全面配置':'従来配置'));
+     ' / UV実形状比率 '+(actualAspect||0).toFixed(2)+' / '+(geometryMatchesCommons?'全面配置':'従来配置（比率不一致）'));
     ctx.drawImage(remote,sx,sy,sw,sh,(width-w)/2,(height-h)/2,w,h);
     if(upload(canvas)){
      resource.commonsCornerColor=commonsCornerColor(remote);
@@ -444,6 +446,15 @@ export function createMapFacadeTextureLayer(renderer){
    const valid=all;
    for(const face of valid){
     const resource=resources.get(face.texture);
+    // Use the aspect captured when this face's geometry was actually built,
+    // not the asynchronously updated image metadata registry.
+    if(resource&&!resource.activated){
+     const aspect=face.logoAspectRatio;
+     if(Number.isFinite(aspect)&&aspect>0){
+      if(resource.geometryAspect===undefined)resource.geometryAspect=aspect;
+      else if(Math.abs(resource.geometryAspect/aspect-1)>.01)resource.geometryAspect=null;
+     }
+    }
     resource?.activate?.();geometryFor(face);
     if(face.texture==='lawson'&&resource&&!resource.faceDiagnosticReported){
      resource.faceDiagnosticReported=true;
