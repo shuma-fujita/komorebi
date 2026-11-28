@@ -47,7 +47,7 @@ import {paintManekinekoFacade} from './manekineko-sign.js?v=shared-facade-priori
 import {matsumotoKiyoshi} from './matsumoto-kiyoshi.js?v=matsumoto-kiyoshi-v1-20261127';
 import {paintMatsumotoKiyoshiFacade} from './matsumoto-kiyoshi-sign.js?v=shared-facade-priority-v1-20261128';
 import {toyokoInn} from './toyoko-inn.js?v=toyoko-inn-v1-20261128';
-import {paintToyokoInnFacade} from './toyoko-inn-sign.js?v=toyoko-inn-v1-20261128';
+import {paintToyokoInnFacade} from './toyoko-inn-sign.js?v=toyoko-white-v2-20261128';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
  {brand:daiso,paint:paintDaisoFacade},

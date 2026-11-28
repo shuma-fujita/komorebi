@@ -174,7 +174,7 @@ export function chooseFacadeCornerColor(pixels,fallback){
   return (p[0]<<16)|(p[1]<<8)|p[2];
  }
  function sampledColor(face,resource){
- if(!resource.ready)return face.backgroundColor;
+ if(!resource.ready||face.backgroundSample==='fixed')return face.backgroundColor;
  const [u,v]=face.backgroundUV||[.04,.04];
  const legacy=u!==.04||v!==.04;
  const edge=face.backgroundSample==='edge';

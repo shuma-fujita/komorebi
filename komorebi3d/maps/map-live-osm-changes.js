@@ -1,6 +1,6 @@
 // Scene-only update for successfully saved production OSM tags.
 // Keep all operations local: no Overpass, remote API, or complete-tile rebuild.
-import {buildMap} from './map-builder.js?v=toyoko-inn-v1-20261128';
+import {buildMap} from './map-builder.js?v=toyoko-white-v2-20261128';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {pointInFootprint,TENANT_OUTSIDE_TOLERANCE_METRES} from './map-occupants.js?v=shared-outside-1m-20261119';
 const facilities=['shop','amenity','tourism','office','leisure','healthcare'];
