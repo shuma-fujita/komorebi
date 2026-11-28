@@ -49,3 +49,31 @@ import {mountLocalStorageManager} from './local-storage-panel.js?v=auto-release-
 mountLocalStorageManager(document,{readOnly:true});
 mountDefaultPanelLayoutEditor(document);
 mountMockTouchInput(document.querySelector('.landscape-game'));
+
+
+ // Preview the one-tap diagnostic copy interaction before syncing the game UI.
+ const logoPanel=document.getElementById('wikidata-logo-status');
+ if(logoPanel){
+  const copyButton=document.createElement('button');
+  copyButton.type='button';
+  copyButton.textContent='📋 診断結果をコピー';
+  copyButton.style.cssText='display:block;margin-top:8px;padding:7px 12px;border-radius:7px;border:1px solid #799781;background:#e2eddf;color:#20302a;font-weight:700;cursor:pointer';
+  const feedback=document.createElement('span');
+  feedback.setAttribute('aria-live','polite');
+  feedback.style.cssText='display:block;margin-top:4px';
+  copyButton.addEventListener('click',async()=>{
+   const text=logoPanel.innerText.split('\n').filter(line=>line.trim()&&!line.includes('診断結果をコピー')).join('\n');
+   try{
+    if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(text);
+    else{
+     const input=document.createElement('textarea');input.value=text;
+     input.style.cssText='position:fixed;left:-9999px;top:0';
+     document.body.append(input);input.select();
+     const ok=document.execCommand('copy');input.remove();
+     if(!ok)throw Error('コピーできませんでした');
+    }
+    feedback.textContent='コピーしました';
+   }catch{feedback.textContent='コピーに失敗しました。Safariの共有・選択操作をご利用ください。';}
+  });
+  logoPanel.append(copyButton,feedback);
+ }
