@@ -98,7 +98,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   const retained=new Set(suppressDenseLogoWalls(polygon,facadeLogoWalls.map(w=>w.i),logoAspectRatio,facadeAssessment));
   facadeLogoWalls=facadeLogoWalls.filter(w=>retained.has(w.i));
  }
- const surface={texture,ownerKey,backgroundColor,backgroundUV,backgroundSample,backgroundPositions:[],positions:[],uvs:[]};
+ const surface={texture,ownerKey,backgroundColor,backgroundUV,backgroundSample,logoAspectRatio,backgroundPositions:[],positions:[],uvs:[]};
  // Background color is geometry, never an image-covered wall.
  const place=(wall,u,y,offset)=>{
   const {a,dx,dz,length}=wall;
