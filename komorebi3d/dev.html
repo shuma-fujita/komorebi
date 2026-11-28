@@ -778,8 +778,7 @@ import {createMapFilenameIndicator} from "./maps/map-filename-indicator.js?v=jso
 import {recordConfirmedOsmTagChanges} from "./maps/osm-pending-changes.js?v=auto-release-20261126";
 import {patchLiveGeofabrikMap} from "./maps/map-live-osm-changes.js?v=toyoko-white-v2-20261128";
 import {getOsmReviewStorageCheck} from "./maps/osm-review-storage-check.js?v=auto-release-20261126";
-import {createMapBuildSteps} from "./maps/map-builder.js?v=generic-logo-preflight-v1-20261129";
-import {resolveGenericLogoIds} from "./objects/buildings/logos/osm-adapter.js?v=generic-logo-preflight-v1-20261129";
+import {createMapBuildSteps} from "./maps/map-builder.js?v=commons-aspect-recovery-v1-20261129";
 import {createMapFacadeTextureLayer,prepareFacadeImageMetadata} from "./maps/map-facade-textures.js?v=commons-aspect-recovery-v1-20261129";
 import {matsudoCameraNear,MATSUDO_FAR_M} from "./maps/matsudo-camera-depth.js?v=adaptive-near-v2-20261124";
 import {drawConvenienceSign,drawConvenienceRoof,drawConvenienceWindows} from "./objects/buildings/convenience/common.js?v=convenience-dark-handles-v10-20261112";
@@ -2105,7 +2104,7 @@ async function loadMatsudoMapInBackground(){
     onLog('地図生成: 開始 / '+name+' / 生成予算 '+MAP_BUILD_BUDGET_MS+'ms');
     const profile=createMapBuildProfiler();
     const builder=createMapBuildSteps(map,{
-     halfSize:1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile,availableGenericLogoIds
+     halfSize:1000,priorityX:game.x,priorityZ:game.z,timeBatched:true,profile
     });
     const displayed={meshes:[],texturedFaces:[],mapFeatures:[],labels:[],mapSpan:2000,
      sourceMap:source==='new'?map:null,tileFilename:map.tileFilename,
