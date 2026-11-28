@@ -7,6 +7,32 @@ export function reportWikidataLogoStage(id,stage,state,detail=''){
  window.dispatchEvent(event);
 }
 const logoStages=new Map();
+function mountLogoCopyButton(panel){
+ const button=document.createElement('button');
+ button.type='button';
+ button.textContent='📋 診断結果をコピー';
+ button.style.cssText='display:block;margin-top:8px;padding:7px 12px;border-radius:7px;border:1px solid #799781;background:#e2eddf;color:#20302a;font-weight:700;cursor:pointer';
+ const feedback=document.createElement('span');
+ feedback.setAttribute('aria-live','polite');
+ feedback.style.cssText='display:block;margin-top:4px';
+ button.addEventListener('click',async()=>{
+  const result=[...panel.children].filter(child=>child!==button&&child!==feedback)
+   .map(child=>child.textContent.trim()).filter(Boolean).join('\n');
+  try{
+   if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(result);
+   else{
+    const input=document.createElement('textarea');input.value=result;
+    input.style.cssText='position:fixed;left:-9999px;top:0';
+    document.body.append(input);input.select();
+    const ok=document.execCommand('copy');input.remove();
+    if(!ok)throw Error('コピーできませんでした');
+   }
+   feedback.textContent='コピーしました';
+  }catch{feedback.textContent='コピーに失敗しました。Safariの共有・選択操作をご利用ください。';}
+ });
+ panel.append(button,feedback);
+}
+
 function renderLogoDiagnostic(){
  const panel=typeof document!=='undefined'?document.getElementById('wikidata-logo-status'):null;
  if(!panel)return;
@@ -21,6 +47,7 @@ function renderLogoDiagnostic(){
   '<div>Wikidata：'+escape(stage('wikidata'))+' ・ P154：'+escape(stage('p154'))+'</div>'+
   '<div>Commons：'+escape(stage('commons'))+' ・ テクスチャ：A '+escape(stage('A'))+' / B '+escape(stage('B'))+'</div>'+
   '<div>'+(error?'PNGフォールバック：'+escape(error.detail):'取得処理：'+(logoStages.size?'実行中／結果表示':'対象ロゴの描画待ち'))+'</div>';
+ mountLogoCopyButton(panel);
 }
 if(typeof window!=='undefined')window.addEventListener('komorebi:wikidata-logo',event=>{
  const {id,stage,state,detail}=event.detail||{};
@@ -28,6 +55,10 @@ if(typeof window!=='undefined')window.addEventListener('komorebi:wikidata-logo',
  logoStages.set(stage,{state,detail});
  renderLogoDiagnostic();
 });
+if(typeof document!=='undefined'){
+ const panel=document.getElementById('wikidata-logo-status');
+ if(panel)mountLogoCopyButton(panel);
+}
 const pending=new Map();
 function rankStatement(statement,now){
  if(statement.rank==='deprecated'||statement.mainsnak?.snaktype!=='value')return -1;
