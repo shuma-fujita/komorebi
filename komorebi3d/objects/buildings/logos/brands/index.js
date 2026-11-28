@@ -10,7 +10,7 @@ import {torikizoku} from '../../food/torikizoku.js?v=food-torikizoku-v1-20261122
 import {hoshino} from './hoshino.js?v=hoshino-coffee-logo-v1-20261123';
 import {lawson} from './lawson.js?v=lawson-image-v1-20261123';
 import {familymart} from '../../convenience/familymart.js?v=convenience-sign-v1-20261112';
-import {paintImageFacade} from '../facade.js?v=familymart-commons-palette-v2-20261128';
+import {paintImageFacade} from '../facade.js?v=familymart-sign-layout-v3-20261129';
 import {getFamilymartFacadePalette} from '../../../../maps/map-facade-textures.js?v=commons-only-brands-v1-20261128';
 const sukiya=Object.freeze({id:'sukiya',names:['すき家','sukiya']});
 const commonsOnlyFacade=(texture,backgroundColor)=>(quad,mesh,polygon,options={})=>
@@ -20,8 +20,9 @@ const paintFamilymartFacade=(quad,mesh,polygon,options={})=>{
  return paintImageFacade(quad,mesh,polygon,{
   ...options,texture:'familymart',backgroundColor:0xffffff,
   // The white center occupies most of the fascia, as on the real storefront.
-  sideBands:[{from:0,to:.10,color:palette.blue},
-   {from:.78,to:1,color:palette.green}]
+  sideBands:[{from:0,to:.09,color:palette.blue},
+   {from:.76,to:1,color:palette.green}],
+  logoVerticalRange:[.13,.73],backgroundSample:'fixed'
  });
 };
 const paintSukiyaFacade=(quad,mesh,polygon,options={})=>paintImageFacade(quad,mesh,polygon,{

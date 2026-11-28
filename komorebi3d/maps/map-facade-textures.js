@@ -222,7 +222,7 @@ export function chooseFacadeCornerColor(pixels,fallback){
  function sampledColor(face,resource){
  // A successfully fetched Commons logo defines its own facade background.
  // Never use the bundled PNG's legacy blue when the remote logo has white corners.
- if(resource.dynamicReady&&resource.commonsCornerColor!==null&&resource.commonsCornerColor!==undefined)return resource.commonsCornerColor;
+ if(face.backgroundSample!=='fixed'&&resource.dynamicReady&&resource.commonsCornerColor!==null&&resource.commonsCornerColor!==undefined)return resource.commonsCornerColor;
  if(!resource.ready||face.backgroundSample==='fixed')return face.backgroundColor;
  const [u,v]=face.backgroundUV||[.04,.04];
  const legacy=u!==.04||v!==.04;

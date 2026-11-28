@@ -54,7 +54,7 @@ export function imageFacadeMode({bottom,top,groundGlassTop}={}){
  return top>groundGlassTop+1e-8?'ground-and-upper':'ground-only';
 }
 
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null,facadeAssessment=null,sideBands=null}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null,facadeAssessment=null,sideBands=null,logoVerticalRange=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -194,19 +194,26 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   // the automatic door, inside the ground-floor fascia rather than the upper wall.
   const fasciaOnly=logoOnGroundFasciaOnly&&isGroundOnly;
   const imageAreaTop=fasciaOnly?groundGlassTop:top;
+  // Restrict a sign image to its white center without moving the facade bands.
+  const range=Array.isArray(logoVerticalRange)&&logoVerticalRange.length===2&&
+   logoVerticalRange[0]>=0&&logoVerticalRange[1]<=1&&logoVerticalRange[1]>logoVerticalRange[0]
+   ?logoVerticalRange:null;
+  const imageBottomLimit=range&&withGroundGlass?logoAreaBottom+(groundGlassTop-logoAreaBottom)*range[0]:logoAreaBottom;
+  const imageTopLimit=range&&withGroundGlass?logoAreaBottom+(groundGlassTop-logoAreaBottom)*range[1]:imageAreaTop;
+  const availableImageHeight=imageTopLimit-imageBottomLimit;
   // Convenience-scale signs apply to ground-only occupancy; continuous
   // upper-storey branding restores the full-height logo above the door.
   const entranceSize=isGroundOnly
-   ?(hasEntrance&&wall.i===entranceEdgeIndex?{height:Math.min(groundGlassTop-logoAreaBottom,CONVENIENCE_DOOR_WIDTH_M/logoAspectRatio),width:Math.min(CONVENIENCE_DOOR_WIDTH_M,(groundGlassTop-logoAreaBottom)*logoAspectRatio)}:entranceLogoSize(wall.length,groundGlassTop-logoAreaBottom,logoAspectRatio,{fit:true}))
+   ?(hasEntrance&&wall.i===entranceEdgeIndex?{height:Math.min(availableImageHeight,CONVENIENCE_DOOR_WIDTH_M/logoAspectRatio),width:Math.min(CONVENIENCE_DOOR_WIDTH_M,availableImageHeight*logoAspectRatio)}:entranceLogoSize(wall.length,availableImageHeight,logoAspectRatio,{fit:true}))
    :null;
   const imageHeight=entranceSize
    ?entranceSize.height
-   :Math.min(MAX_UPPER_LOGO_HEIGHT_M,imageAreaTop-logoAreaBottom-.28,(wall.length-LOGO_WALL_MARGIN_M)/logoAspectRatio);
+   :Math.min(MAX_UPPER_LOGO_HEIGHT_M,availableImageHeight-.28,(wall.length-LOGO_WALL_MARGIN_M)/logoAspectRatio);
   if(imageHeight<=0){solid(wall,0,wall.length,wallBottom,top);continue;}
   const imageWidth=entranceSize?entranceSize.width:imageHeight*logoAspectRatio;
   const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;
-  const logoBottom=(logoAreaBottom+imageAreaTop)/2-imageHeight/2;
-  const logoTop=(logoAreaBottom+imageAreaTop)/2+imageHeight/2;
+  const logoBottom=(imageBottomLimit+imageTopLimit)/2-imageHeight/2;
+  const logoTop=(imageBottomLimit+imageTopLimit)/2+imageHeight/2;
   if(useTexture){
    // Four solid bands surround one inlaid PNG rectangle without overlap.
    // The same rectangle is rendered in solid color while its PNG is unavailable.
