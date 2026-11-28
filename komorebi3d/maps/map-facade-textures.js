@@ -360,12 +360,19 @@ export function createMapFacadeTextureLayer(renderer){
       }else cropStatus='不透明画素なし';
      }
     }catch(error){cropStatus='画素取得失敗: '+(error?.name||'Error');}
+    // The UV rectangle already has the Commons aspect when metadata prepared
+    // successfully. Fill the square texture in that case: UV geometry restores
+    // the original proportions. Otherwise preserve the old contain fallback.
+    const remoteAspect=remote.naturalWidth/remote.naturalHeight;
+    const geometryMatchesCommons=Math.abs((imageAspectRatios.get(name)||0)/remoteAspect-1)<.01;
     const scale=Math.min(width/sw,height/sh);
-    const w=sw*scale,h=sh*scale;
+    const w=geometryMatchesCommons?width:sw*scale;
+    const h=geometryMatchesCommons?height:sh*scale;
     if(name==='lawson')reportWikidataLogoStage(wikidataId,'size','success',
      '元画像 '+remote.naturalWidth+'×'+remote.naturalHeight+'px / '+cropStatus+
      ' / 切抜 '+sw+'×'+sh+'px (x='+sx+', y='+sy+')'+
-     ' / 配置 '+w.toFixed(1)+'×'+h.toFixed(1)+'px / キャンバス '+width+'×'+height+'px');
+     ' / 配置 '+w.toFixed(1)+'×'+h.toFixed(1)+'px / キャンバス '+width+'×'+height+'px'+
+     ' / UV比率 '+(imageAspectRatios.get(name)||0).toFixed(2)+' / '+(geometryMatchesCommons?'全面配置':'従来配置'));
     ctx.drawImage(remote,sx,sy,sw,sh,(width-w)/2,(height-h)/2,w,h);
     if(upload(canvas)){
      resource.commonsCornerColor=commonsCornerColor(remote);
