@@ -1,6 +1,6 @@
 // Unified brand-logo pipeline. OSM category is *not* the brand identity.
 // A named POI may be a restaurant, pub, shop, office, leisure facility, etc.
-import {LOGO_BRANDS} from './brands/index.js?v=toyoko-white-v2-20261128';
+import {LOGO_BRANDS} from './brands/index.js?v=wikidata-logo-v1-20261128';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=shared-floor-20261126';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()
@@ -40,9 +40,13 @@ export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredL
   for(const group of contiguousLogoGroups(spans)){
    if(occupied.some(other=>group.bottom<other.top-1e-8&&group.top>other.bottom+1e-8))continue;
    const ground=spans.find(span=>Math.abs(span.bottom)<1e-8);
+   const wikidataStores=stores.filter(s=>s.brand?.id===brand.id&&s.wikidata==='Q38076');
+   const wikidataSpans=brand.id==='mcdonalds'
+    ?resolveLogoLevels(wikidataStores,tags,height,inferredLevels,brand.id):[];
+   const logoWikidata=wikidataSpans.some(s=>s.bottom<group.top-1e-8&&s.top>group.bottom+1e-8)?'Q38076':null;
    const groundGlassTop=group.bottom<1e-8&&ground?ground.top:null;
    if(paint(quad,mesh,polygon,{bottom:group.bottom,top:group.top,texturedFaces,ownerKey,
-    groundGlassTop,entranceEdgeIndex,blockedWalls,logoWallIndices,facadeAssessment})){
+    groundGlassTop,entranceEdgeIndex,blockedWalls,logoWallIndices,facadeAssessment,logoWikidata})){
     occupied.push(group);count++;
     // Report only successfully generated image facades, never speculative
     // occupancy or groups rejected by the painter / floor conflict check.

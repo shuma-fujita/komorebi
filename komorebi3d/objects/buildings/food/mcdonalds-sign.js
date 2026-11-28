@@ -30,7 +30,7 @@ function goldenArch(quad,controls){
 // the PNG's solid-red corner. No protruding sign board is created.
 export function paintMcDonaldsFacade(quad,mesh,polygon,options={}){
  return paintImageFacade(quad,mesh,polygon,{
-  ...options,texture:'mcdonalds',backgroundColor:MC_SIGN_BG,
+  ...options,texture:options.logoWikidata==='Q38076'?'wikidataQ38076':'mcdonalds',backgroundSample:options.logoWikidata==='Q38076'?'fixed':'corners',backgroundColor:MC_SIGN_BG,
   drawFallbackLogo:logoQuad=>{
    goldenArch(logoQuad,[[-1,-.92],[-.84,1.46],[-.20,1.46],[0,-.86]]);
    goldenArch(logoQuad,[[0,-.86],[.20,1.46],[.84,1.46],[1,-.92]]);

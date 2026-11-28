@@ -1,7 +1,9 @@
 // Application-owned UV facade renderer for the pinned Komorebi Engine.
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
+import {loadWikidataLogo} from './wikidata-logo.js?v=wikidata-logo-v1-20261128';
 const TEXTURE_URLS=Object.freeze({
+ wikidataQ38076:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
  matsumotoKiyoshi:new URL('../assets/textures/brands/matsumoto-kiyoshi.png?v=matsumoto-kiyoshi-v1-20261127',import.meta.url).href,
  manekineko:new URL('../assets/textures/brands/manekineko.png?v=manekineko-v1-20261126',import.meta.url).href,
@@ -253,18 +255,18 @@ export function createMapFacadeTextureLayer(renderer){
   }
   const image=resource.image;
   image.decoding='async';
-  image.onload=()=>{
+  const upload=source=>{
    if(disposed)return;
    try{
     if(isThree){
-     resource.texture.image=image;
+     resource.texture.image=source;
      resource.texture.needsUpdate=true;
     }else{
      gl.activeTexture(gl.TEXTURE0);
      gl.bindTexture(gl.TEXTURE_2D,resource.texture);
      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
      try{
-      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
      }finally{gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);}
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -272,8 +274,26 @@ export function createMapFacadeTextureLayer(renderer){
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
     }
-    resource.ready=true;
+    resource.image=source;resource.colors.clear();resource.ready=true;
    }catch(error){resource.failed=true;console.warn('PNG facade upload failed:',name,error);}
+  };
+  image.onload=()=>{if(!resource.dynamicReady)upload(image);};
+  if(name==='wikidataQ38076')resource.activate=()=>{
+   if(resource.activated)return;
+   resource.activated=true;
+   loadWikidataLogo('Q38076').then(remote=>{
+    if(disposed)return;
+    // Contain the remote logo in the existing sign rectangle, preserving aspect
+    // without rebuilding the map or changing the shared facade wall selection.
+    const width=image.naturalWidth||512,height=image.naturalHeight||512;
+    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+    const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable');
+    const scale=Math.min(width/remote.naturalWidth,height/remote.naturalHeight);
+    const w=remote.naturalWidth*scale,h=remote.naturalHeight*scale;
+    ctx.drawImage(remote,(width-w)/2,(height-h)/2,w,h);
+    upload(canvas);
+    if(resource.ready)resource.dynamicReady=true;
+   }).catch(error=>console.warn('Wikidata logo fallback:',error));
   };
   image.onerror=()=>{
    if(!disposed){resource.failed=true;console.warn('PNG facade not found:',url);}
@@ -330,7 +350,7 @@ export function createMapFacadeTextureLayer(renderer){
    const current=new Set(all);
    for(const [face,entry] of cache)if(!current.has(face))forget(face,entry);
    const valid=all;
-   for(const face of valid)geometryFor(face);
+   for(const face of valid){resources.get(face.texture)?.activate?.();geometryFor(face);}
    if(!valid.length)return;
    if(isThree){
     for(const face of valid){

@@ -51,7 +51,7 @@ export function matchStoreBuildings(elements,project,halfSize,identifyBrand){
   }
   if(!owner)continue;
   if(!matched.has(owner.id))matched.set(owner.id,[]);
-  matched.get(owner.id).push({brand,level:element.tags?.level});
+  matched.get(owner.id).push({brand,level:element.tags?.level,wikidata:element.tags?.['brand:wikidata']});
  }
  return matched;
 }
