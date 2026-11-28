@@ -1,7 +1,7 @@
 // Application-owned UV facade renderer for the pinned Komorebi Engine.
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
-import {loadWikidataLogo} from './wikidata-logo.js?v=wikidata-logo-v1-20261128';
+import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-diagnostic-v2-20261128';
 const TEXTURE_URLS=Object.freeze({
  wikidataQ38076:new URL('../assets/textures/brands/yoshinoya.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
@@ -279,6 +279,8 @@ export function createMapFacadeTextureLayer(renderer){
   };
   image.onload=()=>{if(!resource.dynamicReady)upload(image);};
   if(name==='wikidataQ38076')resource.activate=()=>{
+   const backend=isThree?'B':'A';
+   reportWikidataLogoStage('Q38076',backend,'loading');
    if(resource.activated)return;
    resource.activated=true;
    loadWikidataLogo('Q38076').then(remote=>{
@@ -292,8 +294,12 @@ export function createMapFacadeTextureLayer(renderer){
     const w=remote.naturalWidth*scale,h=remote.naturalHeight*scale;
     ctx.drawImage(remote,(width-w)/2,(height-h)/2,w,h);
     upload(canvas);
-    if(resource.ready)resource.dynamicReady=true;
-   }).catch(error=>console.warn('Wikidata logo fallback:',error));
+    if(resource.ready){resource.dynamicReady=true;reportWikidataLogoStage('Q38076',backend,'success');}
+    else throw Error('Texture upload did not complete');
+   }).catch(error=>{
+    reportWikidataLogoStage('Q38076',backend,'failed',error?.message||error);
+    console.warn('Wikidata logo fallback:',error);
+   });
   };
   image.onerror=()=>{
    if(!disposed){resource.failed=true;console.warn('PNG facade not found:',url);}
