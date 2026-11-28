@@ -1,9 +1,9 @@
 // Application-owned UV facade renderer for the pinned Komorebi Engine.
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
-import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-commons-thumb-v4-20261128';
+import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-source-diagnostic-v5-20261128';
 const TEXTURE_URLS=Object.freeze({
- wikidataQ38076:new URL('../assets/textures/brands/yoshinoya.png',import.meta.url).href,
+ wikidataQ38076:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
  matsumotoKiyoshi:new URL('../assets/textures/brands/matsumoto-kiyoshi.png?v=matsumoto-kiyoshi-v1-20261127',import.meta.url).href,
  manekineko:new URL('../assets/textures/brands/manekineko.png?v=manekineko-v1-20261126',import.meta.url).href,
@@ -17,7 +17,7 @@ const TEXTURE_URLS=Object.freeze({
  welcia:new URL('../assets/textures/brands/welcia.png?v=welcia-png-v1-20261124',import.meta.url).href,
  lawson:new URL('../assets/textures/brands/lawson.png?v=brand-png-20261123',import.meta.url).href,
  rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=rakuten-crop-png-v1-20261123',import.meta.url).href,
- yoshinoya:new URL('../assets/textures/brands/mcdonalds.png?v=brand-png-20261123',import.meta.url).href,
+ yoshinoya:new URL('../assets/textures/brands/yoshinoya.png?v=brand-png-20261123',import.meta.url).href,
  hidakaya:new URL('../assets/textures/brands/hidakaya.png?v=brand-png-20261123',import.meta.url).href,
  tonkatsuTonichi:new URL('../assets/textures/brands/tonkatsu-tonichi.png?v=brand-png-20261123',import.meta.url).href,
  mcdonalds:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
@@ -280,11 +280,11 @@ export function createMapFacadeTextureLayer(renderer){
   image.onload=()=>{if(!resource.dynamicReady)upload(image);};
   if(name==='wikidataQ38076')resource.activate=()=>{
    const backend=isThree?'B':'A';
-   reportWikidataLogoStage('Q38076',backend,'loading');
    if(resource.activated)return;
+   reportWikidataLogoStage('Q38076',backend,'loading');
    resource.activated=true;
    loadWikidataLogo('Q38076').then(remote=>{
-    if(disposed)return;
+    if(disposed){reportWikidataLogoStage('Q38076',backend,'cancelled');return;}
     // Contain the remote logo in the existing sign rectangle, preserving aspect
     // without rebuilding the map or changing the shared facade wall selection.
     const width=image.naturalWidth||512,height=image.naturalHeight||512;
@@ -297,7 +297,7 @@ export function createMapFacadeTextureLayer(renderer){
     if(resource.ready){resource.dynamicReady=true;reportWikidataLogoStage('Q38076',backend,'success');}
     else throw Error('Texture upload did not complete');
    }).catch(error=>{
-    reportWikidataLogoStage('Q38076',backend,'failed',error?.message||error);
+    reportWikidataLogoStage('Q38076',backend,disposed?'cancelled':'failed',error?.message||error);
     console.warn('Wikidata logo fallback:',error);
    });
   };
