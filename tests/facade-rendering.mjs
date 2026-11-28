@@ -203,3 +203,6 @@ assert.equal(denseSelected.length,1,'Connected crowded signs share one represent
 assert.deepEqual(suppressDenseLogoWalls(compactOutline,[0,1,2],1),[0,1,2],'Square artwork leaves space');
 assert.deepEqual(suppressDenseLogoWalls(compactOutline.map(p=>p.map(v=>v*3)),[0,1,2],692/193),[0,1,2],'Roomy larger footprint preserves directions');
 assert.deepEqual(suppressDenseLogoWalls(compactOutline,[0,2],692/193),[0,2],'Nonadjacent dense signs remain independent');
+
+const priorityAssessment=[{i:0,road:{priority:1},roadEligible:true},{i:1,road:{priority:1},roadEligible:true},{i:2,road:{priority:0},roadEligible:true}];
+assert.deepEqual(suppressDenseLogoWalls(compactOutline,[0,1,2],692/193,priorityAssessment),[0],'Dense cluster retains road priority before wall width');

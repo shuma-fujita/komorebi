@@ -135,12 +135,32 @@ export function eligibleFacadeWalls(polygon,roads=[],otherBuildings=[],minWidth=
 // Door-specific ranking: direct vehicle road > connected walking strip >
 // original road-facing candidates > accessible walls. Ties retain the
 // longest contiguous run and middle-edge selection.
-export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=4,blockedWalls=null){
- const candidates=eligibleFacadeWalls(polygon,roads,otherBuildings,doorWidth,blockedWalls,true);
- const priority=candidates.reduce((best,edge)=>Math.max(best,edge.road?.priority||0),0);
- if(priority)return middleEntranceEdge(candidates.filter(edge=>edge.road?.priority===priority),polygon?.length||0);
- const roadCandidates=candidates.filter(edge=>edge.roadEligible);
- return middleEntranceEdge(roadCandidates.length?roadCandidates:candidates,polygon?.length||0);
+// Common road score: direct vehicle > connected sidewalk > visible road > other.
+export function facadeRoadRank(edge){
+ return !edge||edge.blocked?0:edge.road?.priority?edge.road.priority+1:edge.roadEligible?1:0;
+}
+export function assessFacadeWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null){
+ return eligibleFacadeWalls(polygon,roads,otherBuildings,0,blockedWalls,true);
+}
+export function selectEntranceWall(polygon,roads=[],otherBuildings=[],doorWidth=4,blockedWalls=null,assessment=null){
+ const structure=assessment??assessFacadeWalls(polygon,roads,otherBuildings,blockedWalls);
+ const candidates=structure.filter(edge=>edge.len>=doorWidth-1e-7);
+ const priority=candidates.reduce((best,edge)=>Math.max(best,facadeRoadRank(edge)),0);
+ const best=candidates.filter(edge=>facadeRoadRank(edge)===priority);
+ // A visible lower-ranked middle wall can bridge two equally preferred
+ // ends of one continuous frontage, but cannot extend it at either end.
+ const keep=new Set(best.map(edge=>edge.i));
+ if(priority>1){
+  for(const run of frontageGroups(structure,polygon?.length||0)){
+   const anchors=run.map((edge,i)=>keep.has(edge.i)?i:-1).filter(i=>i>=0);
+   for(let j=1;j<anchors.length;j++){
+    const middle=run.slice(anchors[j-1]+1,anchors[j]);
+    if(middle.every(edge=>edge.roadEligible&&edge.len>=doorWidth-1e-7))
+     for(const edge of middle)keep.add(edge.i);
+   }
+  }
+ }
+ return middleEntranceEdge(candidates.filter(edge=>keep.has(edge.i)),polygon?.length||0);
 }
 
 // A sign belongs to a continuous street-facing frontage, not to each
@@ -241,12 +261,12 @@ function frontageRepresentatives(drawable,closed=false){
   if(!kept.some(other=>same(other,candidate)))kept.push(candidate);
  return kept;
 }
-export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null){
+export function selectLogoWalls(polygon,roads=[],otherBuildings=[],blockedWalls=null,assessment=null){
  // Recognize whole contiguous frontages BEFORE asking whether each tiny OSM
  // wall individually faces the road. Otherwise a short / oblique middle wall
  // creates two separate signs on the sides of one continuous storefront.
  // Unblocked walls too short for a logo still bridge the visual frontage.
- const structure=eligibleFacadeWalls(polygon,roads,otherBuildings,0,blockedWalls);
+ const structure=assessment??assessFacadeWalls(polygon,roads,otherBuildings,blockedWalls);
  const groups=frontageGroups(structure,polygon?.length||0);
  // A road is not required for a logo, but a facade facing a road through
  // another building is not an exposed sign face.

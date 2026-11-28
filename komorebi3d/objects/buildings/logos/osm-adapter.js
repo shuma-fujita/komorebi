@@ -1,6 +1,6 @@
 // Unified brand-logo pipeline. OSM category is *not* the brand identity.
 // A named POI may be a restaurant, pub, shop, office, leisure facility, etc.
-import {LOGO_BRANDS} from './brands/index.js?v=logo-horizontal-density-v1-20261127';
+import {LOGO_BRANDS} from './brands/index.js?v=shared-facade-priority-v1-20261128';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=shared-floor-20261126';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()
@@ -32,7 +32,7 @@ export function contiguousLogoGroups(spans){
  }
  return groups;
 }
-export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[],entranceEdgeIndex=null,blockedWalls=null,logoWallIndices=null,paintedGroups=null){
+export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[],entranceEdgeIndex=null,blockedWalls=null,logoWallIndices=null,paintedGroups=null,facadeAssessment=null){
  let count=0;
  for(const {brand,paint} of LOGO_BRANDS){
   // Preserve per-brand OSM validation and existing occupied-floor protection.
@@ -42,7 +42,7 @@ export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredL
    const ground=spans.find(span=>Math.abs(span.bottom)<1e-8);
    const groundGlassTop=group.bottom<1e-8&&ground?ground.top:null;
    if(paint(quad,mesh,polygon,{bottom:group.bottom,top:group.top,texturedFaces,ownerKey,
-    groundGlassTop,entranceEdgeIndex,blockedWalls,logoWallIndices})){
+    groundGlassTop,entranceEdgeIndex,blockedWalls,logoWallIndices,facadeAssessment})){
     occupied.push(group);count++;
     // Report only successfully generated image facades, never speculative
     // occupancy or groups rejected by the painter / floor conflict check.

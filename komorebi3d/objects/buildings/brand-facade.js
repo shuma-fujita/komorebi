@@ -4,7 +4,7 @@
 import {paintConvenienceGlazing,entranceLogoSize,paintConvenienceFasciaDividers} from './convenience/common.js?v=occupancy-facade-modes-v1-20261123';
 import {CONVENIENCE_DOOR_WIDTH_M} from './convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {getFacadeImageAspectRatio} from '../../maps/map-facade-textures.js?v=png-native-ratio-edge-v1-20261127';
-import {selectLogoWalls} from '../../maps/entrance-wall-selection.js?v=logo-frontage-representatives-v1-20261127';
+import {selectLogoWalls,facadeRoadRank} from '../../maps/entrance-wall-selection.js?v=shared-facade-priority-v1-20261128';
 // Step 2: opaque color and PNG logo occupy disjoint regions of ONE plane.
 // Keep the existing logo plane (and existing glazing / fascia offsets).
 const WALL_IMAGE_OFFSET_M=.012;
@@ -16,7 +16,7 @@ const WALL_COLOR_OFFSET_M=WALL_IMAGE_OFFSET_M;
 const MAX_UPPER_LOGO_HEIGHT_M=2.65;
 const LOGO_WALL_MARGIN_M=.35;
 const DENSE_LOGO_FRACTION=.8;
-export function suppressDenseLogoWalls(polygon,indices,aspectRatio){
+export function suppressDenseLogoWalls(polygon,indices,aspectRatio,assessment=null){
  const n=polygon.length;
  if(indices.length<2||!Number.isFinite(aspectRatio)||aspectRatio<=0)return indices.slice();
  const widths=polygon.map((p,i)=>Math.hypot(polygon[(i+1)%n][0]-p[0],polygon[(i+1)%n][1]-p[1]));
@@ -24,6 +24,7 @@ export function suppressDenseLogoWalls(polygon,indices,aspectRatio){
   Math.min(MAX_UPPER_LOGO_HEIGHT_M*aspectRatio,Math.max(0,widths[i]-LOGO_WALL_MARGIN_M))/widths[i]>=DENSE_LOGO_FRACTION));
  // Only contiguous dense selected walls compete. Separate or spacious
  // directions retain their signs. A chain of dense faces is one cluster.
+ const ranks=new Map((assessment??[]).map(edge=>[edge.i,facadeRoadRank(edge)]));
  const visited=new Set(),removed=new Set();
  for(const i of dense){
   if(visited.has(i))continue;
@@ -33,7 +34,7 @@ export function suppressDenseLogoWalls(polygon,indices,aspectRatio){
    for(const neighbor of [(k+n-1)%n,(k+1)%n])
     if(dense.has(neighbor)&&!visited.has(neighbor)){visited.add(neighbor);cluster.push(neighbor);}
   }
-  cluster.sort((a,b)=>widths[b]-widths[a]||a-b);
+  cluster.sort((a,b)=>(ranks.get(b)??0)-(ranks.get(a)??0)||widths[b]-widths[a]||a-b);
   for(const loser of cluster.slice(1))removed.add(loser);
  }
  return indices.filter(i=>!removed.has(i));
@@ -53,7 +54,7 @@ export function imageFacadeMode({bottom,top,groundGlassTop}={}){
  return top>groundGlassTop+1e-8?'ground-and-upper':'ground-only';
 }
 
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null,facadeAssessment=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -94,7 +95,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   ?walls.filter(w=>w.i===entranceEdgeIndex)
   :logoOnGroundFasciaOnly&&withGroundGlass?[]:logoWalls;
  if(facadeMode==='upper-only'){
-  const retained=new Set(suppressDenseLogoWalls(polygon,facadeLogoWalls.map(w=>w.i),logoAspectRatio));
+  const retained=new Set(suppressDenseLogoWalls(polygon,facadeLogoWalls.map(w=>w.i),logoAspectRatio,facadeAssessment));
   facadeLogoWalls=facadeLogoWalls.filter(w=>retained.has(w.i));
  }
  const surface={texture,ownerKey,backgroundColor,backgroundUV,backgroundSample,backgroundPositions:[],positions:[],uvs:[]};

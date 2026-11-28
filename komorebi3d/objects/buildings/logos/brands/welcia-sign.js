@@ -1,5 +1,5 @@
 // Reuse the common image facade, including ground-floor glazing and wall inlays.
-import {paintImageFacade} from '../facade.js?v=logo-horizontal-density-v1-20261127';
+import {paintImageFacade} from '../facade.js?v=shared-facade-priority-v1-20261128';
 export const WELCIA_BG=0x012190;
 export const WELCIA_ASPECT=1448/510;
 export function paintWelciaFacade(quad,mesh,polygon,options={}){

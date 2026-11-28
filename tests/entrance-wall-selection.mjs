@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import {middleEntranceEdge,selectEntranceWall,blockedBuildingWalls,eligibleFacadeWalls,selectLogoWalls} from '../komorebi3d/maps/entrance-wall-selection.js';
+import {assessFacadeWalls,facadeRoadRank,middleEntranceEdge,selectEntranceWall,blockedBuildingWalls,eligibleFacadeWalls,selectLogoWalls} from '../komorebi3d/maps/entrance-wall-selection.js';
 import {paintImageFacade} from '../komorebi3d/objects/buildings/brand-facade.js';
 const e=(i,len)=>({i,len});
 assert.equal(middleEntranceEdge([e(0,8),e(1,7),e(2,9)],4),1,'Three continuous edges: middle');
@@ -315,3 +315,9 @@ const logoCount=multiFaces[0].uvs.filter((v,i)=>
 assert.equal(logoCount,1,
  'The renderer uses the same single continuous frontage as the selector');
 console.log('Shared neighbor-occlusion: ground glass + fascia blocked; upper branding remains PASS');
+
+// A visible middle face between equally preferred ends must not split an entrance run.
+const cornerOutline=[[0,0],[10,0],[15,5],[15,15],[0,15]];
+const cornerAssessment=[{i:0,len:10,road:{priority:1},roadEligible:true,normal:[0,-1]},{i:1,len:7,road:{priority:0},roadEligible:true,normal:[.707,-.707]},{i:2,len:10,road:{priority:1},roadEligible:true,normal:[1,0]}];
+assert.equal(selectEntranceWall(cornerOutline,[],[],4,null,cornerAssessment),1,'Visible middle entrance joins equally preferred frontage ends');
+assert.equal(facadeRoadRank(cornerAssessment[0]),2);

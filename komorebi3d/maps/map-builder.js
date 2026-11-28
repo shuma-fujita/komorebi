@@ -3,9 +3,9 @@ import {matchLoveHotelBuildings,resolveLoveHotelColor,resolveLoveHotelFloorSpans
 import {paintLoveHotelWall} from '../objects/buildings/love-hotel/common.js?v=brothel-floor5-20261119';
 import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-hotel-pink-20261119';
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
-import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls} from './entrance-wall-selection.js?v=logo-frontage-representatives-v1-20261127';
+import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls,assessFacadeWalls} from './entrance-wall-selection.js?v=shared-facade-priority-v1-20261128';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=shared-floor-20261126';
-import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=logo-horizontal-density-v1-20261127';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=shared-facade-priority-v1-20261128';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=wall-dedup-step1-v1-20261124';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
@@ -281,8 +281,9 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
       if(other.id!==e.id)nearby.set(other.id,other.points);
    const nearbyBuildings=[...nearby.values()];
    const blockedWalls=blockedBuildingWalls(p,nearbyBuildings);
-   const frontEdge=selectEntranceWall(p,roadSegments,nearbyBuildings,CONVENIENCE_DOOR_WIDTH_M,blockedWalls);
-   const logoWallIndices=selectLogoWalls(p,roadSegments,nearbyBuildings,blockedWalls);
+   const facadeAssessment=assessFacadeWalls(p,roadSegments,nearbyBuildings,blockedWalls);
+   const frontEdge=selectEntranceWall(p,roadSegments,nearbyBuildings,CONVENIENCE_DOOR_WIDTH_M,blockedWalls,facadeAssessment);
+   const logoWallIndices=selectLogoWalls(p,roadSegments,nearbyBuildings,blockedWalls,facadeAssessment);
    // Same POI / building association as Yoshinoya and Hidakaya. The tagged
    // zero-based 'level' owns placement; no station/building/floor IDs here.
    // Only actual rendered storefront spans can reserve a floor against a PNG logo.
@@ -292,7 +293,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // while PNGs are loading or unavailable in the isolated editor preview.
    const paintedGroups=[];
    paintLogoBuilding(quad,buildingMesh,p,logoBuildings.get(e.id),tags,height,
-    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls,logoWallIndices,paintedGroups);
+    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls,logoWallIndices,paintedGroups,facadeAssessment);
    building(buildingMesh,p,height,tint,convenienceSpans,frontEdge,tags,pinkSpans,foodSpans,blockedWalls,paintedGroups);
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
