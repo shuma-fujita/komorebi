@@ -5,7 +5,6 @@ import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=shared-floor-20261126';
 import {paintImageFacade} from './facade.js?v=commons-aspect-recovery-v1-20261129';
 import {registerWikidataFacade} from '../../../maps/map-facade-textures.js?v=commons-aspect-recovery-v1-20261129';
-import {loadWikidataLogo} from '../../../maps/wikidata-logo.js?v=commons-edge-v1-20261128';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()
  .replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 const nameKeys=['brand:ja','brand','brand:en','name:ja','name','name:en'];
@@ -23,28 +22,6 @@ export function identifyLogoBrand(tags={}){
  if(!/^Q[1-9]\d*$/.test(qid))return null;
  return {id:'wikidata:'+qid,names:[],wikidataId:qid};
 }
-// Preflight only generic Wikidata brands. Known brands retain their existing
-// bundled PNG / special-facade fallback behavior.
-export async function resolveGenericLogoIds(elements,{timeoutMs=8000}={}){
- const ids=new Set();
- for(const element of elements||[]){
-  const id=identifyLogoBrand(element.tags)?.wikidataId;
-  if(id)ids.add(id);
- }
- const available=new Set();
- await Promise.all([...ids].map(async id=>{
-  let timer;
-  try{
-   const image=await Promise.race([
-    loadWikidataLogo(id),
-    new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Generic logo preflight timeout')),timeoutMs);})
-   ]);
-   if(image?.naturalWidth>0&&image?.naturalHeight>0)available.add(id);
-  }catch{/* No valid image: leave the ordinary building facade untouched. */}
-  finally{clearTimeout(timer);}
- }));
- return available;
-}
 export function matchLogoBuildings(elements,project,halfSize){
  return matchLogoFootprints(elements,project,halfSize,identifyLogoBrand);
 }
@@ -61,9 +38,9 @@ export function contiguousLogoGroups(spans){
  }
  return groups;
 }
-export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[],entranceEdgeIndex=null,blockedWalls=null,logoWallIndices=null,paintedGroups=null,facadeAssessment=null,availableGenericLogoIds=null){
+export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[],entranceEdgeIndex=null,blockedWalls=null,logoWallIndices=null,paintedGroups=null,facadeAssessment=null){
  let count=0;
- const genericIds=[...new Set((stores||[]).map(s=>s.brand?.wikidataId).filter(id=>id&&availableGenericLogoIds?.has(id)))];
+ const genericIds=[...new Set((stores||[]).map(s=>s.brand?.wikidataId).filter(Boolean))];
  const entries=[...LOGO_BRANDS,...genericIds.map(id=>({
   brand:{id:'wikidata:'+id},
   paint:(quad,mesh,polygon,options={})=>paintImageFacade(quad,mesh,polygon,{
