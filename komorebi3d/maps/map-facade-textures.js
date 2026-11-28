@@ -322,9 +322,30 @@ export function createMapFacadeTextureLayer(renderer){
     const width=image.naturalWidth||512,height=image.naturalHeight||512;
     const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
     const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable');
-    const scale=Math.min(width/remote.naturalWidth,height/remote.naturalHeight);
-    const w=remote.naturalWidth*scale,h=remote.naturalHeight*scale;
-    ctx.drawImage(remote,(width-w)/2,(height-h)/2,w,h);
+    // Fit the visible logo rather than transparent margins. If pixel reading
+    // is blocked or the image is fully transparent, retain the original fit.
+    let sx=0,sy=0,sw=remote.naturalWidth,sh=remote.naturalHeight;
+    try{
+     const probe=document.createElement('canvas');
+     probe.width=sw;probe.height=sh;
+     const probeCtx=probe.getContext('2d',{willReadFrequently:true});
+     if(probeCtx){
+      probeCtx.drawImage(remote,0,0);
+      const rgba=probeCtx.getImageData(0,0,sw,sh).data;
+      let left=sw,top=sh,right=-1,bottom=-1;
+      for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){
+       if(rgba[(y*sw+x)*4+3]<=8)continue;
+       if(x<left)left=x;if(x>right)right=x;
+       if(y<top)top=y;if(y>bottom)bottom=y;
+      }
+      if(right>=left&&bottom>=top){
+       sx=left;sy=top;sw=right-left+1;sh=bottom-top+1;
+      }
+     }
+    }catch{/* Retain uncropped fit if canvas pixels are unavailable. */}
+    const scale=Math.min(width/sw,height/sh);
+    const w=sw*scale,h=sh*scale;
+    ctx.drawImage(remote,sx,sy,sw,sh,(width-w)/2,(height-h)/2,w,h);
     if(upload(canvas)){
      resource.commonsCornerColor=commonsCornerColor(remote);
      resource.dynamicReady=true;
