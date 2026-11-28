@@ -8,16 +8,18 @@ export function reportWikidataLogoStage(id,stage,state,detail=''){
 }
 const logoStages=new Map();
 function mountLogoCopyButton(panel){
+ if(panel.querySelector('[data-wikidata-copy]'))return;
  const button=document.createElement('button');
  button.type='button';
+ button.dataset.wikidataCopy='';
  button.textContent='📋 診断結果をコピー';
  button.style.cssText='display:block;margin-top:8px;padding:7px 12px;border-radius:7px;border:1px solid #799781;background:#e2eddf;color:#20302a;font-weight:700;cursor:pointer';
  const feedback=document.createElement('span');
  feedback.setAttribute('aria-live','polite');
  feedback.style.cssText='display:block;margin-top:4px';
  button.addEventListener('click',async()=>{
-  const result=[...panel.children].filter(child=>child!==button&&child!==feedback)
-   .map(child=>child.textContent.trim()).filter(Boolean).join('\n');
+  const content=panel.querySelector('[data-wikidata-diagnostic]');
+  const result=[...(content?.children||[])].map(child=>child.textContent.trim()).filter(Boolean).join('\n');
   try{
    if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(result);
    else{
@@ -28,7 +30,7 @@ function mountLogoCopyButton(panel){
     if(!ok)throw Error('コピーできませんでした');
    }
    feedback.textContent='コピーしました';
-  }catch{feedback.textContent='コピーに失敗しました。Safariの共有・選択操作をご利用ください。';}
+  }catch(error){feedback.textContent='コピー失敗：'+(error?.name||'UnknownError')+'。長押しで診断文を選択してください。';}
  });
  panel.append(button,feedback);
 }
@@ -42,7 +44,13 @@ function renderLogoDiagnostic(){
  };
  const error=logoStages.get('error');
  const escape=value=>String(value).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
- panel.innerHTML='<strong>🖼️ Wikidataロゴ診断（実測）</strong>'+
+ let content=panel.querySelector('[data-wikidata-diagnostic]');
+ if(!content){
+  content=document.createElement('div');
+  content.dataset.wikidataDiagnostic='';
+  panel.prepend(content);
+ }
+ content.innerHTML='<strong>🖼️ Wikidataロゴ診断（実測）</strong>'+
   '<div>対象：McDonald’s / Q38076</div>'+
   '<div>Wikidata：'+escape(stage('wikidata'))+' ・ P154：'+escape(stage('p154'))+'</div>'+
   '<div>Commons：'+escape(stage('commons'))+' ・ テクスチャ：A '+escape(stage('A'))+' / B '+escape(stage('B'))+'</div>'+
@@ -57,7 +65,13 @@ if(typeof window!=='undefined')window.addEventListener('komorebi:wikidata-logo',
 });
 if(typeof document!=='undefined'){
  const panel=document.getElementById('wikidata-logo-status');
- if(panel)mountLogoCopyButton(panel);
+ if(panel){
+  const content=document.createElement('div');
+  content.dataset.wikidataDiagnostic='';
+  while(panel.firstChild)content.append(panel.firstChild);
+  panel.append(content);
+  mountLogoCopyButton(panel);
+ }
 }
 const pending=new Map();
 function rankStatement(statement,now){
