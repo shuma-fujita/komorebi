@@ -1,6 +1,6 @@
 // Unified brand-logo pipeline. OSM category is *not* the brand identity.
 // A named POI may be a restaurant, pub, shop, office, leisure facility, etc.
-import {LOGO_BRANDS} from './brands/index.js?v=commons-three-v1-20261129';
+import {LOGO_BRANDS} from './brands/index.js?v=wikidata-generic-v1-20261129';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=shared-floor-20261126';
 import {paintImageFacade} from '../facade.js?v=familymart-continuous-bands-v4-20261129';
