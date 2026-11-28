@@ -98,6 +98,21 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   const retained=new Set(suppressDenseLogoWalls(polygon,facadeLogoWalls.map(w=>w.i),logoAspectRatio,facadeAssessment));
   facadeLogoWalls=facadeLogoWalls.filter(w=>retained.has(w.i));
  }
+ // Keep decorative bands at one absolute height on every eligible wall,
+ // including walls without a logo. The entrance wall determines that height.
+ const bandReference=facadeLogoWalls[0]??null;
+ const referenceFasciaOnly=logoOnGroundFasciaOnly&&isGroundOnly;
+ const referenceTop=referenceFasciaOnly?groundGlassTop:top;
+ const referenceEntranceSize=isGroundOnly&&bandReference
+  ?(hasEntrance&&bandReference.i===entranceEdgeIndex
+   ?{height:Math.min(groundGlassTop-logoAreaBottom,CONVENIENCE_DOOR_WIDTH_M/logoAspectRatio)}
+   :entranceLogoSize(bandReference.length,groundGlassTop-logoAreaBottom,logoAspectRatio,{fit:true}))
+  :null;
+ const referenceHeight=bandReference?(referenceEntranceSize
+  ?referenceEntranceSize.height
+  :Math.min(MAX_UPPER_LOGO_HEIGHT_M,referenceTop-logoAreaBottom-.28,
+   (bandReference.length-LOGO_WALL_MARGIN_M)/logoAspectRatio)):0;
+ const referenceBottom=(logoAreaBottom+referenceTop-referenceHeight)/2;
  const surface={texture,ownerKey,backgroundColor,backgroundUV,backgroundSample,logoAspectRatio,backgroundPositions:[],positions:[],uvs:[]};
  // Background color is geometry, never an image-covered wall.
  const place=(wall,u,y,offset)=>{
@@ -117,6 +132,23 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   const c=place(w,u1,y1,WALL_COLOR_OFFSET_M),d=place(w,u0,y1,WALL_COLOR_OFFSET_M);
   if(useTexture)surface.backgroundPositions.push(...a,...b,...c,...a,...c,...d);
   else quad(mesh,a,b,c,d,backgroundColor);
+ }
+ function paintBands(wall,left=0,right=0){
+  if(!Array.isArray(sideBands)||!(referenceHeight>0))return;
+  for(const band of sideBands){
+   if(!(band.from>=0&&band.to<=1&&band.to>band.from&&Number.isInteger(band.color)))continue;
+   const y0=referenceBottom+referenceHeight*band.from;
+   const y1=referenceBottom+referenceHeight*band.to;
+   if(y0<logoAreaBottom-1e-7||y1>top+1e-7)continue;
+   const stripe=(u0,u1)=>{
+    if(u1<=u0)return;
+    const depth=WALL_IMAGE_OFFSET_M+.004;
+    quad(mesh,place(wall,u0,y0,depth),place(wall,u1,y0,depth),
+     place(wall,u1,y1,depth),place(wall,u0,y1,depth),band.color);
+   };
+   stripe(0,left);
+   stripe(right,wall.length);
+  }
  }
  for(const wall of walls){
   // For an obstructed ground-floor face, leave both glazing and the fascia
@@ -153,6 +185,7 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   const isLogoWall=facadeLogoWalls.includes(wall);
   if(!isLogoWall){
    solid(wall,0,wall.length,wallBottom,top);
+   paintBands(wall,0,0);
    continue;
   }
   // Preserve original image aspect ratio; square brands retain exact dimensions.
@@ -173,17 +206,6 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;
   const logoBottom=(logoAreaBottom+imageAreaTop)/2-imageHeight/2;
   const logoTop=(logoAreaBottom+imageAreaTop)/2+imageHeight/2;
-  if(Array.isArray(sideBands))for(const band of sideBands){
-   const y0=logoBottom+imageHeight*band.from,y1=logoBottom+imageHeight*band.to;
-   if(!(band.from>=0&&band.to<=1&&band.to>band.from&&Number.isInteger(band.color)))continue;
-   const stripe=(u0,u1)=>{
-    if(u1<=u0)return;
-    const offset=WALL_IMAGE_OFFSET_M+.004;
-    quad(mesh,place(wall,u0,y0,offset),place(wall,u1,y0,offset),
-     place(wall,u1,y1,offset),place(wall,u0,y1,offset),band.color);
-   };
-   stripe(0,left);stripe(right,wall.length);
-  }
   if(useTexture){
    // Four solid bands surround one inlaid PNG rectangle without overlap.
    // The same rectangle is rendered in solid color while its PNG is unavailable.
@@ -199,8 +221,10 @@ const uv=outward>0
  ? [[1,0],[0,0],[0,1],[1,1]]
  : [[0,0],[1,0],[1,1],[0,1]];
 face(wall,left,right,logoBottom,logoTop,...uv);
+   paintBands(wall,left,right);
   }else{
    solid(wall,0,wall.length,wallBottom,top);
+   paintBands(wall,left,right);
    // Direct non-textured painter fallback. McDonald's supplies its classic
    // arch painter; DAISO keeps the solid pink facade if PNG is unavailable.
    if(typeof drawFallbackLogo==='function'){

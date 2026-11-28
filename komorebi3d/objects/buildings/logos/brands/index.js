@@ -10,7 +10,7 @@ import {torikizoku} from '../../food/torikizoku.js?v=food-torikizoku-v1-20261122
 import {hoshino} from './hoshino.js?v=hoshino-coffee-logo-v1-20261123';
 import {lawson} from './lawson.js?v=lawson-image-v1-20261123';
 import {familymart} from '../../convenience/familymart.js?v=convenience-sign-v1-20261112';
-import {paintImageFacade} from '../facade.js?v=shared-facade-priority-v1-20261128';
+import {paintImageFacade} from '../facade.js?v=sukiya-side-bands-v2-20261128';
 const sukiya=Object.freeze({id:'sukiya',names:['すき家','sukiya']});
 const commonsOnlyFacade=(texture,backgroundColor)=>(quad,mesh,polygon,options={})=>
  paintImageFacade(quad,mesh,polygon,{...options,texture,backgroundColor});
