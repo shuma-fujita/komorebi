@@ -1,2 +1,2 @@
 // Shared square/wide UV facade geometry, outside the pinned Engine.
-export {paintImageFacade} from '../brand-facade.js?v=familymart-photo-bands-v1-20261128';
+export {paintImageFacade} from '../brand-facade.js?v=familymart-commons-palette-v2-20261128';

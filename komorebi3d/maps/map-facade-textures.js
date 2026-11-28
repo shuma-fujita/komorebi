@@ -37,6 +37,30 @@ const TEXTURE_URLS=Object.freeze({
  // The map builder is synchronous; decode PNG dimensions before it starts.
  // The registry is shared with both texture renderers, including previews.
  const imageAspectRatios=new Map();
+ const familymartPalette={green:0x00a76f,blue:0x1687bf};
+ export function getFamilymartFacadePalette(){return {...familymartPalette};}
+ // Sample the original Commons pixels, not guessed CSS colors.
+ function sampleFamilymartPalette(image){
+  try{
+   const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+   const ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)return;
+   ctx.drawImage(image,0,0);
+   const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+   const bins={green:new Map(),blue:new Map()};
+   for(let i=0;i<data.length;i+=4){
+    const [r,g,b,a]=data.slice(i,i+4);if(a<220)continue;
+    const category=g>r*1.22&&g>b*.92?'green':b>r*1.35&&b>g*1.10?'blue':null;
+    if(!category)continue;
+    const color=((r>>3)<<19)|((g>>3)<<11)|((b>>3)<<3);
+    bins[category].set(color,(bins[category].get(color)||0)+1);
+   }
+   for(const name of ['green','blue']){
+    const best=[...bins[name]].sort((a,b)=>b[1]-a[1])[0];
+    if(best)familymartPalette[name]=best[0];
+   }
+  }catch{/* CORS or unavailable canvas: keep the existing FamilyMart sign colors. */}
+ }
+
  let metadataPending=null;
  export function getFacadeImageAspectRatio(texture,fallback=1){
   return imageAspectRatios.get(texture)??fallback;
@@ -69,6 +93,7 @@ const TEXTURE_URLS=Object.freeze({
       new Promise((_,reject)=>setTimeout(()=>reject(Error('Commons metadata timeout')),8000))
      ]);
      if(remote.naturalWidth>0&&remote.naturalHeight>0){
+      if(name==='familymart')sampleFamilymartPalette(remote);
       imageAspectRatios.set(name,remote.naturalWidth/remote.naturalHeight);
       return;
      }
@@ -391,6 +416,19 @@ export function createMapFacadeTextureLayer(renderer){
      ' / 配置 '+w.toFixed(1)+'×'+h.toFixed(1)+'px / キャンバス '+width+'×'+height+'px'+
      ' / 追加余白 '+(padding*100)+'% / UV実形状比率 '+(actualAspect||0).toFixed(2)+' / '+(geometryMatchesCommons?'全面配置':'従来配置（比率不一致）'));
     ctx.drawImage(remote,sx,sy,sw,sh,(width-w)/2,(height-h)/2,w,h);
+    if(name==='familymart'){
+     // Commons' green-backed wordmark fills the whole inlay. Turn its green
+     // background white while retaining the original blue letter pixels;
+     // the facade geometry supplies the green top and blue bottom stripes.
+     const pixels=ctx.getImageData(0,0,width,height);
+     const rgba=pixels.data;
+     for(let i=0;i<rgba.length;i+=4){
+      const r=rgba[i],g=rgba[i+1],b=rgba[i+2],a=rgba[i+3];
+      if(a<8)continue;
+      if(g>r*1.20&&g>b*.92){rgba[i]=255;rgba[i+1]=255;rgba[i+2]=255;}
+     }
+     ctx.putImageData(pixels,0,0);
+    }
     if(upload(canvas)){
      resource.commonsCornerColor=corners.color;
      reportWikidataLogoStage(wikidataId,'adoptedColor','success',corners.color===null?'判定不可（従来色）':'#'+corners.color.toString(16).padStart(6,'0'));
