@@ -54,7 +54,7 @@ export function imageFacadeMode({bottom,top,groundGlassTop}={}){
  return top>groundGlassTop+1e-8?'ground-and-upper':'ground-only';
 }
 
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null,facadeAssessment=null,sideBands=null,logoVerticalRange=null}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null,facadeAssessment=null,sideBands=null,logoVerticalRange=null,bandsAcrossLogo=false}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -147,8 +147,8 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
     quad(mesh,place(wall,u0,y0,depth),place(wall,u1,y0,depth),
      place(wall,u1,y1,depth),place(wall,u0,y1,depth),band.color);
    };
-   stripe(0,left);
-   stripe(right,wall.length);
+   if(bandsAcrossLogo)stripe(0,wall.length);
+   else{stripe(0,left);stripe(right,wall.length);}
   }
  }
  for(const wall of walls){
