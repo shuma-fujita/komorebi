@@ -9,6 +9,7 @@ export function reportWikidataLogoStage(id,stage,state,detail=''){
 const logoStages=new Map();
 let logoImageUrl='';
 let logoFileName='';
+let logoSelection='未選択';
 function mountLogoCopyButton(panel){
  if(panel.querySelector('[data-wikidata-copy]'))return;
  const button=document.createElement('button');
@@ -55,6 +56,7 @@ function renderLogoDiagnostic(){
  content.innerHTML='<strong>🖼️ Wikidataロゴ診断（実測）</strong>'+
   '<div>対象：McDonald’s / Q38076</div>'+
   '<div>Wikidata：'+escape(stage('wikidata'))+' ・ P154：'+escape(stage('p154'))+'</div>'+
+  '<div>選択方式：'+escape(logoSelection)+' ・ 採用ファイル：'+escape(logoFileName||'未取得')+'</div>'+
   '<div>Commons：'+escape(stage('commons'))+' ・ テクスチャ：A '+escape(stage('A'))+' / B '+escape(stage('B'))+'</div>'+ 
   '<div>取得ロゴURL：'+(logoImageUrl?'<a href="'+escape(logoImageUrl)+'" target="_blank" rel="noopener noreferrer" style="overflow-wrap:anywhere">'+escape(logoImageUrl)+'</a>':'未取得')+'</div>'+
   '<div>Commonsページ：'+(logoFileName?'<a href="'+escape('https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(logoFileName.replace(/ /g,'_')))+'" target="_blank" rel="noopener noreferrer" style="overflow-wrap:anywhere">'+escape('https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(logoFileName.replace(/ /g,'_')))+'</a>':'未取得')+'</div>'+
@@ -78,6 +80,10 @@ if(typeof document!=='undefined'){
   mountLogoCopyButton(panel);
  }
 }
+// Optional Commons file override per Wikidata entity. Remove an entry to use P154 automatically.
+const logoOverrides=Object.freeze({
+ Q38076:"McDonald's square 2020.svg"
+});
 const pending=new Map();
 function rankStatement(statement,now){
  if(statement.rank==='deprecated'||statement.mainsnak?.snaktype!=='value')return -1;
@@ -116,32 +122,44 @@ export function loadWikidataLogo(id){
   if(!entity)throw Error('Wikidata entity missing');
   reportWikidataLogoStage(id,'wikidata','success');
   reportWikidataLogoStage(id,'p154','loading');
-  const filename=selectWikidataLogoFile(entity);
-  if(!filename)throw Error('Wikidata P154 missing');
-  logoFileName=filename;
-  reportWikidataLogoStage(id,'p154','success',filename);
-  reportWikidataLogoStage(id,'commons','loading');
-  const commons='https://commons.wikimedia.org/w/api.php?origin=*&format=json&action=query&prop=imageinfo&iiprop=url&iiurlwidth=512&titles='+encodeURIComponent('File:'+filename);
-  const result=await json(commons);
-  const pages=Object.values(result.query?.pages||{});
-  const page=pages.find(p=>p.imageinfo?.length)||pages[0];
-  const info=page?.imageinfo?.[0];
-  const url=info?.thumburl||info?.url;
-  if(!url){
-   const reason=result.error?.info||result.warnings?.query?.['*']||
-    (page?.missing!==undefined?'Commons file missing: '+filename:
-     'Commons imageinfo URL missing');
-   throw Error(String(reason).slice(0,180));
+  const automaticFile=selectWikidataLogoFile(entity);
+  const overrideFile=logoOverrides[id];
+  if(!automaticFile&&!overrideFile)throw Error('Wikidata P154 missing');
+  reportWikidataLogoStage(id,'p154',automaticFile?'success':'failed',automaticFile||'Wikidata P154 missing');
+  const candidates=[...(overrideFile?[{filename:overrideFile,mode:'手動指定'}]:[]),
+   ...(automaticFile&&automaticFile!==overrideFile?[{filename:automaticFile,mode:'自動選択（P154）'}]:[])];
+  let lastError;
+  for(const {filename,mode} of candidates){
+   logoFileName=filename;
+   logoImageUrl='';
+   logoSelection=mode;
+   reportWikidataLogoStage(id,'commons','loading');
+   try{
+    const commons='https://commons.wikimedia.org/w/api.php?origin=*&format=json&action=query&prop=imageinfo&iiprop=url&iiurlwidth=512&titles='+encodeURIComponent('File:'+filename);
+    const result=await json(commons);
+    const pages=Object.values(result.query?.pages||{});
+    const page=pages.find(p=>p.imageinfo?.length)||pages[0];
+    const info=page?.imageinfo?.[0];
+    const url=info?.thumburl||info?.url;
+    if(!url){
+     const reason=result.error?.info||result.warnings?.query?.['*']||
+      (page?.missing!==undefined?'Commons file missing: '+filename:'Commons imageinfo URL missing');
+     throw Error(String(reason).slice(0,180));
+    }
+    let parsed;
+    try{parsed=new URL(url);}catch{throw Error('Invalid Commons image URL');}
+    if(parsed.protocol!=='https:'||!['upload.wikimedia.org','thumb.wikimedia.org'].includes(parsed.hostname))
+     throw Error('Unexpected Commons image host: '+parsed.hostname);
+    const image=await loadImage(parsed.href);
+    logoImageUrl=parsed.href;
+    reportWikidataLogoStage(id,'commons','success',image.naturalWidth+'×'+image.naturalHeight);
+    return image;
+   }catch(error){
+    lastError=error;
+    reportWikidataLogoStage(id,'commons','failed',error?.message||error);
+   }
   }
-  let parsed;
-  try{parsed=new URL(url);}catch{throw Error('Invalid Commons image URL');}
-  if(parsed.protocol!=='https:'||!['upload.wikimedia.org','thumb.wikimedia.org'].includes(parsed.hostname))
-   throw Error('Unexpected Commons image host: '+parsed.hostname);
-  logoImageUrl=parsed.href;
-  renderLogoDiagnostic();
-  const image=await loadImage(parsed.href);
-  reportWikidataLogoStage(id,'commons','success',image.naturalWidth+'×'+image.naturalHeight);
-  return image;
+  throw lastError||Error('Commons logo unavailable');
  })().catch(error=>{
   reportWikidataLogoStage(id,'error','failed',error?.message||error);
   throw error;
