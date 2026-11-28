@@ -3,7 +3,7 @@
 // Keep the fixed Engine mesh contract unchanged.
 import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-pilot-v8-20261128';
 // Pilot: reuse the existing local PNG texture keys as reliable fallbacks.
-const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819'});
+const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819',yoshinoya:'Q776272'});
 const TEXTURE_URLS=Object.freeze({
  wikidataQ38076:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
