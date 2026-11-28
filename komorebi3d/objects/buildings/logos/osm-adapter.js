@@ -3,6 +3,8 @@
 import {LOGO_BRANDS} from './brands/index.js?v=commons-three-v1-20261129';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=shared-floor-20261126';
+import {paintImageFacade} from '../facade.js?v=familymart-continuous-bands-v4-20261129';
+import {registerWikidataFacade} from '../../../maps/map-facade-textures.js?v=wikidata-generic-v1-20261129';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()
  .replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
 const nameKeys=['brand:ja','brand','brand:en','name:ja','name','name:en'];
@@ -13,8 +15,12 @@ export function identifyLogoBrand(tags={}){
  // Brand=LAWSON is also used by variants: a named sub-brand takes precedence.
  const otherLawson=names.some(name=>['ローソンストア100','ローソン100','lawsonstore100','lawson100',
   'ナチュラルローソン','naturallawson'].some(prefix=>name.startsWith(normalize(prefix))));
- return LOGO_BRANDS.find(e=>e.brand.exactBrand!==undefined ? tags.brand===e.brand.exactBrand : (e.brand.id!=='lawson'||!otherLawson)&&
-  (e.brand.id==='au' ? nameKeys.some(key=>{const value=String(tags[key]??'').normalize('NFKC').trim().toLowerCase();return /^au(?:$|[\s\-‐‑–—]|ショップ|style(?=$|[\s\-‐‑–—]|[^\x00-\x7f])|[^\x00-\x7f])/.test(value);}) : names.some(name=>e.brand.names.some(alias=>name.startsWith(normalize(alias))))))?.brand??null;
+ const existing=LOGO_BRANDS.find(e=>e.brand.exactBrand!==undefined ? tags.brand===e.brand.exactBrand : (e.brand.id!=='lawson'||!otherLawson)&&
+  (e.brand.id==='au' ? nameKeys.some(key=>{const value=String(tags[key]??'').normalize('NFKC').trim().toLowerCase();return /^au(?:$|[\s\-‐‑–—]|ショップ|style(?=$|[\s\-‐‑–—]|[^\x00-\x7f])|[^\x00-\x7f])/.test(value);}) : names.some(name=>e.brand.names.some(alias=>name.startsWith(normalize(alias))))))?.brand;
+ if(existing)return existing;
+ const qid=String(tags['brand:wikidata']??'').trim();
+ if(!/^Q[1-9]\\d*$/.test(qid))return null;
+ return {id:'wikidata:'+qid,names:[],wikidataId:qid};
 }
 export function matchLogoBuildings(elements,project,halfSize){
  return matchLogoFootprints(elements,project,halfSize,identifyLogoBrand);
@@ -34,7 +40,13 @@ export function contiguousLogoGroups(spans){
 }
 export function paintLogoBuilding(quad,mesh,polygon,stores,tags,height,inferredLevels,texturedFaces,ownerKey,occupied=[],entranceEdgeIndex=null,blockedWalls=null,logoWallIndices=null,paintedGroups=null,facadeAssessment=null){
  let count=0;
- for(const {brand,paint} of LOGO_BRANDS){
+ const genericIds=[...new Set((stores||[]).map(s=>s.brand?.wikidataId).filter(Boolean))];
+ const entries=[...LOGO_BRANDS,...genericIds.map(id=>({
+  brand:{id:'wikidata:'+id},
+  paint:(quad,mesh,polygon,options={})=>paintImageFacade(quad,mesh,polygon,{
+   ...options,texture:registerWikidataFacade(id),backgroundColor:0xffffff})
+ }))];
+ for(const {brand,paint} of entries){
   // Preserve per-brand OSM validation and existing occupied-floor protection.
   const spans=resolveLogoLevels(stores,tags,height,inferredLevels,brand.id);
   for(const group of contiguousLogoGroups(spans)){
