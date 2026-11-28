@@ -50,7 +50,14 @@ const TEXTURE_URLS=Object.freeze({
 
  // The map builder is synchronous; decode PNG dimensions before it starts.
  // The registry is shared with both texture renderers, including previews.
- const imageAspectRatios=new Map();
+ // Preserve previously verified Commons dimensions when a metadata request times out.
+ // The first paint must never silently revert a wide wordmark to a square UV.
+ const COMMONS_ASPECT_FALLBACKS=Object.freeze({
+  familymart:592/86,
+  misterDonut:854/97,
+  lawson:960/147
+ });
+ const imageAspectRatios=new Map(Object.entries(COMMONS_ASPECT_FALLBACKS));
  const familymartPalette={green:0x00a76f,blue:0x1687bf};
  export function getFamilymartFacadePalette(){return {...familymartPalette};}
  // Sample the original Commons pixels, not guessed CSS colors.
@@ -82,7 +89,7 @@ const TEXTURE_URLS=Object.freeze({
  export function prepareFacadeImageMetadata(){
   if(typeof Image==='undefined')return Promise.resolve(imageAspectRatios.size);
   if(metadataPending)return metadataPending;
-  const pending=Object.entries(TEXTURE_URLS).filter(([name])=>!imageAspectRatios.has(name));
+  const pending=Object.entries(TEXTURE_URLS).filter(([name])=>!imageAspectRatios.has(name)||Object.hasOwn(COMMONS_ASPECT_FALLBACKS,name));
   metadataPending=Promise.all(pending.map(async([name,url])=>{
    // The geometry is built synchronously after this preparation. For Commons
    // brands, use the *selected* remote logo ratio rather than the square
