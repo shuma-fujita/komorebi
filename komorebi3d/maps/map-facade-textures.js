@@ -3,12 +3,15 @@
 // Keep the fixed Engine mesh contract unchanged.
 import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=commons-edge-v1-20261128';
 // Commons-only brands have null PNG URLs; existing brands retain local PNG fallbacks.
-const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819',yoshinoya:'Q776272',familymart:'Q1191685',sukiya:'Q6137375',nitori:'Q10801453',yamadaDenki:'Q1096390'});
+const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819',yoshinoya:'Q776272',familymart:'Q1191685',sukiya:'Q6137375',nitori:'Q10801453',yamadaDenki:'Q1096390',komeda:'Q11302679',mizuhoBank:'Q2882956',acom:'Q4674469'});
 const TEXTURE_URLS=Object.freeze({
  familymart:null,
  sukiya:null,
  nitori:null,
  yamadaDenki:null,
+ komeda:null,
+ mizuhoBank:null,
+ acom:null,
  wikidataQ38076:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
  matsumotoKiyoshi:new URL('../assets/textures/brands/matsumoto-kiyoshi.png?v=matsumoto-kiyoshi-v1-20261127',import.meta.url).href,
