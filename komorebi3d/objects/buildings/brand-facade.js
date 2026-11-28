@@ -112,7 +112,8 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   ?referenceEntranceSize.height
   :Math.min(MAX_UPPER_LOGO_HEIGHT_M,referenceTop-logoAreaBottom-.28,
    (bandReference.length-LOGO_WALL_MARGIN_M)/logoAspectRatio)):0;
- const referenceBottom=(logoAreaBottom+referenceTop-referenceHeight)/2;
+ const referenceBottom=withGroundGlass?logoAreaBottom:(logoAreaBottom+referenceTop-referenceHeight)/2;
+ const bandHeight=withGroundGlass?groundGlassTop-logoAreaBottom:referenceHeight;
  const surface={texture,ownerKey,backgroundColor,backgroundUV,backgroundSample,logoAspectRatio,backgroundPositions:[],positions:[],uvs:[]};
  // Background color is geometry, never an image-covered wall.
  const place=(wall,u,y,offset)=>{
@@ -134,11 +135,11 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   else quad(mesh,a,b,c,d,backgroundColor);
  }
  function paintBands(wall,left=0,right=0){
-  if(!Array.isArray(sideBands)||!(referenceHeight>0))return;
+  if(!Array.isArray(sideBands)||!(bandHeight>0))return;
   for(const band of sideBands){
    if(!(band.from>=0&&band.to<=1&&band.to>band.from&&Number.isInteger(band.color)))continue;
-   const y0=referenceBottom+referenceHeight*band.from;
-   const y1=referenceBottom+referenceHeight*band.to;
+   const y0=referenceBottom+bandHeight*band.from;
+   const y1=referenceBottom+bandHeight*band.to;
    if(y0<logoAreaBottom-1e-7||y1>top+1e-7)continue;
    const stripe=(u0,u1)=>{
     if(u1<=u0)return;
