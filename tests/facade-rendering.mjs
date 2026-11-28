@@ -142,7 +142,7 @@ try{
   typeof key==='string'&&key===key.toUpperCase()?key:
   typeof key==='string'&&key.startsWith('create')?()=>({}):()=>{}});
  const layerA=createMapFacadeTextureLayer({gl});
- const imageA=images.find(i=>i.src.includes('hidakaya.png'));
+ const imageA=images.find(i=>i.src?.includes('hidakaya.png'));
  layerA.render([face],camera);
  assert.deepEqual(draws.splice(0),counts.map(n=>[n,0]),'A: loading fills both disjoint rectangles in solid color');
  imageA.onload();
@@ -151,7 +151,7 @@ try{
  layerA.render([face],camera);draws.length=0;
  assert.equal(samples,1,'Solid RGB sample is cached across frames');
  const cornerFace={...face,texture:'doutor',backgroundUV:[.04,.04],backgroundColor:0};
- const cornerImage=images.find(i=>i.src.includes('doutor.png'));
+ const cornerImage=images.find(i=>i.src?.includes('doutor.png'));
  cornerImage.onload();
  sampleCoordinates.length=0;
  layerA.render([cornerFace],camera);
@@ -174,7 +174,7 @@ try{
  const layerB=createMapFacadeTextureLayer({THREE,scene:{fog:null},camera:{},renderer:{
   autoClear:true,render(scene){frames.push(scene.children.map(m=>[m.geometry.attributes.position.count,!!m.material.map]));}
  }});
- const imageB=images.filter(i=>i.src.includes('hidakaya.png')).at(-1);
+ const imageB=images.filter(i=>i.src?.includes('hidakaya.png')).at(-1);
  layerB.render([face],camera);
  assert.deepEqual(frames.pop(),counts.map(n=>[n,false]),'B: loading fills wall and logo in solid color');
  imageB.onload();
@@ -184,7 +184,7 @@ try{
  layerB.render([noLogoFace],camera);
  assert.deepEqual(frames.pop(),[[noLogoFace.backgroundPositions.length/3,false]],'B: no-logo wall is rendered, not hidden');
  const failedFace={...face,texture:'lawson'};
- const failedImage=images.filter(i=>i.src.includes('lawson.png')).at(-1);
+ const failedImage=images.filter(i=>i.src?.includes('lawson.png')).at(-1);
  const warn=console.warn;
  try{console.warn=()=>{};failedImage.onerror();}finally{console.warn=warn;}
  layerB.render([failedFace],camera);
