@@ -1,7 +1,7 @@
 // Application-owned UV facade renderer for the pinned Komorebi Engine.
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
-import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-diagnostic-v2-20261128';
+import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-copy-stable-v3-20261128';
 const TEXTURE_URLS=Object.freeze({
  wikidataQ38076:new URL('../assets/textures/brands/yoshinoya.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
