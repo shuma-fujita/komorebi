@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "Commonsの画像URL欠落・ファイル未存在・想定外ホストを区別して診断（原因再検証待ち）",
+  "matsudo": "WikidataロゴのCommonsサムネイル配信先thumb.wikimedia.orgを許可（実機未確認）",
   "common": "Wikidata診断更新中もコピーボタンと結果表示を維持、失敗理由を表示（本体実機未確認）"
 }
