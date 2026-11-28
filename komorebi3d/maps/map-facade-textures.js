@@ -43,22 +43,37 @@ const TEXTURE_URLS=Object.freeze({
   if(typeof Image==='undefined')return Promise.resolve(imageAspectRatios.size);
   if(metadataPending)return metadataPending;
   const pending=Object.entries(TEXTURE_URLS).filter(([name])=>!imageAspectRatios.has(name));
-  metadataPending=Promise.all(pending.map(([name,url])=>new Promise(resolve=>{
-   const image=new Image();
-   let finished=false;
-   const done=()=>{
-    if(finished)return;finished=true;
-    clearTimeout(timer);image.onload=null;image.onerror=null;resolve();
-   };
-   const timer=setTimeout(done,8000);
-   image.onload=()=>{
-    const w=image.naturalWidth,h=image.naturalHeight;
-    if(Number.isFinite(w)&&Number.isFinite(h)&&w>0&&h>0)imageAspectRatios.set(name,w/h);
-    done();
-   };
-   image.onerror=done;
-   image.src=url;
-  }))).then(()=>imageAspectRatios.size).finally(()=>{metadataPending=null;});
+  metadataPending=Promise.all(pending.map(async([name,url])=>{
+   // The geometry is built synchronously after this preparation. For Commons
+   // brands, use the *selected* remote logo ratio rather than the square
+   // fallback PNG ratio, so wide wordmarks fill the entrance fascia.
+   const fallback=()=>new Promise(resolve=>{
+    const image=new Image();
+    const timer=setTimeout(()=>{image.onload=null;image.onerror=null;resolve();},8000);
+    image.onload=()=>{
+     clearTimeout(timer);
+     const w=image.naturalWidth,h=image.naturalHeight;
+     if(w>0&&h>0)imageAspectRatios.set(name,w/h);
+     resolve();
+    };
+    image.onerror=()=>{clearTimeout(timer);resolve();};
+    image.src=url;
+   });
+   const id=WIKIDATA_BRANDS[name];
+   if(id){
+    try{
+     const remote=await Promise.race([
+      loadWikidataLogo(id),
+      new Promise((_,reject)=>setTimeout(()=>reject(Error('Commons metadata timeout')),8000))
+     ]);
+     if(remote.naturalWidth>0&&remote.naturalHeight>0){
+      imageAspectRatios.set(name,remote.naturalWidth/remote.naturalHeight);
+      return;
+     }
+    }catch{/* Keep the bundled PNG aspect when Commons is unavailable. */}
+   }
+   await fallback();
+  })).then(()=>imageAspectRatios.size).finally(()=>{metadataPending=null;});
   return metadataPending;
  }
 
