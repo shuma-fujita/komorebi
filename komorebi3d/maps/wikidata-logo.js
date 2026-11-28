@@ -6,6 +6,28 @@ export function reportWikidataLogoStage(id,stage,state,detail=''){
  const event=new CustomEvent('komorebi:wikidata-logo',{detail:{id,stage,state,detail:String(detail).slice(0,180)}});
  window.dispatchEvent(event);
 }
+const logoStages=new Map();
+function renderLogoDiagnostic(){
+ const panel=typeof document!=='undefined'?document.getElementById('wikidata-logo-status'):null;
+ if(!panel)return;
+ const stage=key=>{
+  const value=logoStages.get(key);
+  return value?value.state==='loading'?'取得中':value.state==='success'?'成功'+(value.detail?' ('+value.detail+')':''):value.state==='failed'?'失敗 ('+value.detail+')':'待機中':'待機中';
+ };
+ const error=logoStages.get('error');
+ const escape=value=>String(value).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+ panel.innerHTML='<strong>🖼️ Wikidataロゴ診断（実測）</strong>'+
+  '<div>対象：McDonald’s / Q38076</div>'+
+  '<div>Wikidata：'+escape(stage('wikidata'))+' ・ P154：'+escape(stage('p154'))+'</div>'+
+  '<div>Commons：'+escape(stage('commons'))+' ・ テクスチャ：A '+escape(stage('A'))+' / B '+escape(stage('B'))+'</div>'+
+  '<div>'+(error?'PNGフォールバック：'+escape(error.detail):'取得処理：'+(logoStages.size?'実行中／結果表示':'対象ロゴの描画待ち'))+'</div>';
+}
+if(typeof window!=='undefined')window.addEventListener('komorebi:wikidata-logo',event=>{
+ const {id,stage,state,detail}=event.detail||{};
+ if(id!=='Q38076'||!stage)return;
+ logoStages.set(stage,{state,detail});
+ renderLogoDiagnostic();
+});
 const pending=new Map();
 function rankStatement(statement,now){
  if(statement.rank==='deprecated'||statement.mainsnak?.snaktype!=='value')return -1;
