@@ -54,7 +54,7 @@ export function imageFacadeMode({bottom,top,groundGlassTop}={}){
  return top>groundGlassTop+1e-8?'ground-and-upper':'ground-only';
 }
 
-export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null,facadeAssessment=null}={}){
+export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=null,ownerKey=null,texture,backgroundColor,drawFallbackLogo=null,logoAspectRatio=1,backgroundUV=[.04,.04],backgroundSample='corners',groundGlassTop=null,entranceEdgeIndex=null,logoOnGroundFasciaOnly=false,blockedWalls=null,logoWallIndices=null,facadeAssessment=null,sideBands=null}={}){
  if(!Array.isArray(polygon)||polygon.length<4||
   !Number.isFinite(bottom)||!Number.isFinite(top)||bottom<0||top-bottom<1.5||
   !polygon.every(p=>p.length===2&&p.every(Number.isFinite))||
@@ -173,6 +173,17 @@ export function paintImageFacade(quad,mesh,polygon,{bottom,top,texturedFaces=nul
   const left=(wall.length-imageWidth)/2,right=(wall.length+imageWidth)/2;
   const logoBottom=(logoAreaBottom+imageAreaTop)/2-imageHeight/2;
   const logoTop=(logoAreaBottom+imageAreaTop)/2+imageHeight/2;
+  if(Array.isArray(sideBands))for(const band of sideBands){
+   const y0=logoBottom+imageHeight*band.from,y1=logoBottom+imageHeight*band.to;
+   if(!(band.from>=0&&band.to<=1&&band.to>band.from&&Number.isInteger(band.color)))continue;
+   const stripe=(u0,u1)=>{
+    if(u1<=u0)return;
+    const offset=WALL_IMAGE_OFFSET_M+.004;
+    quad(mesh,place(wall,u0,y0,offset),place(wall,u1,y0,offset),
+     place(wall,u1,y1,offset),place(wall,u0,y1,offset),band.color);
+   };
+   stripe(0,left);stripe(right,wall.length);
+  }
   if(useTexture){
    // Four solid bands surround one inlaid PNG rectangle without overlap.
    // The same rectangle is rendered in solid color while its PNG is unavailable.

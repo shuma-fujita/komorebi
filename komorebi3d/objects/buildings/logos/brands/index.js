@@ -15,7 +15,11 @@ const sukiya=Object.freeze({id:'sukiya',names:['すき家','sukiya']});
 const commonsOnlyFacade=(texture,backgroundColor)=>(quad,mesh,polygon,options={})=>
  paintImageFacade(quad,mesh,polygon,{...options,texture,backgroundColor});
 const paintFamilymartFacade=commonsOnlyFacade('familymart',0xffffff);
-const paintSukiyaFacade=commonsOnlyFacade('sukiya',0xffffff);
+const paintSukiyaFacade=(quad,mesh,polygon,options={})=>paintImageFacade(quad,mesh,polygon,{
+ ...options,texture:'sukiya',backgroundColor:0xffffff,
+ // Continue the bowl's yellow rim and red body across both sides of its sign.
+ sideBands:[{from:.79,to:.9,color:0xffc928},{from:.38,to:.79,color:0xb51d28}]
+});
 import {rakutenMobile} from './rakuten-mobile.js?v=rakuten-mobile-v1-20261123';
 import {yoshinoya} from '../../food/yoshinoya.js?v=food-image-logo-v1-20261123';
 import {hidakaya} from '../../food/hidakaya.js?v=food-image-logo-v1-20261123';
