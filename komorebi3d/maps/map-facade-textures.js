@@ -1,7 +1,9 @@
 // Application-owned UV facade renderer for the pinned Komorebi Engine.
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
-import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-override-v7-20261128';
+import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-pilot-v8-20261128';
+// Pilot: reuse the existing local PNG texture keys as reliable fallbacks.
+const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819'});
 const TEXTURE_URLS=Object.freeze({
  wikidataQ38076:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
@@ -279,13 +281,14 @@ export function createMapFacadeTextureLayer(renderer){
    }catch(error){resource.failed=true;console.warn('PNG facade upload failed:',name,error);return false;}
   };
   image.onload=()=>{if(!resource.dynamicReady)upload(image);};
-  if(name==='wikidataQ38076')resource.activate=()=>{
+  const wikidataId=WIKIDATA_BRANDS[name];
+  if(wikidataId)resource.activate=()=>{
    const backend=isThree?'B':'A';
    if(resource.activated)return;
-   reportWikidataLogoStage('Q38076',backend,'loading');
+   reportWikidataLogoStage(wikidataId,backend,'loading');
    resource.activated=true;
-   loadWikidataLogo('Q38076').then(remote=>{
-    if(disposed){reportWikidataLogoStage('Q38076',backend,'cancelled');return;}
+   loadWikidataLogo(wikidataId).then(remote=>{
+    if(disposed){reportWikidataLogoStage(wikidataId,backend,'cancelled');return;}
     // Contain the remote logo in the existing sign rectangle, preserving aspect
     // without rebuilding the map or changing the shared facade wall selection.
     const width=image.naturalWidth||512,height=image.naturalHeight||512;
@@ -294,10 +297,10 @@ export function createMapFacadeTextureLayer(renderer){
     const scale=Math.min(width/remote.naturalWidth,height/remote.naturalHeight);
     const w=remote.naturalWidth*scale,h=remote.naturalHeight*scale;
     ctx.drawImage(remote,(width-w)/2,(height-h)/2,w,h);
-    if(upload(canvas)){resource.dynamicReady=true;reportWikidataLogoStage('Q38076',backend,'success');}
+    if(upload(canvas)){resource.dynamicReady=true;reportWikidataLogoStage(wikidataId,backend,'success');}
     else throw Error('Texture upload did not complete');
    }).catch(error=>{
-    reportWikidataLogoStage('Q38076',backend,disposed?'cancelled':'failed',error?.message||error);
+    reportWikidataLogoStage(wikidataId,backend,disposed?'cancelled':'failed',error?.message||error);
     console.warn('Wikidata logo fallback:',error);
    });
   };
