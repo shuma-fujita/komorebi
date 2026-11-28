@@ -6,7 +6,7 @@ import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=com
 const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819',yoshinoya:'Q776272',familymart:'Q1191685',sukiya:'Q6137375',nitori:'Q10801453',yamadaDenki:'Q1096390',komeda:'Q11302679',mizuhoBank:'Q2882956',acom:'Q4674469'});
 const dynamicWikidataIds=new Map();
 export function registerWikidataFacade(id){
- if(!/^Q[1-9]\\d*$/.test(id))throw Error('Invalid Wikidata logo id');
+ if(!/^Q[1-9]\d*$/.test(id))throw Error('Invalid Wikidata logo id');
  const texture='wikidata:'+id;
  dynamicWikidataIds.set(texture,id);
  return texture;
