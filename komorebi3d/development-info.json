@@ -1,6 +1,6 @@
 {
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
-  "matsudo": "Wikidataロゴの実画像URL表示、A/B中断・アップロード診断改善、検証用PNG入替復元（実機待ち）",
+  "matsudo": "Wikidataロゴ診断に実画像URL・Commonsファイルページ・Wikidata項目ページを表示（実機待ち）",
   "common": "Wikidata診断更新中もコピーボタンと結果表示を維持、失敗理由を表示（本体実機未確認）"
 }
