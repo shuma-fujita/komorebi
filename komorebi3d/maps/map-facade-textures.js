@@ -3,7 +3,7 @@
 // Keep the fixed Engine mesh contract unchanged.
 import {loadWikidataLogo} from './wikidata-logo.js?v=wikidata-logo-v1-20261128';
 const TEXTURE_URLS=Object.freeze({
- wikidataQ38076:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
+ wikidataQ38076:new URL('../assets/textures/brands/yoshinoya.png',import.meta.url).href,
  toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
  matsumotoKiyoshi:new URL('../assets/textures/brands/matsumoto-kiyoshi.png?v=matsumoto-kiyoshi-v1-20261127',import.meta.url).href,
  manekineko:new URL('../assets/textures/brands/manekineko.png?v=manekineko-v1-20261126',import.meta.url).href,
@@ -17,7 +17,7 @@ const TEXTURE_URLS=Object.freeze({
  welcia:new URL('../assets/textures/brands/welcia.png?v=welcia-png-v1-20261124',import.meta.url).href,
  lawson:new URL('../assets/textures/brands/lawson.png?v=brand-png-20261123',import.meta.url).href,
  rakutenMobile:new URL('../assets/textures/brands/rakuten-mobile.png?v=rakuten-crop-png-v1-20261123',import.meta.url).href,
- yoshinoya:new URL('../assets/textures/brands/yoshinoya.png?v=brand-png-20261123',import.meta.url).href,
+ yoshinoya:new URL('../assets/textures/brands/mcdonalds.png?v=brand-png-20261123',import.meta.url).href,
  hidakaya:new URL('../assets/textures/brands/hidakaya.png?v=brand-png-20261123',import.meta.url).href,
  tonkatsuTonichi:new URL('../assets/textures/brands/tonkatsu-tonichi.png?v=brand-png-20261123',import.meta.url).href,
  mcdonalds:new URL('../assets/textures/brands/mcdonalds.png',import.meta.url).href,
