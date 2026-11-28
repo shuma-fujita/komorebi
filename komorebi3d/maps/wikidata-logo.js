@@ -129,7 +129,7 @@ export function loadWikidataLogo(id){
   }
   let parsed;
   try{parsed=new URL(url);}catch{throw Error('Invalid Commons image URL');}
-  if(parsed.protocol!=='https:'||parsed.hostname!=='upload.wikimedia.org')
+  if(parsed.protocol!=='https:'||!['upload.wikimedia.org','thumb.wikimedia.org'].includes(parsed.hostname))
    throw Error('Unexpected Commons image host: '+parsed.hostname);
   const image=await loadImage(parsed.href);
   reportWikidataLogoStage(id,'commons','success',image.naturalWidth+'×'+image.naturalHeight);
