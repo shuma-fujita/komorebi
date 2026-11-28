@@ -7,6 +7,7 @@ export function reportWikidataLogoStage(id,stage,state,detail=''){
  window.dispatchEvent(event);
 }
 const logoStages=new Map();
+let logoImageUrl='';
 function mountLogoCopyButton(panel){
  if(panel.querySelector('[data-wikidata-copy]'))return;
  const button=document.createElement('button');
@@ -40,7 +41,7 @@ function renderLogoDiagnostic(){
  if(!panel)return;
  const stage=key=>{
   const value=logoStages.get(key);
-  return value?value.state==='loading'?'取得中':value.state==='success'?'成功'+(value.detail?' ('+value.detail+')':''):value.state==='failed'?'失敗 ('+value.detail+')':'待機中':'待機中';
+  return value?value.state==='loading'?'取得中':value.state==='success'?'成功'+(value.detail?' ('+value.detail+')':''):value.state==='failed'?'失敗 ('+value.detail+')':value.state==='cancelled'?'中断（再生成）':'待機中':'待機中';
  };
  const error=logoStages.get('error');
  const escape=value=>String(value).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
@@ -53,7 +54,8 @@ function renderLogoDiagnostic(){
  content.innerHTML='<strong>🖼️ Wikidataロゴ診断（実測）</strong>'+
   '<div>対象：McDonald’s / Q38076</div>'+
   '<div>Wikidata：'+escape(stage('wikidata'))+' ・ P154：'+escape(stage('p154'))+'</div>'+
-  '<div>Commons：'+escape(stage('commons'))+' ・ テクスチャ：A '+escape(stage('A'))+' / B '+escape(stage('B'))+'</div>'+
+  '<div>Commons：'+escape(stage('commons'))+' ・ テクスチャ：A '+escape(stage('A'))+' / B '+escape(stage('B'))+'</div>'+ 
+  '<div>取得ロゴURL：'+(logoImageUrl?'<a href="'+escape(logoImageUrl)+'" target="_blank" rel="noopener noreferrer" style="overflow-wrap:anywhere">'+escape(logoImageUrl)+'</a>':'未取得')+'</div>'+
   '<div>'+(error?'PNGフォールバック：'+escape(error.detail):'取得処理：'+(logoStages.size?'実行中／結果表示':'対象ロゴの描画待ち'))+'</div>';
  mountLogoCopyButton(panel);
 }
@@ -131,6 +133,8 @@ export function loadWikidataLogo(id){
   try{parsed=new URL(url);}catch{throw Error('Invalid Commons image URL');}
   if(parsed.protocol!=='https:'||!['upload.wikimedia.org','thumb.wikimedia.org'].includes(parsed.hostname))
    throw Error('Unexpected Commons image host: '+parsed.hostname);
+  logoImageUrl=parsed.href;
+  renderLogoDiagnostic();
   const image=await loadImage(parsed.href);
   reportWikidataLogoStage(id,'commons','success',image.naturalWidth+'×'+image.naturalHeight);
   return image;
