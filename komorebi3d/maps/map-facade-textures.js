@@ -444,17 +444,22 @@ export function createMapFacadeTextureLayer(renderer){
    const current=new Set(all);
    for(const [face,entry] of cache)if(!current.has(face))forget(face,entry);
    const valid=all;
+   // Collect the ratios of actual UV faces before activating any image load.
+   // A mismatch (or missing ratio) always disables stretched full-canvas fill.
+   const geometryAspects=new Map();
+   for(const face of valid){
+    const aspect=face.logoAspectRatio;
+    const previous=geometryAspects.get(face.texture);
+    geometryAspects.set(face.texture,
+     Number.isFinite(aspect)&&aspect>0&&(previous===undefined||previous!==null&&Math.abs(previous/aspect-1)<.01)
+      ?aspect:null);
+   }
+   for(const [name,aspect] of geometryAspects){
+    const resource=resources.get(name);
+    if(resource&&!resource.activated)resource.geometryAspect=aspect;
+   }
    for(const face of valid){
     const resource=resources.get(face.texture);
-    // Use the aspect captured when this face's geometry was actually built,
-    // not the asynchronously updated image metadata registry.
-    if(resource&&!resource.activated){
-     const aspect=face.logoAspectRatio;
-     if(Number.isFinite(aspect)&&aspect>0){
-      if(resource.geometryAspect===undefined)resource.geometryAspect=aspect;
-      else if(Math.abs(resource.geometryAspect/aspect-1)>.01)resource.geometryAspect=null;
-     }
-    }
     resource?.activate?.();geometryFor(face);
     if(face.texture==='lawson'&&resource&&!resource.faceDiagnosticReported){
      resource.faceDiagnosticReported=true;
