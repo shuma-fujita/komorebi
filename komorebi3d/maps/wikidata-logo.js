@@ -102,11 +102,22 @@ export function loadWikidataLogo(id){
   reportWikidataLogoStage(id,'p154','success',filename);
   reportWikidataLogoStage(id,'commons','loading');
   const commons='https://commons.wikimedia.org/w/api.php?origin=*&format=json&action=query&prop=imageinfo&iiprop=url&iiurlwidth=512&titles='+encodeURIComponent('File:'+filename);
-  const pages=(await json(commons)).query?.pages||{};
-  const info=Object.values(pages)[0]?.imageinfo?.[0];
+  const result=await json(commons);
+  const pages=Object.values(result.query?.pages||{});
+  const page=pages.find(p=>p.imageinfo?.length)||pages[0];
+  const info=page?.imageinfo?.[0];
   const url=info?.thumburl||info?.url;
-  if(!url||!/^https:\/\/upload\.wikimedia\.org\//.test(url))throw Error('Unexpected Commons image URL');
-  const image=await loadImage(url);
+  if(!url){
+   const reason=result.error?.info||result.warnings?.query?.['*']||
+    (page?.missing!==undefined?'Commons file missing: '+filename:
+     'Commons imageinfo URL missing');
+   throw Error(String(reason).slice(0,180));
+  }
+  let parsed;
+  try{parsed=new URL(url);}catch{throw Error('Invalid Commons image URL');}
+  if(parsed.protocol!=='https:'||parsed.hostname!=='upload.wikimedia.org')
+   throw Error('Unexpected Commons image host: '+parsed.hostname);
+  const image=await loadImage(parsed.href);
   reportWikidataLogoStage(id,'commons','success',image.naturalWidth+'×'+image.naturalHeight);
   return image;
  })().catch(error=>{
