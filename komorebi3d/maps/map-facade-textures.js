@@ -4,6 +4,15 @@
 import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=commons-edge-v1-20261128';
 // Commons-only brands have null PNG URLs; existing brands retain local PNG fallbacks.
 const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819',yoshinoya:'Q776272',familymart:'Q1191685',sukiya:'Q6137375',nitori:'Q10801453',yamadaDenki:'Q1096390',komeda:'Q11302679',mizuhoBank:'Q2882956',acom:'Q4674469'});
+const dynamicWikidataIds=new Map();
+export function registerWikidataFacade(id){
+ if(!/^Q[1-9]\\d*$/.test(id))throw Error('Invalid Wikidata logo id');
+ const texture='wikidata:'+id;
+ dynamicWikidataIds.set(texture,id);
+ return texture;
+}
+const wikidataForTexture=name=>WIKIDATA_BRANDS[name]??dynamicWikidataIds.get(name);
+const hasFacadeTexture=name=>Object.hasOwn(TEXTURE_URLS,name)||dynamicWikidataIds.has(name);
 const TEXTURE_URLS=Object.freeze({
  familymart:null,
  sukiya:null,
@@ -90,7 +99,7 @@ const TEXTURE_URLS=Object.freeze({
     image.onerror=()=>{clearTimeout(timer);resolve();};
     image.src=url;
    });
-   const id=WIKIDATA_BRANDS[name];
+   const id=wikidataForTexture(name);
    if(id){
     try{
      const remote=await Promise.race([
@@ -185,7 +194,7 @@ function programFor(gl){
   fogEnd:gl.getUniformLocation(program,'uFogEnd')};
 }
 function isFace(face){
- return Object.hasOwn(TEXTURE_URLS,face?.texture)&&Array.isArray(face.positions)&&
+ return hasFacadeTexture(face?.texture)&&Array.isArray(face.positions)&&
   Array.isArray(face.uvs)&&face.positions.length%18===0&&
   face.uvs.length===face.positions.length/3*2&&
   Array.isArray(face.backgroundPositions)&&face.backgroundPositions.length%18===0&&
@@ -279,7 +288,8 @@ export function createMapFacadeTextureLayer(renderer){
  // PNG-free Commons brands use the same texture path with no network-dependent placeholder file.
  // Every brand owns its texture; all geometry and camera operations remain
  // identical across the fixed WebGL1/Three.js rendering backends.
- for(const [name,url] of Object.entries(TEXTURE_URLS)){
+ const ensureResource=(name,url)=>{
+  if(resources.has(name))return resources.get(name);
   const resource={name,url,ready:false,failed:false,image:new Image(),texture:null,material:null,colors:new Map()};
   if(isThree){
    const texture=new THREE.Texture();
@@ -365,7 +375,7 @@ export function createMapFacadeTextureLayer(renderer){
     return {color:null,transparent:null};
    }
   };
-  const wikidataId=WIKIDATA_BRANDS[name];
+  const wikidataId=wikidataForTexture(name);
   if(wikidataId)resource.activate=()=>{
    const backend=isThree?'B':'A';
    if(resource.activated)return;
@@ -440,7 +450,9 @@ export function createMapFacadeTextureLayer(renderer){
   };
   resources.set(name,resource);
   if(url)image.src=url;
- }
+  return resource;
+ };
+ for(const [name,url] of Object.entries(TEXTURE_URLS))ensureResource(name,url);
  function solidMaterial(color){
   if(!solidMaterials.has(color))solidMaterials.set(color,new THREE.MeshBasicMaterial({
    color,side:THREE.DoubleSide,transparent:false,depthTest:true,depthWrite:true,toneMapped:false}));
@@ -487,6 +499,7 @@ export function createMapFacadeTextureLayer(renderer){
   render(faces,camera){
    if(disposed)return;
    const all=Array.isArray(faces)?faces.filter(isFace):[];
+   for(const face of all)if(!resources.has(face.texture))ensureResource(face.texture,null);
    const current=new Set(all);
    for(const [face,entry] of cache)if(!current.has(face))forget(face,entry);
    const valid=all;
