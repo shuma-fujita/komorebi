@@ -2,5 +2,5 @@
   "engine": "56bb2bc",
   "forest": "中央2枚扉の取っ手を濃い青グレーに変更（他の外観は不変／実機PASS）",
   "matsudo": "松戸マクドナルドのbrand:wikidata=Q38076からP154ロゴを非同期取得・PNGフォールバック（実機未確認）",
-  "common": "Wikidata・P154・Commons取得とA/Bテクスチャ反映を実行ステータスの診断表示へ接続（実機未確認）"
+  "common": "Wikidataロゴ実測診断のコピー操作をゲーム本体に接続（モック実機PASS・本体未確認）"
 }
