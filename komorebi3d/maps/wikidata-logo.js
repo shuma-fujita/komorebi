@@ -8,6 +8,7 @@ export function reportWikidataLogoStage(id,stage,state,detail=''){
 }
 const logoStages=new Map();
 let logoImageUrl='';
+let logoFileName='';
 function mountLogoCopyButton(panel){
  if(panel.querySelector('[data-wikidata-copy]'))return;
  const button=document.createElement('button');
@@ -56,6 +57,8 @@ function renderLogoDiagnostic(){
   '<div>Wikidata：'+escape(stage('wikidata'))+' ・ P154：'+escape(stage('p154'))+'</div>'+
   '<div>Commons：'+escape(stage('commons'))+' ・ テクスチャ：A '+escape(stage('A'))+' / B '+escape(stage('B'))+'</div>'+ 
   '<div>取得ロゴURL：'+(logoImageUrl?'<a href="'+escape(logoImageUrl)+'" target="_blank" rel="noopener noreferrer" style="overflow-wrap:anywhere">'+escape(logoImageUrl)+'</a>':'未取得')+'</div>'+
+  '<div>Commonsページ：'+(logoFileName?'<a href="'+escape('https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(logoFileName.replace(/ /g,'_')))+'" target="_blank" rel="noopener noreferrer" style="overflow-wrap:anywhere">'+escape('https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(logoFileName.replace(/ /g,'_')))+'</a>':'未取得')+'</div>'+
+  '<div>Wikidataページ：<a href="https://www.wikidata.org/wiki/Q38076" target="_blank" rel="noopener noreferrer">https://www.wikidata.org/wiki/Q38076</a></div>'+
   '<div>'+(error?'PNGフォールバック：'+escape(error.detail):'取得処理：'+(logoStages.size?'実行中／結果表示':'対象ロゴの描画待ち'))+'</div>';
  mountLogoCopyButton(panel);
 }
@@ -115,6 +118,7 @@ export function loadWikidataLogo(id){
   reportWikidataLogoStage(id,'p154','loading');
   const filename=selectWikidataLogoFile(entity);
   if(!filename)throw Error('Wikidata P154 missing');
+  logoFileName=filename;
   reportWikidataLogoStage(id,'p154','success',filename);
   reportWikidataLogoStage(id,'commons','loading');
   const commons='https://commons.wikimedia.org/w/api.php?origin=*&format=json&action=query&prop=imageinfo&iiprop=url&iiurlwidth=512&titles='+encodeURIComponent('File:'+filename);
