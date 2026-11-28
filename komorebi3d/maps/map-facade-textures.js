@@ -178,6 +178,9 @@ export function chooseFacadeCornerColor(pixels,fallback){
   return (p[0]<<16)|(p[1]<<8)|p[2];
  }
  function sampledColor(face,resource){
+ // A successfully fetched Commons logo defines its own facade background.
+ // Never use the bundled PNG's legacy blue when the remote logo has white corners.
+ if(resource.dynamicReady&&resource.commonsCornerColor!==null&&resource.commonsCornerColor!==undefined)return resource.commonsCornerColor;
  if(!resource.ready||face.backgroundSample==='fixed')return face.backgroundColor;
  const [u,v]=face.backgroundUV||[.04,.04];
  const legacy=u!==.04||v!==.04;
@@ -281,6 +284,23 @@ export function createMapFacadeTextureLayer(renderer){
    }catch(error){resource.failed=true;console.warn('PNG facade upload failed:',name,error);return false;}
   };
   image.onload=()=>{if(!resource.dynamicReady)upload(image);};
+  // Sample the original Commons image, before fitting it into the PNG-sized canvas.
+  // Transparent or inconsistent corners leave the original PNG/facade behavior intact.
+  const commonsCornerColor=remote=>{
+   try{
+    const w=remote.naturalWidth,h=remote.naturalHeight;
+    if(!(w>0&&h>0))return null;
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=1;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    if(!ctx)return null;
+    const read=(x,y)=>{
+     ctx.clearRect(0,0,1,1);
+     ctx.drawImage(remote,x,y,1,1,0,0,1,1);
+     return ctx.getImageData(0,0,1,1).data;
+    };
+    return chooseFacadeCornerColor([read(0,0),read(w-1,0),read(0,h-1),read(w-1,h-1)],null);
+   }catch{return null;}
+  };
   const wikidataId=WIKIDATA_BRANDS[name];
   if(wikidataId)resource.activate=()=>{
    const backend=isThree?'B':'A';
@@ -297,7 +317,11 @@ export function createMapFacadeTextureLayer(renderer){
     const scale=Math.min(width/remote.naturalWidth,height/remote.naturalHeight);
     const w=remote.naturalWidth*scale,h=remote.naturalHeight*scale;
     ctx.drawImage(remote,(width-w)/2,(height-h)/2,w,h);
-    if(upload(canvas)){resource.dynamicReady=true;reportWikidataLogoStage(wikidataId,backend,'success');}
+    if(upload(canvas)){
+     resource.commonsCornerColor=commonsCornerColor(remote);
+     resource.dynamicReady=true;
+     reportWikidataLogoStage(wikidataId,backend,'success');
+    }
     else throw Error('Texture upload did not complete');
    }).catch(error=>{
     reportWikidataLogoStage(wikidataId,backend,disposed?'cancelled':'failed',error?.message||error);
