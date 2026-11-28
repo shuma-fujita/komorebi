@@ -2,6 +2,7 @@
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
 const TEXTURE_URLS=Object.freeze({
+ toyokoInn:new URL('../assets/textures/brands/toyoko-inn.png?v=toyoko-inn-v1-20261128',import.meta.url).href,
  matsumotoKiyoshi:new URL('../assets/textures/brands/matsumoto-kiyoshi.png?v=matsumoto-kiyoshi-v1-20261127',import.meta.url).href,
  manekineko:new URL('../assets/textures/brands/manekineko.png?v=manekineko-v1-20261126',import.meta.url).href,
  kfc:new URL('../assets/textures/brands/kfc.png?v=kfc-v1-20261125',import.meta.url).href,
