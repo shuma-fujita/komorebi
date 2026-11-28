@@ -416,19 +416,6 @@ export function createMapFacadeTextureLayer(renderer){
      ' / 配置 '+w.toFixed(1)+'×'+h.toFixed(1)+'px / キャンバス '+width+'×'+height+'px'+
      ' / 追加余白 '+(padding*100)+'% / UV実形状比率 '+(actualAspect||0).toFixed(2)+' / '+(geometryMatchesCommons?'全面配置':'従来配置（比率不一致）'));
     ctx.drawImage(remote,sx,sy,sw,sh,(width-w)/2,(height-h)/2,w,h);
-    if(name==='familymart'){
-     // Commons' green-backed wordmark fills the whole inlay. Turn its green
-     // background white while retaining the original blue letter pixels;
-     // the facade geometry supplies the green top and blue bottom stripes.
-     const pixels=ctx.getImageData(0,0,width,height);
-     const rgba=pixels.data;
-     for(let i=0;i<rgba.length;i+=4){
-      const r=rgba[i],g=rgba[i+1],b=rgba[i+2],a=rgba[i+3];
-      if(a<8)continue;
-      if(g>r*1.20&&g>b*.92){rgba[i]=255;rgba[i+1]=255;rgba[i+2]=255;}
-     }
-     ctx.putImageData(pixels,0,0);
-    }
     if(upload(canvas)){
      resource.commonsCornerColor=corners.color;
      reportWikidataLogoStage(wikidataId,'adoptedColor','success',corners.color===null?'判定不可（従来色）':'#'+corners.color.toString(16).padStart(6,'0'));
