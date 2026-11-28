@@ -8,6 +8,7 @@ export function reportWikidataLogoStage(id,stage,state,detail=''){
 }
 const logoStages=new Map();
 const lawsonStages=new Map();
+const adoptedColors=new Map();
 let logoImageUrl='';
 let logoFileName='';
 let logoSelection='未選択';
@@ -70,10 +71,14 @@ function renderLogoDiagnostic(){
   '<div>背景採用：'+escape(lawson('background'))+'</div>'+ 
   '<div>ロゴ寸法：'+escape(lawson('size'))+'</div>'+
   '<div>テクスチャ A：'+escape(lawson('A'))+' / B：'+escape(lawson('B'))+'</div>';
+ for(const [id,color] of adoptedColors){
+  const line=document.createElement('div');line.textContent='Commons背景 '+id+'：'+color;content.append(line);
+ }
  mountLogoCopyButton(panel);
 }
 if(typeof window!=='undefined')window.addEventListener('komorebi:wikidata-logo',event=>{
  const {id,stage,state,detail}=event.detail||{};
+ if(stage==='adoptedColor'&&/^Q[1-9]\d*$/.test(id)){adoptedColors.set(id,detail);renderLogoDiagnostic();return;}
  if(!stage||!['Q38076','Q1557223'].includes(id))return;
  (id==='Q38076'?logoStages:lawsonStages).set(stage,{state,detail});
  renderLogoDiagnostic();

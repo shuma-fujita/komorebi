@@ -1,7 +1,7 @@
 // Application-owned UV facade renderer for the pinned Komorebi Engine.
 // Opaque solid wall bands and PNG logo inlays share one facade plane.
 // Keep the fixed Engine mesh contract unchanged.
-import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=wikidata-logo-pilot-v8-20261128';
+import {loadWikidataLogo,reportWikidataLogoStage} from './wikidata-logo.js?v=commons-edge-v1-20261128';
 // Pilot: reuse the existing local PNG texture keys as reliable fallbacks.
 const WIKIDATA_BRANDS=Object.freeze({wikidataQ38076:'Q38076',lawson:'Q1557223',misterDonut:'Q1065819',yoshinoya:'Q776272'});
 const TEXTURE_URLS=Object.freeze({
@@ -316,7 +316,14 @@ export function createMapFacadeTextureLayer(renderer){
     };
     const pixels=[read(0,0),read(w-1,0),read(0,h-1),read(w-1,h-1)];
     const transparent=pixels.every(p=>p[3]===0);
-    const color=transparent?0xffffff:chooseFacadeCornerColor(pixels,null);
+    const edgePixels=[];
+    if(!transparent){
+     for(let i=0;i<12;i++){
+      const x=Math.round((w-1)*i/11),y=Math.round((h-1)*i/11);
+      edgePixels.push(read(x,0),read(x,h-1),read(0,y),read(w-1,y));
+     }
+    }
+    const color=transparent?0xffffff:chooseFacadeEdgeColor(edgePixels,null);
     if(name==='lawson')reportWikidataLogoStage('Q1557223','corners','success',
      pixels.map(p=>'#'+[...p].slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join('')+'/a'+p[3]).join(' ')+' => '+(color===null?'判定不可':'#'+color.toString(16).padStart(6,'0')));
     return {color,transparent};
@@ -383,6 +390,7 @@ export function createMapFacadeTextureLayer(renderer){
     ctx.drawImage(remote,sx,sy,sw,sh,(width-w)/2,(height-h)/2,w,h);
     if(upload(canvas)){
      resource.commonsCornerColor=corners.color;
+     reportWikidataLogoStage(wikidataId,'adoptedColor','success',corners.color===null?'判定不可（従来色）':'#'+corners.color.toString(16).padStart(6,'0'));
      resource.dynamicReady=true;
      if(name==='lawson')reportWikidataLogoStage(wikidataId,'background','success',
       'Commons背景：'+(resource.commonsCornerColor===null?'判定不可（従来色）':'#'+resource.commonsCornerColor.toString(16).padStart(6,'0')));
