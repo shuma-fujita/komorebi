@@ -325,6 +325,7 @@ export function createMapFacadeTextureLayer(renderer){
     // Fit the visible logo rather than transparent margins. If pixel reading
     // is blocked or the image is fully transparent, retain the original fit.
     let sx=0,sy=0,sw=remote.naturalWidth,sh=remote.naturalHeight;
+    let cropStatus='未検出';
     try{
      const probe=document.createElement('canvas');
      probe.width=sw;probe.height=sh;
@@ -340,11 +341,16 @@ export function createMapFacadeTextureLayer(renderer){
       }
       if(right>=left&&bottom>=top){
        sx=left;sy=top;sw=right-left+1;sh=bottom-top+1;
-      }
+       cropStatus='検出成功';
+      }else cropStatus='不透明画素なし';
      }
-    }catch{/* Retain uncropped fit if canvas pixels are unavailable. */}
+    }catch(error){cropStatus='画素取得失敗: '+(error?.name||'Error');}
     const scale=Math.min(width/sw,height/sh);
     const w=sw*scale,h=sh*scale;
+    if(name==='lawson')reportWikidataLogoStage(wikidataId,'size','success',
+     '元画像 '+remote.naturalWidth+'×'+remote.naturalHeight+'px / '+cropStatus+
+     ' / 切抜 '+sw+'×'+sh+'px (x='+sx+', y='+sy+')'+
+     ' / 配置 '+w.toFixed(1)+'×'+h.toFixed(1)+'px / キャンバス '+width+'×'+height+'px');
     ctx.drawImage(remote,sx,sy,sw,sh,(width-w)/2,(height-h)/2,w,h);
     if(upload(canvas)){
      resource.commonsCornerColor=commonsCornerColor(remote);
