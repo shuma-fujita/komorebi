@@ -3,7 +3,7 @@
 import {LOGO_BRANDS} from './brands/index.js?v=wikidata-generic-v1-20261129';
 import {matchLogoFootprints} from './matching.js?v=logos-unified-v1-20261122';
 import {resolveLogoLevels} from './levels.js?v=shared-floor-20261126';
-import {paintImageFacade} from '../facade.js?v=familymart-continuous-bands-v4-20261129';
+import {paintImageFacade} from './facade.js?v=familymart-continuous-bands-v4-20261129';
 import {registerWikidataFacade} from '../../../maps/map-facade-textures.js?v=wikidata-generic-v1-20261129';
 const normalize=value=>String(value??'').normalize('NFKC').toLowerCase()
  .replace(/[\s\u2010-\u2015\u2212\uff0d-]/g,'');
