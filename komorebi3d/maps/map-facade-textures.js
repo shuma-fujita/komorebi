@@ -298,8 +298,15 @@ export function createMapFacadeTextureLayer(renderer){
      ctx.drawImage(remote,x,y,1,1,0,0,1,1);
      return ctx.getImageData(0,0,1,1).data;
     };
-    return chooseFacadeCornerColor([read(0,0),read(w-1,0),read(0,h-1),read(w-1,h-1)],null);
-   }catch{return null;}
+    const pixels=[read(0,0),read(w-1,0),read(0,h-1),read(w-1,h-1)];
+    const color=chooseFacadeCornerColor(pixels,null);
+    if(name==='lawson')reportWikidataLogoStage('Q1557223','corners','success',
+     pixels.map(p=>'#'+[...p].slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join('')+'/a'+p[3]).join(' ')+' => '+(color===null?'判定不可':'#'+color.toString(16).padStart(6,'0')));
+    return color;
+   }catch(error){
+    if(name==='lawson')reportWikidataLogoStage('Q1557223','corners','failed',error?.message||error);
+    return null;
+   }
   };
   const wikidataId=WIKIDATA_BRANDS[name];
   if(wikidataId)resource.activate=()=>{
@@ -320,6 +327,8 @@ export function createMapFacadeTextureLayer(renderer){
     if(upload(canvas)){
      resource.commonsCornerColor=commonsCornerColor(remote);
      resource.dynamicReady=true;
+     if(name==='lawson')reportWikidataLogoStage(wikidataId,'background','success',
+      'Commons背景：'+(resource.commonsCornerColor===null?'判定不可（従来色）':'#'+resource.commonsCornerColor.toString(16).padStart(6,'0')));
      reportWikidataLogoStage(wikidataId,backend,'success');
     }
     else throw Error('Texture upload did not complete');
@@ -383,7 +392,16 @@ export function createMapFacadeTextureLayer(renderer){
    const current=new Set(all);
    for(const [face,entry] of cache)if(!current.has(face))forget(face,entry);
    const valid=all;
-   for(const face of valid){resources.get(face.texture)?.activate?.();geometryFor(face);}
+   for(const face of valid){
+    const resource=resources.get(face.texture);
+    resource?.activate?.();geometryFor(face);
+    if(face.texture==='lawson'&&resource&&!resource.faceDiagnosticReported){
+     resource.faceDiagnosticReported=true;
+     reportWikidataLogoStage('Q1557223','face','success',
+      'UV看板あり・従来背景 #'+face.backgroundColor.toString(16).padStart(6,'0')+
+      '・backgroundSample='+String(face.backgroundSample||'corners'));
+    }
+   }
    if(!valid.length)return;
    if(isThree){
     for(const face of valid){
