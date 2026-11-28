@@ -368,8 +368,11 @@ export function createMapFacadeTextureLayer(renderer){
     const geometryMatchesCommons=Number.isFinite(actualAspect)&&actualAspect>0&&
      Math.abs(actualAspect/remoteAspect-1)<.01;
     const scale=Math.min(width/sw,height/sh);
-    const w=geometryMatchesCommons?width:sw*scale;
-    const h=geometryMatchesCommons?height:sh*scale;
+    // Give Commons logos 10% breathing room on each side of the UV sign.
+    // Keep the existing contain fallback when the actual UV ratio differs.
+    const padding=geometryMatchesCommons?.1:0;
+    const w=geometryMatchesCommons?width*(1-2*padding):sw*scale;
+    const h=geometryMatchesCommons?height*(1-2*padding):sh*scale;
     if(name==='lawson')reportWikidataLogoStage(wikidataId,'size','success',
      '元画像 '+remote.naturalWidth+'×'+remote.naturalHeight+'px / '+cropStatus+
      ' / 切抜 '+sw+'×'+sh+'px (x='+sx+', y='+sy+')'+
