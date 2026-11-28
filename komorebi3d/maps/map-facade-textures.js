@@ -285,7 +285,8 @@ export function createMapFacadeTextureLayer(renderer){
   };
   image.onload=()=>{if(!resource.dynamicReady)upload(image);};
   // Sample the original Commons image, before fitting it into the PNG-sized canvas.
-  // Transparent or inconsistent corners leave the original PNG/facade behavior intact.
+  // Four fully transparent corners mean a white sign background for Commons logos.
+  // Other ambiguous corners retain the original PNG/facade behavior.
   const commonsCornerColor=remote=>{
    try{
     const w=remote.naturalWidth,h=remote.naturalHeight;
@@ -299,7 +300,7 @@ export function createMapFacadeTextureLayer(renderer){
      return ctx.getImageData(0,0,1,1).data;
     };
     const pixels=[read(0,0),read(w-1,0),read(0,h-1),read(w-1,h-1)];
-    const color=chooseFacadeCornerColor(pixels,null);
+    const color=pixels.every(p=>p[3]===0)?0xffffff:chooseFacadeCornerColor(pixels,null);
     if(name==='lawson')reportWikidataLogoStage('Q1557223','corners','success',
      pixels.map(p=>'#'+[...p].slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join('')+'/a'+p[3]).join(' ')+' => '+(color===null?'判定不可':'#'+color.toString(16).padStart(6,'0')));
     return color;
