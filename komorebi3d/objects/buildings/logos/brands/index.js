@@ -68,6 +68,8 @@ import {paintManekinekoFacade} from './manekineko-sign.js?v=shared-facade-priori
 import {matsumotoKiyoshi} from './matsumoto-kiyoshi.js?v=matsumoto-kiyoshi-v1-20261127';
 import {paintMatsumotoKiyoshiFacade} from './matsumoto-kiyoshi-sign.js?v=shared-facade-priority-v1-20261128';
 import {toyokoInn} from './toyoko-inn.js?v=toyoko-inn-v1-20261128';
+import {nitori} from './nitori.js?v=nitori-brand-v1-20261129';
+import {yamadaDenki} from './yamada-denki.js?v=yamada-denki-brand-v1-20261129';
 import {paintToyokoInnFacade} from './toyoko-inn-sign.js?v=toyoko-white-v2-20261128';
 export const LOGO_BRANDS=Object.freeze([
  {brand:mcdonalds,paint:paintMcDonaldsFacade},
@@ -95,5 +97,7 @@ export const LOGO_BRANDS=Object.freeze([
  {brand:kfc,paint:paintKfcFacade},
  {brand:manekineko,paint:paintManekinekoFacade},
  {brand:matsumotoKiyoshi,paint:paintMatsumotoKiyoshiFacade},
- {brand:toyokoInn,paint:paintToyokoInnFacade}
+ {brand:toyokoInn,paint:paintToyokoInnFacade},
+ {brand:nitori,paint:commonsOnlyFacade('nitori',0xffffff)},
+ {brand:yamadaDenki,paint:commonsOnlyFacade('yamadaDenki',0xffffff)}
 ]);
