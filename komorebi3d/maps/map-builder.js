@@ -5,7 +5,7 @@ import {LOVE_HOTEL_COLOR} from '../objects/buildings/love-hotel/const.js?v=love-
 import {CONVENIENCE_DOOR_WIDTH_M} from '../objects/buildings/convenience/const.js?v=convenience-one-sign-v3-20261112';
 import {selectEntranceWall,blockedBuildingWalls,selectLogoWalls,assessFacadeWalls} from './entrance-wall-selection.js?v=shared-facade-priority-v1-20261128';
 import {matchFoodBuildings,resolveFoodPaint} from '../objects/buildings/food/osm-adapter.js?v=shared-floor-20261126';
-import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=generic-logo-preflight-v1-20261129';
+import {matchLogoBuildings,paintLogoBuilding} from '../objects/buildings/logos/osm-adapter.js?v=commons-aspect-recovery-v1-20261129';
 import {paintFoodWall} from '../objects/buildings/food/common.js?v=wall-dedup-step1-v1-20261124';
 import {tileCenterWgs84} from './tile-grid.js?v=tile-grid-epsg6677-20261114';
 import {parkingAreaFromOsm} from '../objects/parking/osm-adapter.js?v=parking-surface-v1-20261122';
@@ -75,7 +75,7 @@ function roadStyle(highway){
 // Defaults preserve the original Matsudo 500m test snapshot.
 // One geometry implementation feeds both the legacy synchronous builder and
 // the time-budgeted Step 3 renderer. Each yield occurs AFTER a whole OSM item.
-export function* createMapBuildSteps(map,{latitude=35.78444,longitude=139.90061,halfSize=250,priorityX=0,priorityZ=0,timeBatched=false,profile=null,availableGenericLogoIds=null}={}){
+export function* createMapBuildSteps(map,{latitude=35.78444,longitude=139.90061,halfSize=250,priorityX=0,priorityZ=0,timeBatched=false,profile=null}={}){
  // Legacy snapshots keep their exact origin; indexed 2km tiles derive it
  // from the immutable EPSG:6677 grid rather than caller-supplied coordinates.
  const center=map.tile?tileCenterWgs84(map.tile):{latitude,longitude};
@@ -293,7 +293,7 @@ function rectangle(m,x0,z0,x1,z1,t){quad(m,[x0,-.22,z0],[x0,-.22,z1],[x1,-.22,z1
    // while PNGs are loading or unavailable in the isolated editor preview.
    const paintedGroups=[];
    paintLogoBuilding(quad,buildingMesh,p,logoBuildings.get(e.id),tags,height,
-    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls,logoWallIndices,paintedGroups,facadeAssessment,availableGenericLogoIds);
+    inferredLevels,texturedFaces,e.type+'/'+e.id,otherStoreSpans,frontEdge,blockedWalls,logoWallIndices,paintedGroups,facadeAssessment);
    building(buildingMesh,p,height,tint,convenienceSpans,frontEdge,tags,pinkSpans,foodSpans,blockedWalls,paintedGroups);
    buildingSlices.push({osmKey:e.type+'/'+e.id,mesh:buildingMesh,start:buildingStart,end:buildingMesh.positions.length});
    {const feature={type:'building',points:p,height,area,osmType:e.type,osmId:e.id,osmVersion:e.version??null,tags:{...tags},bounds:[minX,maxX,minZ,maxZ]};
