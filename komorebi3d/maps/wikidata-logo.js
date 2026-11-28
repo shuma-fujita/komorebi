@@ -1,5 +1,11 @@
 // Runtime-only Wikimedia logo resolver. One request and decoded image per Wikidata entity.
 // Fail closed: the caller retains its bundled PNG on network/CORS/metadata errors.
+// Report runtime stages without coupling the resolver to a panel or renderer.
+export function reportWikidataLogoStage(id,stage,state,detail=''){
+ if(typeof window==='undefined')return;
+ const event=new CustomEvent('komorebi:wikidata-logo',{detail:{id,stage,state,detail:String(detail).slice(0,180)}});
+ window.dispatchEvent(event);
+}
 const pending=new Map();
 function rankStatement(statement,now){
  if(statement.rank==='deprecated'||statement.mainsnak?.snaktype!=='value')return -1;
@@ -32,16 +38,27 @@ function loadImage(url){
 export function loadWikidataLogo(id){
  if(!/^Q[1-9]\d*$/.test(id))return Promise.reject(Error('Invalid Wikidata id'));
  if(!pending.has(id))pending.set(id,(async()=>{
+  reportWikidataLogoStage(id,'wikidata','loading');
   const api='https://www.wikidata.org/w/api.php?origin=*&format=json&action=wbgetentities&props=claims&ids='+encodeURIComponent(id);
   const entity=(await json(api)).entities?.[id];
+  if(!entity)throw Error('Wikidata entity missing');
+  reportWikidataLogoStage(id,'wikidata','success');
+  reportWikidataLogoStage(id,'p154','loading');
   const filename=selectWikidataLogoFile(entity);
   if(!filename)throw Error('Wikidata P154 missing');
+  reportWikidataLogoStage(id,'p154','success',filename);
+  reportWikidataLogoStage(id,'commons','loading');
   const commons='https://commons.wikimedia.org/w/api.php?origin=*&format=json&action=query&prop=imageinfo&iiprop=url&iiurlwidth=512&titles='+encodeURIComponent('File:'+filename);
   const pages=(await json(commons)).query?.pages||{};
   const info=Object.values(pages)[0]?.imageinfo?.[0];
   const url=info?.thumburl||info?.url;
   if(!url||!/^https:\/\/upload\.wikimedia\.org\//.test(url))throw Error('Unexpected Commons image URL');
-  return loadImage(url);
- })());
+  const image=await loadImage(url);
+  reportWikidataLogoStage(id,'commons','success',image.naturalWidth+'×'+image.naturalHeight);
+  return image;
+ })().catch(error=>{
+  reportWikidataLogoStage(id,'error','failed',error?.message||error);
+  throw error;
+ }));
  return pending.get(id);
 }
