@@ -19,7 +19,7 @@ export function identifyLogoBrand(tags={}){
   (e.brand.id==='au' ? nameKeys.some(key=>{const value=String(tags[key]??'').normalize('NFKC').trim().toLowerCase();return /^au(?:$|[\s\-‐‑–—]|ショップ|style(?=$|[\s\-‐‑–—]|[^\x00-\x7f])|[^\x00-\x7f])/.test(value);}) : names.some(name=>e.brand.names.some(alias=>name.startsWith(normalize(alias))))))?.brand;
  if(existing)return existing;
  const qid=String(tags['brand:wikidata']??'').trim();
- if(!/^Q[1-9]\\d*$/.test(qid))return null;
+ if(!/^Q[1-9]\d*$/.test(qid))return null;
  return {id:'wikidata:'+qid,names:[],wikidataId:qid};
 }
 export function matchLogoBuildings(elements,project,halfSize){
