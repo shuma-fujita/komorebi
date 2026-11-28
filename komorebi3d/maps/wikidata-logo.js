@@ -67,7 +67,8 @@ function renderLogoDiagnostic(){
  content.innerHTML+='<div style="margin-top:10px;border-top:1px solid #aaa;padding-top:8px"><strong>🏪 ローソン背景色診断 / Q1557223</strong></div>'+
   '<div>UV看板：'+escape(lawson('face'))+'</div>'+
   '<div>Commons四隅：'+escape(lawson('corners'))+'</div>'+
-  '<div>背景採用：'+escape(lawson('background'))+'</div>'+
+  '<div>背景採用：'+escape(lawson('background'))+'</div>'+ 
+  '<div>ロゴ寸法：'+escape(lawson('size'))+'</div>'+
   '<div>テクスチャ A：'+escape(lawson('A'))+' / B：'+escape(lawson('B'))+'</div>';
  mountLogoCopyButton(panel);
 }
