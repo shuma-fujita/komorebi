@@ -256,7 +256,7 @@ export function createMapFacadeTextureLayer(renderer){
   const image=resource.image;
   image.decoding='async';
   const upload=source=>{
-   if(disposed)return;
+   if(disposed)return false;
    try{
     if(isThree){
      resource.texture.image=source;
@@ -275,7 +275,8 @@ export function createMapFacadeTextureLayer(renderer){
      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
     }
     resource.image=source;resource.colors.clear();resource.ready=true;
-   }catch(error){resource.failed=true;console.warn('PNG facade upload failed:',name,error);}
+    return true;
+   }catch(error){resource.failed=true;console.warn('PNG facade upload failed:',name,error);return false;}
   };
   image.onload=()=>{if(!resource.dynamicReady)upload(image);};
   if(name==='wikidataQ38076')resource.activate=()=>{
@@ -293,8 +294,7 @@ export function createMapFacadeTextureLayer(renderer){
     const scale=Math.min(width/remote.naturalWidth,height/remote.naturalHeight);
     const w=remote.naturalWidth*scale,h=remote.naturalHeight*scale;
     ctx.drawImage(remote,(width-w)/2,(height-h)/2,w,h);
-    upload(canvas);
-    if(resource.ready){resource.dynamicReady=true;reportWikidataLogoStage('Q38076',backend,'success');}
+    if(upload(canvas)){resource.dynamicReady=true;reportWikidataLogoStage('Q38076',backend,'success');}
     else throw Error('Texture upload did not complete');
    }).catch(error=>{
     reportWikidataLogoStage('Q38076',backend,disposed?'cancelled':'failed',error?.message||error);
